@@ -1,8 +1,14 @@
 {
   "packageDirectories": [
     {
-      "path": "force-app",
+      "path": "core",
       "default": true
+    },
+    {
+      "path": "extension-feature-one"
+    },
+    {
+      "path": "extension-feature-two"
     }
   ],
   "name": "sfdx-nakama-project-scaffolding",
