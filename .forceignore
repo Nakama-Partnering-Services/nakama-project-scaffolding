@@ -10,3 +10,6 @@ package.xml
 
 # LWC Jest
 **/__tests__/**
+
+# Environment specific
+**/environment-specific/**

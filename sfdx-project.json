@@ -1,14 +1,21 @@
 {
   "packageDirectories": [
     {
-      "path": "core",
+      "path": "sfdx-source/frameworks",
       "default": true
     },
     {
-      "path": "extension-feature-one"
+      "path": "sfdx-source/temporal",
+      "default": true
     },
     {
-      "path": "extension-feature-two"
+      "path": "sfdx-source/core"
+    },
+    {
+      "path": "sfdx-source/extension-feature-one"
+    },
+    {
+      "path": "sfdx-source/extension-feature-two"
     }
   ],
   "name": "sfdx-nakama-project-scaffolding",
