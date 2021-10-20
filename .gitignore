@@ -8,9 +8,6 @@
 .localdevserver/
 deploy-options.json
 
-# LWC VSCode autocomplete
-# **/lwc/jsconfig.json (Commented here to be tracked by git)
-
 # LWC Jest coverage reports
 coverage/
 
@@ -38,6 +35,3 @@ $RECYCLE.BIN/
 
 # Local environment variables
 .env
-
-# Untracked metadata files
-sfdx-source/untracked/
