@@ -1,25 +1,25 @@
 {
-  "packageDirectories": [
-    {
-      "path": "sfdx-source/frameworks",
-      "default": true
-    },
-    {
-      "path": "sfdx-source/temporal",
-      "default": true
-    },
-    {
-      "path": "sfdx-source/core"
-    },
-    {
-      "path": "sfdx-source/extension-feature-one"
-    },
-    {
-      "path": "sfdx-source/extension-feature-two"
-    }
-  ],
-  "name": "sfdx-nakama-project-scaffolding",
-  "namespace": "",
-  "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "53.0"
+	"packageDirectories": [
+		{
+			"path": "sfdx-source/frameworks",
+			"default": true
+		},
+		{
+			"path": "sfdx-source/temporal",
+			"default": true
+		},
+		{
+			"path": "sfdx-source/core"
+		},
+		{
+			"path": "sfdx-source/extension-feature-one"
+		},
+		{
+			"path": "sfdx-source/extension-feature-two"
+		}
+	],
+	"name": "sfdx-nakama-project-scaffolding",
+	"namespace": "",
+	"sfdcLoginUrl": "https://login.salesforce.com",
+	"sourceApiVersion": "53.0"
 }

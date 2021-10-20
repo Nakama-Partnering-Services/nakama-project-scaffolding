@@ -1,4 +1,5 @@
 # sfdx-source/core
+
 This folder is to contain metadata files that provide the main functionality of the project and their tests. They do not have dependencies anywhere else expect from scaffolding frameworks.
 
 Usually, `core_` prefix is used for metadata files in this folder since it is useful to easily identify package dependencies in files (as suggested [here](https://youtu.be/MY2_AfjtBp8?t=893)).
