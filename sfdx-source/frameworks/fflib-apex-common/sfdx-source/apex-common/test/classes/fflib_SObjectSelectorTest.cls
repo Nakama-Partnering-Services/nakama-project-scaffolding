@@ -107,16 +107,15 @@ private with sharing class fflib_SObjectSelectorTest
 		System.runAs(testUser)
 		{
 			Testfflib_SObjectSelector selector = new Testfflib_SObjectSelector();
-			// WARNING
-			// try
-			// {
-			// 	List<Account> result = (List<Account>) selector.selectSObjectsById(idSet);
-			// 	System.assert(false,'Expected exception was not thrown');
-			// }
-			// catch(fflib_SObjectDomain.DomainException e)
-			// {
-			// 	System.assertEquals('Permission to access an Account denied.',e.getMessage());
-			// }
+			try
+			{
+				List<Account> result = (List<Account>) selector.selectSObjectsById(idSet);
+				System.assert(false,'Expected exception was not thrown');
+			}
+			catch(fflib_SecurityUtils.CrudException e)
+			{
+				System.assert(e.getMessage().contains('You do not have permission'));
+			}
 		}
 	}
 
@@ -137,15 +136,14 @@ private with sharing class fflib_SObjectSelectorTest
 		System.runAs(testUser)
 		{
 			Testfflib_SObjectSelector selector = new Testfflib_SObjectSelector(false, false, false, true);
-			// WARNING
-			// try
-			// {
-			// 	List<Account> result = (List<Account>) selector.selectSObjectsById(idSet);
-			// }
-			// catch(fflib_SObjectDomain.DomainException e)
-			// {
-			// 	System.assert(false,'Did not expect an exception to be thrown');
-			// }
+			try
+			{
+				List<Account> result = (List<Account>) selector.selectSObjectsById(idSet);
+			}
+			catch(fflib_SecurityUtils.CrudException e)
+			{
+				System.assert(false,'Did not expect an exception to be thrown');
+			}
 		}
 	}
 

@@ -1,8 +1,7 @@
 {
 	"packageDirectories": [
 		{
-			"path": "sfdx-source/frameworks",
-			"default": true
+			"path": "sfdx-source/frameworks"
 		},
 		{
 			"path": "sfdx-source/temporal",

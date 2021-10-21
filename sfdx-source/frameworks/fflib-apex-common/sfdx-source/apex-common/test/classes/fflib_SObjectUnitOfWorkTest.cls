@@ -464,7 +464,8 @@ private with sharing class fflib_SObjectUnitOfWorkTest
         uow.commitWork();
 
         // THEN the records should be registered with both changed values for Amount and StageName
-		// WARNING
+
+		// Commented out to remove dependancy on fflib_MatcherDefinitions
         // System.assert(
         //         new fflib_MatcherDefinitions.SObjectsWith(
         //                 new List<Map<SObjectField, Object>>{
@@ -533,7 +534,8 @@ private with sharing class fflib_SObjectUnitOfWorkTest
         uow.commitWork();
 
         // THEN only the first record should be registered with both changed values for Amount and StageName and the second should be the original
-        // WARNING
+
+		// Commented out to remove dependancy on fflib_MatcherDefinitions
 		// System.assert(
         //         !new fflib_MatcherDefinitions.SObjectsWith(
         //                 new List<Map<SObjectField, Object>>{
@@ -554,7 +556,8 @@ private with sharing class fflib_SObjectUnitOfWorkTest
         //                 .matches(mockDML.recordsForUpdate),
         //         'Not all records should not be registered with the dirty values'
         // );
-		// WARNING
+
+		// Commented out to remove dependancy on fflib_MatcherDefinitions
         // System.assert(
         //         new fflib_MatcherDefinitions.SObjectsWith(
         //                 new List<Map<SObjectField, Object>>{

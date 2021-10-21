@@ -315,18 +315,6 @@ public abstract with sharing class fflib_SObjectSelector
     }
 
     /**
-     * Throws an exception if the SObject indicated by getSObjectType is not accessible to the current user (read access)
-     *
-     * @deprecated If you utilise the newQueryFactory method this is automatically done for you (unless disabled by the selector)
-     **/
-    public void assertIsAccessible()
-    {
-         // WARNING if(!getSObjectType().getDescribe().isAccessible())
-           // WARNING throw new fflib_SObjectDomain.DomainException(
-             // WARNING   'Permission to access an ' + getSObjectType().getDescribe().getName() + ' denied.');
-    }
-
-    /**
      * Public access for the getSObjectType during Mock registration
      *   (adding public to the existing method broken base class API backwards compatibility)
      **/
@@ -442,14 +430,7 @@ public abstract with sharing class fflib_SObjectSelector
         // CRUD and FLS security required?
         if (assertCRUD)
         {
-        	try {
-        		// Leverage QueryFactory for CRUD checking
-        		queryFactory.assertIsAccessible();
-        	} catch (fflib_SecurityUtils.CrudException e) {
-        		// Marshal exception into DomainException for backwards compatibility
-				// WARNING throw new fflib_SObjectDomain.DomainException(
-	             // WARNING    'Permission to access an ' + getSObjectType().getDescribe().getName() + ' denied.');
-        	}
+        	queryFactory.assertIsAccessible();
         }
         queryFactory.setEnforceFLS(enforceFLS);
 
