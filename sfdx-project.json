@@ -1,7 +1,16 @@
 {
 	"packageDirectories": [
 		{
-			"path": "sfdx-source/frameworks"
+			"path": "sfdx-source/frameworks/apex-dml-manager"
+		},
+		{
+			"path": "sfdx-source/frameworks/fflib-apex-common"
+		},
+		{
+			"path": "sfdx-source/frameworks/extensions"
+		},
+		{
+			"path": "sfdx-source/frameworks/apex-domainbuilder"
 		},
 		{
 			"path": "sfdx-source/temporal",
