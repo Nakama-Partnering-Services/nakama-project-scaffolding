@@ -236,51 +236,6 @@ public abstract with sharing class fflib_SObjectSelector
     }
 
     /**
-     * Provides access to the builder containing the list of fields base queries are using, this is demand
-     *   created if one has not already been defined via setFieldListBuilder
-     *
-     * @depricated See newQueryFactory
-     **/
-    public fflib_StringBuilder.CommaDelimitedListBuilder getFieldListBuilder()
-    {
-        return
-            new fflib_StringBuilder.CommaDelimitedListBuilder(
-                new List<String>(newQueryFactory().getSelectedFields()));
-    }
-
-    /**
-     * Use this method to override the default FieldListBuilder (created on demand via getFieldListBuilder) with a custom one,
-     *   warning, this will bypass anything getSObjectFieldList or getSObjectFieldSetList returns
-     *
-     * @depricated See newQueryFactory
-     **/
-    public void setFieldListBuilder(fflib_StringBuilder.FieldListBuilder fieldListBuilder)
-    {
-        // TODO: Consider if given the known use cases for this (dynamic selector optimisation) if it's OK to leave this as a null operation
-    }
-
-    /**
-     * Returns in string form a comma delimited list of fields as defined via getSObjectFieldList and optionally getSObjectFieldSetList
-     *
-     * @deprecated See newQueryFactory
-     **/
-    public String getFieldListString()
-    {
-        return getFieldListBuilder().getStringValue();
-    }
-
-    /**
-     * Returns in string form a comma delimited list of fields as defined via getSObjectFieldList and optionally getSObjectFieldSetList
-     * @param relation Will prefix fields with the given relation, e.g. MyLookupField__r
-     *
-     * @depricated See newQueryFactory
-     **/
-    public String getRelatedFieldListString(String relation)
-    {
-        return getFieldListBuilder().getStringValue(relation + '.');
-    }
-
-    /**
      * Returns the string representation of the SObject this selector represents
      **/
     public String getSObjectName()
