@@ -1,6 +1,9 @@
 {
 	"packageDirectories": [
 		{
+			"path": "sfdx-source/frameworks/apex-fp"
+		},
+		{
 			"path": "sfdx-source/frameworks/apex-dml-manager"
 		},
 		{
