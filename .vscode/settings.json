@@ -29,6 +29,7 @@
 	"peacock.remoteColor": "#1857a4",
 	"peacock.color": "#dd0531",
 	"salesforcedx-vscode-apex.java.home": "/usr/lib/jvm/java-11-openjdk-amd64",
+	"salesforcedx-vscode-core.detectConflictsAtSync": true,
 	"files.trimTrailingWhitespace": true,
 	"diffEditor.ignoreTrimWhitespace": false,
 	"editor.insertSpaces": false,
