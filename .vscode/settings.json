@@ -35,15 +35,10 @@
 	"editor.insertSpaces": false,
 	"editor.detectIndentation": false,
 	"editor.renderWhitespace": "all",
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
 	"prettier.trailingComma": "none",
 	"prettier.singleQuote": true,
 	"prettier.printWidth": 120,
 	"prettier.tabWidth": 4,
-	"prettier.useTabs": true,
-    "[json]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
-	"[html]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	}
+	"prettier.useTabs": true
 }
