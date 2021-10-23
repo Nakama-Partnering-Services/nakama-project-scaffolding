@@ -16,6 +16,9 @@
 			"path": "sfdx-source/frameworks/apex-domainbuilder"
 		},
 		{
+			"path": "sfdx-source/frameworks/NebulaLogger"
+		},
+		{
 			"path": "sfdx-source/temporal",
 			"default": true
 		},
