@@ -155,7 +155,7 @@ public abstract class DomainBuilder {
         for(Integer i = sorted.size() - 1; i >= 0; i--){
             insertOrder.add(sorted[i]);
         }
-        return new fflib_SObjectUnitOfWork(insertOrder);
+        return new SObjectSecureUnitOfWork(insertOrder);
     }
 
 
