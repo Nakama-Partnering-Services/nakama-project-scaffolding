@@ -1,8 +1,22 @@
 {
 	"packageDirectories": [
 		{
-			"path": "sfdx-source/frameworks",
-			"default": true
+			"path": "sfdx-source/frameworks/apex-fp"
+		},
+		{
+			"path": "sfdx-source/frameworks/apex-dml-manager"
+		},
+		{
+			"path": "sfdx-source/frameworks/fflib-apex-common"
+		},
+		{
+			"path": "sfdx-source/frameworks/extensions"
+		},
+		{
+			"path": "sfdx-source/frameworks/apex-domainbuilder"
+		},
+		{
+			"path": "sfdx-source/frameworks/NebulaLogger"
 		},
 		{
 			"path": "sfdx-source/temporal",

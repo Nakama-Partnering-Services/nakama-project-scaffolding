@@ -29,20 +29,16 @@
 	"peacock.remoteColor": "#1857a4",
 	"peacock.color": "#dd0531",
 	"salesforcedx-vscode-apex.java.home": "/usr/lib/jvm/java-11-openjdk-amd64",
+	"salesforcedx-vscode-core.detectConflictsAtSync": true,
 	"files.trimTrailingWhitespace": true,
 	"diffEditor.ignoreTrimWhitespace": false,
 	"editor.insertSpaces": false,
 	"editor.detectIndentation": false,
 	"editor.renderWhitespace": "all",
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
 	"prettier.trailingComma": "none",
 	"prettier.singleQuote": true,
 	"prettier.printWidth": 120,
 	"prettier.tabWidth": 4,
-	"prettier.useTabs": true,
-    "[json]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
-	"[html]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	}
+	"prettier.useTabs": true
 }
