@@ -10,7 +10,7 @@ This repository aims to contain the resources and frameworks used for the scaffo
 
 ## Credits
 
--   **Nakama Partnering Services**
+-   [**Nakama Partnering Services**](https://github.com/Nakama-Partnering-Services)
 
 ## Contributing
 
