@@ -18,7 +18,7 @@
 			"path": "sfdx-source/extension-feature-two"
 		}
 	],
-	"name": "sfdx-nakama-project-scaffolding",
+	"name": "project-scaffolding",
 	"namespace": "",
 	"sfdcLoginUrl": "https://login.salesforce.com",
 	"sourceApiVersion": "53.0"

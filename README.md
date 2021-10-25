@@ -1,4 +1,4 @@
-# sfdx-nakama-project-scaffolding
+# project-scaffolding
 
 This repository aims to contain the resources and frameworks used for the scaffoling of new sfdx projects. It also has a modular project structure with guidelines on how to use it, the purpose of each folder, and some naming conventions and best practises.
 
