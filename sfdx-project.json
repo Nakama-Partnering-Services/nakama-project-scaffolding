@@ -1,6 +1,9 @@
 {
 	"packageDirectories": [
 		{
+			"path": "sfdx-source/frameworks/apex-trigger-actions-framework"
+		},
+		{
 			"path": "sfdx-source/frameworks/apex-fp"
 		},
 		{
@@ -19,11 +22,8 @@
 			"path": "sfdx-source/frameworks/NebulaLogger"
 		},
 		{
-			"path": "sfdx-source/temporal",
+			"path": "sfdx-source/core",
 			"default": true
-		},
-		{
-			"path": "sfdx-source/core"
 		},
 		{
 			"path": "sfdx-source/extension-feature-one"

@@ -38,4 +38,4 @@ $RECYCLE.BIN/
 
 package-lock.json
 
-sfdx-source/temporal/main/default/**
+sfdx-source/core/main/default/**
