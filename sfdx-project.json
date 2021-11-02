@@ -1,29 +1,44 @@
 {
 	"packageDirectories": [
 		{
-			"path": "sfdx-source/frameworks/apex-trigger-actions-framework"
-		},
-		{
-			"path": "sfdx-source/frameworks/apex-fp"
-		},
-		{
-			"path": "sfdx-source/frameworks/apex-dml-manager"
-		},
-		{
-			"path": "sfdx-source/frameworks/fflib-apex-common"
-		},
-		{
-			"path": "sfdx-source/frameworks/extensions"
-		},
-		{
-			"path": "sfdx-source/frameworks/apex-domainbuilder"
-		},
-		{
-			"path": "sfdx-source/frameworks/NebulaLogger"
+			"path": "sfdx-source/frameworks",
+			"package": "Frameworks",
+			"versionName": "Frameworks - Initial Version",
+			"versionDescription": "This version is for testing purposes and likely contains flaws",
+			"versionNumber": "53.0.0.NEXT",
+			"definitionFile": "config/project-scratch-def.json",
+			"includeProfileUserLicenses": false,
+			"default": false,
+			"unpackagedMetadata": {
+				"path": "sfdx-source/unpackaged"
+			},
+			"apexTestAccess": {
+				"permissionSets": [],
+				"permissionSetLicenses": []
+			}
 		},
 		{
 			"path": "sfdx-source/core",
-			"default": true
+			"package": "Core",
+			"versionName": "Core - Initial Version",
+			"versionDescription": "This version is for testing purposes and likely contains flaws",
+			"versionNumber": "53.0.0.NEXT",
+			"definitionFile": "config/project-scratch-def.json",
+			"includeProfileUserLicenses": false,
+			"default": true,
+			"unpackagedMetadata": {
+				"path": "sfdx-source/unpackaged"
+			},
+			"apexTestAccess": {
+				"permissionSets": [],
+				"permissionSetLicenses": []
+			},
+			"dependencies": [
+				{
+					"package": "Frameworks",
+					"versionNumber": "53.0.0.LATEST"
+				}
+			]
 		},
 		{
 			"path": "sfdx-source/extension-feature-one"
@@ -35,5 +50,11 @@
 	"name": "project-scaffolding",
 	"namespace": "",
 	"sfdcLoginUrl": "https://login.salesforce.com",
-	"sourceApiVersion": "53.0"
+	"sourceApiVersion": "53.0",
+	"packageAliases": {
+		"Frameworks": "0Ho7Q0000008OIoSAM",
+		"Core": "0Ho7Q0000008OItSAM",
+		"Frameworks@53.0.0-40": "04t7Q000000cFXmQAM",
+		"Core@53.0.0-35": "04t7Q000000cFXrQAM"
+	}
 }

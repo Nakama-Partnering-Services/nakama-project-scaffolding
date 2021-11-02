@@ -23,6 +23,6 @@ Contributions are what make the trailblazer community such an amazing place. I r
 
 This project is licensed under the MIT license - see the [LICENSE](/LICENSE) file for details.
 
--   [Latest Frameworks package version installation link](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cFGXQA2)
+-   [Latest Frameworks package version installation link](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cFXmQAM)
 
--   [Latest Core package version installation link](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cFGcQAM)
+-   [Latest Core package version installation link](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cFXrQAM)

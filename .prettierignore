@@ -10,3 +10,5 @@
 coverage/
 
 sfdx-source/frameworks/**
+
+config/pmd-ruleset.xml
