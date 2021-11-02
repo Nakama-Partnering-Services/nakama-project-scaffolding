@@ -13,3 +13,9 @@ package.xml
 
 # Environment specific
 **/environment-specific/**
+
+# README.md files
+README.md
+
+# Default folder
+sfdx-source/core/main/default/**

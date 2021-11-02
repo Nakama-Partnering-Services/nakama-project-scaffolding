@@ -3,6 +3,7 @@
 **/lwc/**/*.json
 **/lwc/**/*.svg
 **/lwc/**/*.xml
+**/lwc/**/*.md
 **/aura/**/*.auradoc
 **/aura/**/*.cmp
 **/aura/**/*.css
@@ -13,4 +14,6 @@
 **/aura/**/*.tokens
 **/aura/**/*.xml
 **/aura/**/*.app
+**/aura/**/*.md
+sfdx-source/frameworks/**
 .sfdx
