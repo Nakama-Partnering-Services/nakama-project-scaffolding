@@ -1,6 +1,7 @@
 {
 	"orgName": "Nakama",
 	"edition": "Developer",
+	"language": "en_US",
 	"features": ["EnableSetPasswordInApi"],
 	"settings": {
 		"lightningExperienceSettings": {

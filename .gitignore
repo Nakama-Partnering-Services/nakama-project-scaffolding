@@ -36,6 +36,4 @@ $RECYCLE.BIN/
 # Local environment variables
 .env
 
-package-lock.json
-
 sfdx-source/core/main/default/**

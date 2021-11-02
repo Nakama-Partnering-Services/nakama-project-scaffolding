@@ -1,0 +1,195 @@
+name: Validate pull request
+on:
+    # Note: workflow will be executed even if the .yaml file exists only in source branch but not in the base branch
+    pull_request:
+        branches: main
+        paths:
+            - sfdx-source/**
+
+jobs:
+    local-validations:
+        name: 'Execute local validations'
+        runs-on: ubuntu-latest
+        container:
+            # Warning: when running in container, git commands will not work since it will not be a repository
+            image: docker://salesforce/salesforcedx:latest-full
+        steps:
+            - name: 'Checkout source code'
+              uses: actions/checkout@v2
+
+            - name: 'Restore node_modules cache'
+              id: cache-npm
+              uses: actions/cache@v2
+              with:
+                  path: node_modules
+                  key: npm-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ env.cache-name }}-
+                      npm-
+
+            - name: 'Install npm dependencies'
+              if: steps.cache-npm.outputs.cache-hit != 'true'
+              run: npm ci
+
+            - name: 'Install SFDX Scanner'
+              run: sf plugins install @salesforce/sfdx-scanner
+
+            - name: 'Verify formatting with Prettier'
+              run: npm run prettier:verify
+
+            - name: 'Verify Aura and Lightning Web Components with ESLint'
+              run: npm run lint
+
+            - name: 'Verify Apex with SFDX Scanner and save results in a file'
+              run: sf scanner run --pmdconfig config/pmd-ruleset.xml --target '.,!sfdx-source/frameworks/**/*.cls' --engine pmd --severity-threshold 3 --format table
+
+            # - name: 'Test Lightning Web Components'
+            #   run: npm run test:unit:coverage
+
+            # - name: 'Upload code coverage for Lightning Web Components to Codecov.io'
+            #   uses: codecov/codecov-action@v2.0.2
+            #   with:
+            #       token: ${{ secrets.CODECOV_TOKEN }}
+            #       flags: LWC
+
+    org-validations:
+        name: 'Execute validations against scratch org'
+        needs: local-validations
+        runs-on: ubuntu-latest
+        steps:
+            - name: 'Checkout source branch'
+              uses: actions/checkout@v2
+              with:
+                  # Note: env.GITHUB_HEAD_REF can not be used because default environment variables exist only in the runner
+                  ref: ${{ github.event.pull_request.head.ref }}
+
+            - name: 'Restore node_modules cache'
+              id: cache-npm
+              uses: actions/cache@v2
+              with:
+                  path: node_modules
+                  key: npm-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ env.cache-name }}-
+                      npm-
+
+            - name: 'Install npm dependencies'
+              if: steps.cache-npm.outputs.cache-hit != 'true'
+              run: npm ci
+
+            - name: Install Salesforce CLI
+              run: npm install sfdx-cli --global
+
+            - name: 'Create Dev Hub auth file'
+              run: echo ${{ secrets.DEVHUB_SFDX_AUTH_URL }} > ./DEVHUB_SFDX_AUTH_URL.txt
+
+            - name: 'Authorize Dev Hub'
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Nakama Dev Hub' --setdefaultdevhubusername --setdefaultusername
+
+            - name: 'Remove Dev Hub auth file'
+              run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
+
+            # TODO: comment this when scratch orgs limit is reached
+
+            # - name: 'Create scratch org'
+            #   run: sfdx force:org:create --definitionfile config/project-scratch-def.json --setalias 'Nakama scratch org' --setdefaultusername --durationdays 1
+
+            # - name: 'Push source to scratch org'
+            #   run: sfdx force:source:push
+
+            # - name: 'Assign permissionset to default user'
+            #   run: |
+            #       sfdx force:user:permset:assign --permsetname PermissionSetName
+
+            # - name: 'Import sample data'
+            #   run: |
+            #       sfdx force:data:tree:import --plan ./data/fileName.json
+
+            - name: 'Run Apex tests'
+              run: sfdx force:apex:test:run --codecoverage --resultformat human --outputdir ./tests/apex --wait 20
+
+            # Delete temporary test file that Codecov is unable to parse
+            - name: 'Delete coverage file (temporary step)'
+              run: rm ./tests/apex/test-result-707*-codecoverage.json
+
+            - name: 'Upload code coverage for Apex to Codecov.io'
+              uses: codecov/codecov-action@v2.0.2
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  flags: Apex
+
+            - name: 'Check for package changes'
+              id: checkForChanges
+              run: |
+                  git fetch origin $GITHUB_BASE_REF --depth=1
+                  changedPaths=$( git diff --name-only origin/$GITHUB_BASE_REF )
+
+                  changedPackages=()
+
+                  if [ $(echo "$changedPaths" | grep -c '^sfdx-source/frameworks') > 0 ]; then
+                      changedPackages+=( 'Frameworks' )
+                  fi
+
+                  if [ $(echo "$changedPaths" | grep -c '^sfdx-source/core') > 0 ]; then
+                      changedPackages+=( 'Core' )
+                  fi
+
+                  echo "Changed packages (${#changedPackages[@]}):"
+                  for i in ${changedPackages[@]}; do
+                      echo "- $i"
+                  done
+
+                  changedPackagesJson='[]'
+                  if (( ${#changedPackages[@]} > 0 )); then
+                      changedPackagesJson=$(printf '%s\n' "${changedPackages[@]}" | jq -R . | jq -c -s .)
+                  fi
+                  echo "::set-output name=changes::$changedPackagesJson"
+
+            - name: 'Create package version - Frameworks'
+              id: package-frameworks
+              if: ${{ contains(steps.checkForChanges.outputs.changes, 'Frameworks') }}
+              run: |
+                  json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --skipvalidation --wait 10 --json)
+                  packageVersionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
+                  echo "::set-output name=packageVersionId::$packageVersionId"
+
+            - name: 'Create package version - Core'
+              id: package-core
+              if: ${{ contains(steps.checkForChanges.outputs.changes, 'Core') }}
+              run: |
+                  json=$(sfdx force:package:version:create --package Core --installationkeybypass --skipvalidation --wait 10 --json)
+                  packageVersionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
+                  echo "::set-output name=packageVersionId::$packageVersionId"
+
+            - name: 'Update sfdx-project.json and README.md'
+              uses: trailheadapps/github-action-sfdx-packaging-updater@1.1.0
+
+            - name: 'Persist sfdx-project.json and README.md'
+              run: |
+                  git config --local user.email "action@github.com"
+                  git config --local user.name "GitHub Action Bot"
+                  npx prettier --write sfdx-project.json README.md
+                  git add sfdx-project.json README.md
+                  git commit -m "Updated sfdx-project.json and README.md with new package version"
+                  git push
+
+            - name: 'Wait for package installation links to be ready'
+              uses: maddox/actions/sleep@master
+              with:
+                  args: 120
+
+            - name: 'Install Frameworks'
+              run: |
+                  versionId=$(echo '${{ steps.package-frameworks.outputs.packageVersionId }}')
+                  sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt
+
+            - name: 'Install Core'
+              run: |
+                  versionId=$(echo '${{ steps.package-core.outputs.packageVersionId }}')
+                  sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt
+
+            # TODO: comment this when scratch orgs limit is reached
+
+            # - name: 'Delete scratch org'
+            #   if: always()
+            #   run: sfdx force:org:delete --noprompt

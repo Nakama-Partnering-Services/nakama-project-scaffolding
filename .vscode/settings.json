@@ -40,5 +40,8 @@
 	"prettier.singleQuote": true,
 	"prettier.printWidth": 120,
 	"prettier.tabWidth": 4,
-	"prettier.useTabs": true
+	"prettier.useTabs": true,
+	"[xml]": {
+		"editor.defaultFormatter": "DotJoshJohnson.xml"
+	}
 }
