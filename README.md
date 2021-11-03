@@ -1,5 +1,6 @@
 # project-scaffolding
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/d8ef5651b1904c06a7bbef9e8afc4b51)](https://app.codacy.com/gh/Nakama-Partnering-Services/project-scaffolding?utm_source=github.com&utm_medium=referral&utm_content=Nakama-Partnering-Services/project-scaffolding&utm_campaign=Badge_Grade_Settings)
 [![Deploy](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/deploy.yaml/badge.svg)](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/deploy.yaml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/31cf577135ee43f387303e55666f1b20)](https://www.codacy.com/gh/Nakama-Partnering-Services/project-scaffolding/dashboard?utm_source=github.com&utm_medium=referral&utm_content=Nakama-Partnering-Services/project-scaffolding&utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/gh/jdkgabri/sfdx-actions-demo/branch/code-checks-action/graph/badge.svg)](https://codecov.io/gh/jdkgabri/project-scaffolding)
