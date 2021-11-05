@@ -14,7 +14,9 @@
 		"eamodio.gitlens",
 		"mhutchie.git-graph",
 		"shardulm94.trailing-spaces",
-		"dotjoshjohnson.xml"
+		"dotjoshjohnson.xml",
+		"tabnine.tabnine-vscode",
+		"vignaeshrama.sfdx-package-xml-generator"
 	],
 	"settings": {
 		"salesforcedx-vscode-apex.java.home": "/usr/lib/jvm/java-11-openjdk-amd64"
