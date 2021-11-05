@@ -13,7 +13,8 @@
 		"github.copilot",
 		"eamodio.gitlens",
 		"mhutchie.git-graph",
-		"shardulm94.trailing-spaces"
+		"shardulm94.trailing-spaces",
+		"dotjoshjohnson.xml"
 	],
 	"settings": {
 		"salesforcedx-vscode-apex.java.home": "/usr/lib/jvm/java-11-openjdk-amd64"
