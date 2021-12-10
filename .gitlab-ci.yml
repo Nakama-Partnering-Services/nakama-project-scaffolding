@@ -1,0 +1,44 @@
+image: salesforce/salesforcedx:latest-full
+
+.sfdx-changes:
+    - sfdx-source/frameworks/**/*
+    - sfdx-source/**/main/**/*
+    - sfdx-source/**/test/apex-classes/**/*
+
+.vlocity-changes:
+    - sfdx-source/**/vlocity/**/*
+
+workflow:
+    rules:
+        - if: $DESTINATION_ENVIRONMENT != "" && ($METADATA_DEPLOYMENT == "true" || $VLOCITY_DEPLOYMENT == "true")
+        - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+          when: never
+        - if: ($DEPLOY == "true" && ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /^release*$/)) || ($VALIDATE_MERGE_REQUEST == "true" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release*$/))
+          changes:
+              - sfdx-source/frameworks/**/*
+              - sfdx-source/**/main/**/*
+              - sfdx-source/**/test/apex-classes/**/*
+              - sfdx-source/**/vlocity/**/*
+
+include:
+    - pipelines/.manual-deployment.yml
+    - pipelines/.delta-operations.yml
+    # Note: commented out since it is not working in altemista.com
+    # - pipelines/.code-quality.yml
+    - pipelines/.push.yml
+    - pipelines/.merge-request.yml
+
+stages:
+    - local-validations
+    # Note: commented out since it is not working in altemista.com
+    # - generate-code_quality-report
+    - generate-deltas
+    - identify-test-classes
+    - org-validations
+    - delete-scratch-org
+    - deploy-deltas-integration
+    - deploy-vlocity-integration
+    - manually-deploy-deltas-qa
+    - manually-deploy-vlocity-qa
+    - manual-metadata-deployment
+    - manual-vlocity-deployment

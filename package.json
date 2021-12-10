@@ -37,8 +37,5 @@
 		"**/{aura,lwc}/**": [
 			"eslint"
 		]
-	},
-	"comments": {
-		"prettier": "Since prettier is installed just locally, in order to execute it from the terminal, prettier:execute has been added in scripts. Usage: npm run prettier:execute -- [options]"
 	}
 }

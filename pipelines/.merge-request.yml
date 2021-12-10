@@ -1,0 +1,106 @@
+# cache: working in gitlab.com but not in altemista, so using artifacts instead
+
+# cache:
+#     key: ${CI_COMMIT_REF_NAME}
+#     paths:
+#         - node_modules/
+#         - .sfdx/
+
+install-npm-dependancies:
+    stage: .pre
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && ($EXECUTE_PRETTIER == "true" || $EXECUTE_ESLINT == "true")
+          changes: !reference [.sfdx-changes]
+    script:
+        - npm ci
+    artifacts:
+        paths:
+            - node_modules
+
+verify-formatting:
+    stage: local-validations
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $EXECUTE_PRETTIER == "true"
+          changes: !reference [.sfdx-changes]
+    script:
+        - npm run prettier:verify
+
+verify-linting:
+    stage: local-validations
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $EXECUTE_ESLINT == "true"
+          changes: !reference [.sfdx-changes]
+    script:
+        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**)
+        - npx eslint $CHANGED_FILES
+
+verify-pmd:
+    stage: local-validations
+    needs: []
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $EXECUTE_PMD == "true"
+          changes: !reference [.sfdx-changes]
+    script:
+        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD)
+        - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
+        - sf plugins install @salesforce/sfdx-scanner
+        - sf scanner run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!sfdx-source/frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
+
+integration-validations:
+    stage: org-validations
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $VALIDATE_INTEGRATION == "true"
+          changes: !reference [.sfdx-changes]
+    environment: integration
+    resource_group: integration
+    script:
+        - sfdx auth:sfdxurl:store --sfdxurlfile $INTEGRATION_SFDX_AUTH_URL --setdefaultusername
+        - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES != "" ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
+
+scratch-org-validations:
+    stage: org-validations
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $VALIDATE_SCRATCH_ORG == "true"
+          changes: !reference [.sfdx-changes]
+    environment:
+        name: scratch/$CI_COMMIT_REF_SLUG
+        url: $SCRATCH_ORG_URL
+        # Dynamic environments stop automatically when their associated branch is deleted
+        on_stop: delete-scratch-org
+    script:
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
+        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
+        - SCRATCH_ORG_DETAILS=$(sfdx force:org:open --urlonly --json)
+        - SCRATCH_ORG_URL=$(jq -r '.result.url' <<< $SCRATCH_ORG_DETAILS)
+        - echo "SCRATCH_ORG_URL=$SCRATCH_ORG_URL" >> scratch.env
+        - SCRATCH_ORG_USERNAME=$(jq -r '.result.username' <<< $SCRATCH_ORG_DETAILS)
+        - echo "SCRATCH_ORG_USERNAME=$SCRATCH_ORG_USERNAME" >> scratch.env
+        - sfdx force:source:push
+        # TODO: consider removing redundancy of test execution
+        - |
+            if [ $TEST_CLASSES != "" ]; then
+              sfdx force:apex:test:run --codecoverage --resultformat junit --outputdir ./tests/apex --wait 20 --classnames $TEST_CLASSES
+            fi
+    artifacts:
+        reports:
+            junit: tests/apex/*-junit.xml
+            dotenv: scratch.env
+    # Also configurable in: project > Settings > CI/CD > Expand General pipelines
+    coverage: /name="testRunCoverage" value="([\d]+%)"/
+
+delete-scratch-org:
+    stage: org-validations
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $VALIDATE_SCRATCH_ORG == "true"
+          changes: !reference [.sfdx-changes]
+          when: manual
+    allow_failure: true
+    environment:
+        name: scratch/$CI_COMMIT_REF_SLUG
+        action: stop
+    script:
+        # Command below does not work because of missing auth information due to different running instance
+        # - sfdx force:org:delete --noprompt --targetusername $SCRATCH_ORG_USERNAME
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultusername
+        - sfdx force:data:record:delete --sobjecttype ScratchOrgInfo --where SignupUsername=$SCRATCH_ORG_USERNAME

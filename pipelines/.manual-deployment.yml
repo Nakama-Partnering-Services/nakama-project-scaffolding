@@ -1,0 +1,93 @@
+variables:
+    DESTINATION_ENVIRONMENT:
+        value: ''
+        description: 'Destination environment for the manual deployment. Possible values are: integration, qa, staging, production, hotfix.'
+
+    DELTAS_FROM:
+        value: ''
+        description: 'SHA pointer to specify where to generate the delta deployment from. Populate only when deploying deltas.'
+
+    DELTAS_TO:
+        value: 'HEAD'
+        description: 'SHA pointer to specify where to generate the delta deployment to. Not used if DELTAS_FROM is empty.'
+
+    PACKAGE_TO_DEPLOY:
+        value: ''
+        description: 'Package to deploy. Possible values are: frameworks, core, cpq, data, contract, sales, vmo2-101. Leave empty to deploy all packages.'
+
+    METADATA_DEPLOYMENT:
+        value: 'false'
+        description: 'Set to "true" if Salesforce metadata should be deployed. If VLOCITY_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
+
+    VLOCITY_DEPLOYMENT:
+        value: 'false'
+        description: 'Set to "true" if Vlocity data should be deployed. Not supported with PACKAGE_TO_DEPLOY empty to deploy all packages. If METADATA_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
+
+    VALIDATION_ONLY:
+        value: 'false'
+        description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true".'
+
+    TEST_LEVEL:
+        value: 'RunLocalTests'
+        description: 'Possible values are: NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg. Only applies when METADATA_DEPLOYMENT is set to "true". If DEPLOY_FROM is speceified, default value is RunSpecifiedTests.'
+
+    TESTS_TO_RUN:
+        value: ''
+        description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when you set TEST_LEVEL to RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". If DEPLOY_FROM is specified, default value is based on autoidentified test classes.'
+
+manual-metadata-deployment:
+    stage: manual-metadata-deployment
+    rules:
+        - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && $DELTAS_FROM == ""
+    environment: $DESTINATION_ENVIRONMENT
+    script:
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - VALIDATION_PARAMETER=$(if [ $VALIDATION_ONLY == "true" ]; then echo "--checkonly"; else echo ""; fi)
+        - RUN_TEST_PARAMETER=$(if [ $TEST_LEVEL == "RunSpecifiedTests" ]; then echo "--runtests $TESTS_TO_RUN"; else echo ""; fi)
+        - sfdx force:source:deploy --sourcepath sfdx-source/$PACKAGE_TO_DEPLOY --testlevel $TEST_LEVEL --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+
+manual-metadata-delta-deployment:
+    stage: manual-metadata-deployment
+    rules:
+        - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && $DELTAS_FROM != ""
+    environment: $DESTINATION_ENVIRONMENT
+    script:
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - VALIDATION_PARAMETER=$(if [ $VALIDATION_ONLY == "true" ]; then echo "--checkonly"; else echo ""; fi)
+        - TESTS_TO_RUN=$(if [ $!TESTS_TO_RUN ]; then echo "$TEST_CLASSES"; fi)
+        - RUN_TEST_PARAMETER=$(if [[ ( $TEST_LEVEL == "RunSpecifiedTests" || $!TEST_LEVEL ) && $TESTS_TO_RUN ]]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $TEST_LEVEL ]; then echo "--testlevel $TEST_LEVEL"; else echo ""; fi)
+        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
+
+manual-vlocity-deployment:
+    stage: manual-vlocity-deployment
+    rules:
+        - if: $DESTINATION_ENVIRONMENT != "" && $VLOCITY_DEPLOYMENT == "true" && $DELTAS_FROM == ""
+    environment: $DESTINATION_ENVIRONMENT
+    script:
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - DESTINATION_ALIAS=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_ALIAS})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias $DESTINATION_ALIAS --setdefaultusername
+        - npm install vlocity puppeteer
+        - npx vlocity -sfdx.username $DESTINATION_ALIAS -job sfdx-source/$PACKAGE_TO_DEPLOY/vlocity.yaml packDeploy --verbose true --simpleLogging true
+        - npx vlocity -sfdx.username $DESTINATION_ALIAS -job sfdx-source/$PACKAGE_TO_DEPLOY/vlocity.yaml packRetry --verbose true --simpleLogging true
+
+manual-vlocity-delta-deployment:
+    stage: manual-vlocity-deployment
+    rules:
+        - if: $DESTINATION_ENVIRONMENT != "" && $VLOCITY_DEPLOYMENT == "true" && $DELTAS_FROM != ""
+    environment: $DESTINATION_ENVIRONMENT
+    script:
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - DESTINATION_ALIAS=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_ALIAS})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias $DESTINATION_ALIAS --setdefaultusername
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM $DELTAS_TO -- **/vlocity/**)
+        - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
+        - npm install vlocity puppeteer
+        - |
+            for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
+            do
+                npx vlocity -sfdx.username $DESTINATION_ALIAS -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
+                npx vlocity -sfdx.username $DESTINATION_ALIAS -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
+            done

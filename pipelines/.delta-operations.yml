@@ -1,0 +1,67 @@
+generate-deltas-push:
+    stage: generate-deltas
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "push"
+          changes: !reference [.sfdx-changes]
+    script:
+        - sf plugins install sfdx-git-delta
+        - mkdir deltas
+        # This command may not work as desired if many commits are being pushed together
+        - sf sgd source delta --source sfdx-source --from HEAD^ --to HEAD --output deltas --ignore .forceignore --generate-delta
+    artifacts:
+        paths:
+            - deltas
+
+generate-deltas-merge-request:
+    stage: generate-deltas
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && ($VALIDATE_INTEGRATION == "true" || $VALIDATE_SCRATCH_ORG == "true")
+          changes: !reference [.sfdx-changes]
+    script:
+        - sf plugins install sfdx-git-delta
+        - mkdir deltas
+        - sf sgd source delta --source sfdx-source --from $CI_MERGE_REQUEST_DIFF_BASE_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
+    artifacts:
+        paths:
+            - deltas
+
+generate-deltas-manual-deployment:
+    stage: generate-deltas
+    rules:
+        - if: $DESTINATION_ENVIRONMENT != "" && ($METADATA_DEPLOYMENT == "true" || $VLOCITY_DEPLOYMENT == "true") && $DELTAS_FROM != ""
+    script:
+        - sf plugins install sfdx-git-delta
+        - mkdir deltas
+        - sf sgd source delta --source sfdx-source --from $DELTAS_FROM --to $DELTAS_TO --output deltas --ignore .forceignore --generate-delta
+    artifacts:
+        paths:
+            - deltas
+
+# If this job is used instead of identify-test-classes, --generate-delta parameter can be removed from sf sgd source delta commands
+# identify-test-classes-by-name:
+#     image: python:latest
+#     stage: identify-test-classes
+#     rules:
+#         - if: $CI_PIPELINE_SOURCE == "push" || ($CI_PIPELINE_SOURCE == "merge_request_event" && ($VALIDATE_INTEGRATION == "true" || $VALIDATE_SCRATCH_ORG == "true"))
+#           changes: !reference [.sfdx-changes]
+#     script:
+#         - apt-get update
+#         - apt-get install -y jq
+#         - pip3 install yq
+#         - TEST_CLASSES=$(xq . < deltas/package/package.xml | jq '.Package.types | if type == "array" then .[] else . end | select(.name == "ApexClass") | .members | if type == "array" then map(select(endswith("Test"))) | join(",") else select(endswith("Test")) end' | tr -d '"')
+#         - echo "TEST_CLASSES=$TEST_CLASSES" >> tests.env
+#     artifacts:
+#         reports:
+#             dotenv: tests.env
+
+identify-test-classes:
+    stage: identify-test-classes
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "push" || ($CI_PIPELINE_SOURCE == "merge_request_event" && ($VALIDATE_INTEGRATION == "true" || $VALIDATE_SCRATCH_ORG == "true")) || ($DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && $DELTAS_FROM != "" && ($TEST_LEVEL == "" || $TEST_LEVEL == "RunSpecifiedTests") && $TESTS_TO_RUN == "")
+          changes: !reference [.sfdx-changes]
+    script:
+        - TEST_CLASSES=$(egrep -wrli @IsTest deltas | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+        - echo "TEST_CLASSES=$TEST_CLASSES" >> tests.env
+    artifacts:
+        reports:
+            dotenv: tests.env

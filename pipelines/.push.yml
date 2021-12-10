@@ -1,0 +1,85 @@
+deploy-deltas-integration:
+    stage: deploy-deltas-integration
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "push"
+          changes: !reference [.sfdx-changes]
+    environment: integration
+    resource_group: integration
+    script:
+        - sfdx auth:sfdxurl:store --sfdxurlfile $INTEGRATION_SFDX_AUTH_URL --setdefaultusername
+        - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES != "" ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
+        # TODO: consider removing redundancy of test execution
+        - |
+            if [ $TEST_CLASSES != "" ]; then
+              sfdx force:apex:test:run --codecoverage --resultformat junit --outputdir ./tests/apex --wait 20 --classnames $TEST_CLASSES
+            fi
+    artifacts:
+        reports:
+            junit: tests/apex/*-junit.xml
+    # Also configurable in: project > Settings > CI/CD > Expand General pipelines
+    coverage: /name="testRunCoverage" value="([\d]+%)"/
+
+deploy-vlocity-integration:
+    stage: deploy-vlocity-integration
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "push"
+          changes: !reference [.vlocity-changes]
+    environment: integration
+    resource_group: integration
+    script:
+        # This command may not work as desired if many commits are being pushed together
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r HEAD -- **/vlocity/**)
+        - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
+        - sfdx auth:sfdxurl:store --sfdxurlfile $INTEGRATION_SFDX_AUTH_URL --setalias $INTEGRATION_ALIAS --setdefaultusername
+        - npm install vlocity puppeteer
+        - |
+            for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
+            do
+                npx vlocity -sfdx.username $INTEGRATION_ALIAS -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
+                npx vlocity -sfdx.username $INTEGRATION_ALIAS -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
+            done
+
+manually-deploy-deltas-qa:
+    stage: manually-deploy-deltas-qa
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "push"
+          changes: !reference [.sfdx-changes]
+          when: manual
+    environment: qa
+    resource_group: qa
+    script:
+        - sfdx auth:sfdxurl:store --sfdxurlfile $QA_SFDX_AUTH_URL --setdefaultusername
+        - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES != "" ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
+        # TODO: consider removing redundancy of test execution
+        - |
+            if [ $TEST_CLASSES != "" ]; then
+              sfdx force:apex:test:run --codecoverage --resultformat junit --outputdir ./tests/apex --wait 20 --classnames $TEST_CLASSES
+            fi
+    artifacts:
+        reports:
+            junit: tests/apex/*-junit.xml
+    # Also configurable in: project > Settings > CI/CD > Expand General pipelines
+    coverage: /name="testRunCoverage" value="([\d]+%)"/
+
+manually-deploy-vlocity-qa:
+    stage: manually-deploy-vlocity-qa
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "push"
+          changes: !reference [.vlocity-changes]
+          when: manual
+    environment: qa
+    resource_group: qa
+    script:
+        # This command may not work as desired if many commits are being pushed together
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r HEAD -- **/vlocity/**)
+        - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
+        - sfdx auth:sfdxurl:store --sfdxurlfile $QA_SFDX_AUTH_URL --setalias $QA_ALIAS --setdefaultusername
+        - npm install vlocity puppeteer
+        - |
+            for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
+            do
+                npx vlocity -sfdx.username $QA_ALIAS -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
+                npx vlocity -sfdx.username $QA_ALIAS -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
+            done

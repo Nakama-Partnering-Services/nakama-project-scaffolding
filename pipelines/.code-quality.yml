@@ -1,0 +1,12 @@
+# working in gitlab.com but not in altemista, since gl-code-quality-report.json file is not created
+
+include:
+    - template: Code-Quality.gitlab-ci.yml
+
+code_quality:
+    stage: generate-code_quality-report
+    rules:
+        - if: $CODE_QUALITY_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"
+          changes: !reference [.sfdx-changes]
