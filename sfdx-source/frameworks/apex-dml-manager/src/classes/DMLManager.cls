@@ -23,14 +23,14 @@
 *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
-public inherited sharing class DMLManager {
+public without sharing class DMLManager {
 	// Items in the following set must be entered in lower case
 	private static Set<String> exceptionValues = new Set<String> {'id','isdeleted','createddate','systemmodstamp','lastmodifiedbyid','createdbyid','lastmodifieddate'};
 
 	private static Map<Operation,Map<SObjectType,List<String>>> cachedRestrictedFields = new Map<Operation,Map<SObjectType,List<String>>>();
-	
+
 	public enum Operation {OP_INSERT,OP_UPDATE,OP_DELETE,OP_UPSERT}
-	
+
 	// CRUD/FLS-safe DML operations. These honor the CRUD and FLS permissions of the running user
 	public static void insertAsUser(sObject obj){performDMLOperation(new List<sObject>{obj},Operation.OP_INSERT);}
 	public static void updateAsUser(sObject obj){performDMLOperation(new List<sObject>{obj},Operation.OP_UPDATE);}
@@ -42,8 +42,8 @@ public inherited sharing class DMLManager {
 	public static void upsertAsUser(List<SObject> objList){performDMLOperation(objList,Operation.OP_UPSERT);}
 	public static void deleteAsUser(List<SObject> objList){performDMLOperation(objList,Operation.OP_DELETE);}
 	public static void mergeAsUser(SObject masterObj, List<SObject> mergeList){ performDMLMergeOperation(masterObj, mergeList);}
-	
-	// Pass-thru methods to raw DML operations. 
+
+	// Pass-thru methods to raw DML operations.
 	// Use these sparingly, and only with good reason, since the DML operations are not CRUD/FLS safe
 	public static void insertAsSystem(sObject obj){ insert obj; }
 	public static void updateAsSystem(sObject obj){ update obj; }
@@ -55,7 +55,7 @@ public inherited sharing class DMLManager {
 	public static void upsertAsSystem(List<SObject> objList){ upsert objList; }
 	public static void deleteAsSystem(List<SObject> objList){ delete objList; }
 	public static void mergeAsSystem(SObject masterObj, List<SObject> mergeList){ Database.merge(masterObj, mergeList); }
-	
+
 	// Custom Exception Classes
 	public virtual class DMLManagerException extends Exception{
 		public SObjectType objType {get; private set;}
@@ -69,9 +69,9 @@ public inherited sharing class DMLManager {
 			this.op = op;
 		}
 	}
- 
+
 	public class FLSException extends DMLManagerException{
-		public SObjectField field{get; private set;}	
+		public SObjectField field{get; private set;}
 		public FLSException(SObjectType objType, SObjectField field, Operation op){
 			this('Access Denied: ' + op + ' on ' + objType + '.' + field);
 			this.objType = objType;
@@ -79,7 +79,7 @@ public inherited sharing class DMLManager {
 			this.field = field;
 		}
 	}
-		
+
 	private static void performDMLOperation(List<SObject> objList, Operation dmlOperation){
 		Map<SObjectType,List<Id>> objTypeMap = analyzeDMLCollection(objList, dmlOperation);
 
@@ -90,7 +90,7 @@ public inherited sharing class DMLManager {
 				checkCreateAction(obj);
 			}
 		} else if (dmlOperation == Operation.OP_UPDATE || dmlOperation == Operation.OP_UPSERT){
-			
+
 			Map<Id,SObject> existingRecords = getExistingRecords(objTypeMap);
 
 			for(SObject obj : objList){
@@ -103,32 +103,32 @@ public inherited sharing class DMLManager {
 			}
 		}
 		// If no errors have been thrown to this point, execute the dml operation.
-		if(dmlOperation == Operation.OP_INSERT){insert objList;} 
-			else if (dmlOperation == Operation.OP_UPDATE){update objList;} 
+		if(dmlOperation == Operation.OP_INSERT){insert objList;}
+			else if (dmlOperation == Operation.OP_UPDATE){update objList;}
 				else if (dmlOperation == Operation.OP_UPSERT){upsertCollection(objList);}
 					else if (dmlOperation == Operation.OP_DELETE){delete objList;}
 	}
-	
+
 	/**
 	 * Checks for CRUD on the master & merge objects and throws error if they don't have the proper object permission
 	 * If all checks pass, the merge operation is performed.
-	 * 
+	 *
 	 * @param masterObj SObject the data will be merged into
 	 * @param mergeList List of SObjects that will be merged into the masterObj
-	 * 
+	 *
 	 */
 	private static void performDMLMergeOperation(SObject masterObj, List<SObject> mergeList) {
-		
+
 		// Make sure the master object can be updated.
 		checkCRUDPermission(new Set<SObjectType>{masterObj.getSObjectType()},Operation.OP_UPDATE);
-		
+
 		// Make sure the merge object can be deleted.
 		checkCRUDPermission(new Set<SObjectType>{mergeList[0].getSObjectType()},Operation.OP_DELETE);
-		
+
 		// If no errors have been thrown to this point, execute the merge operation.
 		Database.merge(masterObj, mergeList);
 	}
-	
+
 	private static void upsertCollection(List<SObject> objList){
 		// This is to deal with a call to upsertAsUser with a singular object.
 		// Since we wrap that into a List<SObject> (which can't be passed into an upsert)
@@ -138,13 +138,13 @@ public inherited sharing class DMLManager {
 		} else {
 			upsert objList;
 		}
-	} 
-	
+	}
+
 	private static Map<String,Object> getFieldMapFromExistingSObject(SObject obj){
 		// Get actual fields present in object.  The getPopulatedFieldsAsMap method removes implicit nulls.
 		return obj.getPopulatedFieldsAsMap();
 	}
-	
+
 	private static void checkCreateAction(SObject obj){
 		List<String> restrictedFields = cachedRestrictedFields.get(Operation.OP_INSERT).get(obj.getSObjectType());
 		//Save ourselves a trip through the loop below if there are no restricted fields
@@ -153,13 +153,13 @@ public inherited sharing class DMLManager {
 		}
 
 		Map<String,Object> fieldsMap = getFieldMapFromExistingSObject(obj);
-		
+
 		// If any restricted fields are present, throw an exception
 		for(String fieldName : restrictedFields){
 			if(fieldsMap.get(fieldName) != null){ // if any of the restricted fields are present in the candidate, throw an exception
 				throw new FLSException(obj.getSObjectType(),obj.getSObjectType().getDescribe().fields.getMap().get(fieldName),Operation.OP_INSERT);
 			}
-		}  
+		}
 	}
 
 	private static void checkUpdateAction(SObject obj, SObject existingRecord){
@@ -168,19 +168,19 @@ public inherited sharing class DMLManager {
 		if(restrictedFields == null || restrictedFields.isEmpty()){
 			return;
 		}
-		
+
 		if(existingRecord == null){
 		    throw new DMLManagerException('DMLManager ERROR:  An existing record could not be found for object with Id = ' + obj.Id);
 		}
 
 		Map<String,Object> fieldsMap = getFieldMapFromExistingSObject(obj);
-		
+
 		// If any of the restricted values are present and have changed in the dml candidate object, throw an exception
 		for(String fieldName : restrictedFields){
 			if(fieldsMap.get(fieldName) != null && fieldsMap.get(fieldName) != existingRecord.get(fieldName) ){
 				throw new FLSException(obj.getSObjectType(),obj.getSObjectType().getDescribe().fields.getMap().get(fieldName),Operation.OP_UPDATE);
 			}
-		}	 
+		}
 	}
 
 
@@ -190,10 +190,10 @@ public inherited sharing class DMLManager {
 		Map<ID, SObject> result = new Map<Id,SObject>();
 
 		Map<SObjectType,List<String>> operationRestrictedFields = cachedRestrictedFields.get(Operation.OP_UPDATE);
-		
+
 		for(SObjectType objType : objTypeMap.keySet()){
 			List<String> restrictedFields = operationRestrictedFields.get(objType);
-			
+
 			if(restrictedFields == null || restrictedFields.isEmpty()){
 				continue;
 			}
@@ -206,10 +206,10 @@ public inherited sharing class DMLManager {
 			String fieldList = String.join(restrictedFields,',');
 			result.putAll((Database.query('SELECT ' + fieldList + ' FROM ' + objType.getDescribe().getName() + ' WHERE Id IN :seenIds')));
 		}
-		
+
 		return result;
 	}
-		
+
 	// Check CRUD permissions for the current user on the object
 	private static void checkCRUDPermission(Set<SObjectType> objTypeList, Operation dmlOperation){
 		for(SObjectType objType : objTypeList){
@@ -222,31 +222,31 @@ public inherited sharing class DMLManager {
 			}
 		}
 	}
-	
-	// Get a Map of all the object types in the dml request and the list of fields for each 
+
+	// Get a Map of all the object types in the dml request and the list of fields for each
 	// that the current user cannot update, based on FLS security settings
 	private static Map<SObjectType,List<Id>> analyzeDMLCollection(List<SObject> objList, Operation dmlOperation){
 		Map<SObjectType,List<Id>> result = new Map<SObjectType,List<Id>>();
-		
+
 		for(SObject obj : objList){
 			ensureRestrictedFieldsEntry(obj, dmlOperation);
-		
+
 			List<Id> seenIds = result.get(obj.getSObjectType());
 			if(seenIds == null){
 				seenIds = new List<Id>();
 				result.put(obj.getSObjectType(),seenIds);
 			}
-			
+
 			if(obj.Id == null){
 				continue;
-			}	
-			
+			}
+
 			seenIds.add(obj.Id);
-			
+
 		}
 		return result;
 	}
-	
+
 	private static void ensureRestrictedFieldsEntry(SObject obj, Operation dmlOperation){
 		if(dmlOperation == Operation.OP_UPSERT){
 			ensureRestrictedFields(obj,Operation.OP_INSERT);
@@ -256,14 +256,14 @@ public inherited sharing class DMLManager {
 			ensureRestrictedFields(obj,dmlOperation);
 		}
 	}
-	
+
 	private static void ensureRestrictedFields(SObject obj, Operation dmlOperation){
 		Map<SObjectType,List<String>> operationRestrictedFields = cachedRestrictedFields.get(dmlOperation);
 		if(operationRestrictedFields == null){
 			operationRestrictedFields = new Map<SObjectType,List<String>>();
 			cachedRestrictedFields.put(dmlOperation,operationRestrictedFields);
 		}
-		
+
 		if(!operationRestrictedFields.containsKey(obj.getSObjectType())){
 
 			DescribeSObjectResult describeObject = obj.getSObjectType().getDescribe();
@@ -276,7 +276,7 @@ public inherited sharing class DMLManager {
 				if(!exceptionValues.contains(nm.toLowerCase())){
 					DescribeFieldResult fr = objectFields.get(nm).getDescribe();
 					if((!fr.isCalculated()) && ((dmlOperation == Operation.OP_INSERT && !fr.isCreateable()) ||
-					   (dmlOperation == Operation.OP_UPDATE && !fr.isUpdateable())) 
+					   (dmlOperation == Operation.OP_UPDATE && !fr.isUpdateable()))
 					){
 						restrictedFields.add(fr.getName());
 					}  // there is not an isDeletable method at the field level
@@ -284,6 +284,6 @@ public inherited sharing class DMLManager {
 			}
 			operationRestrictedFields.put(obj.getSObjectType(),restrictedFields);
 		}
-	}	
+	}
 
 }

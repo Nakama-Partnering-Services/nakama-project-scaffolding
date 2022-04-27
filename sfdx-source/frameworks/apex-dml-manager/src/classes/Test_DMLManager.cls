@@ -25,7 +25,7 @@
 
 @isTest
 private class Test_DMLManager {
-	
+
 	@TestSetup
 	static void testSetup() {
 		createRestrictedUser();
@@ -56,22 +56,22 @@ private class Test_DMLManager {
 			Username='crudmanageruser1@testorg.com'
 		);
 		insert restrictedUser;
-		
+
 		// Create a Permission Set that grants "Read" access to Account, Contact and Opportunity
 		PermissionSet ps = new PermissionSet(Label = 'Restricted User', Name = 'RestrictedUser');
 		insert ps;
-		
+
 		List<ObjectPermissions> objectPerms = new List<ObjectPermissions>();
 		objectPerms.add(createObjectPerms(ps.Id, 'Account', true, false, false, false));
 		objectPerms.add(createObjectPerms(ps.Id, 'Contact', true, false, false, false));
 		objectPerms.add(createObjectPerms(ps.Id, 'Opportunity', true, false, false, false));
 		insert objectPerms;
-		
+
 		// Assign this perm set to our restricted user
 		PermissionSetAssignment psa = new PermissionSetAssignment(AssigneeId = restrictedUser.Id, PermissionSetId = ps.Id);
 		insert psa;
 	}
-	
+
 	private static ObjectPermissions createObjectPerms(
 		Id parentId, String objectType, Boolean canRead, Boolean canCreate, Boolean canEdit, Boolean canDelete
 	) {
@@ -84,16 +84,16 @@ private class Test_DMLManager {
 			PermissionsDelete = canDelete
 		);
 	}
-	
+
 	private static User getRestrictedUser() {
 		return [SELECT Id FROM User WHERE Username = 'crudmanageruser1@testorg.com'];
 	}
-	
+
 	static testMethod void systemInsert(){
 		Opportunity o1 = new Opportunity(Name='Original1 Opp',StageName='Won',CloseDate=Date.today());
-		
+
 		User restrictedUser = getRestrictedUser();
-		
+
 		System.runAs(restrictedUser){
 			DMLManager.insertAsSystem(new Opportunity[]{o1});
 		}
@@ -107,31 +107,33 @@ private class Test_DMLManager {
 		}
 
 		User restrictedUser = getRestrictedUser();
-		
+
 		System.runAs(restrictedUser){
 			a1.Name = 'Apple Updated';
 			DMLManager.updateAsSystem(new Account[]{a1});
-			Account a1Reload = [SELECT Name FROM Account WHERE Id = :a1.Id];
-			System.assertEquals('Apple Updated', a1Reload.Name);
 		}
+
+		Account a1Reload = [SELECT Name FROM Account WHERE Id = :a1.Id];
+		System.assertEquals('Apple Updated', a1Reload.Name);
 	}
-	
+
 	static testMethod void systemUpsert(){
 		Account a1 = new Account(Name='Apple Account');
 
 		System.runAs(new User(Id = UserInfo.getUserId())){
 			insert a1;
 		}
-		
+
 		Account a1Clone = new Account(Id = a1.Id, Name= 'Apple Updated');
-		
+
 		User restrictedUser = getRestrictedUser();
-		
+
 		System.runAs(restrictedUser){
 			DMLManager.upsertAsSystem(new Account[]{a1Clone});
-			Account a1Reload = [SELECT Name FROM Account WHERE Id = :a1.Id];
-			System.assertEquals('Apple Updated', a1Reload.Name);
 		}
+
+		Account a1Reload = [SELECT Name FROM Account WHERE Id = :a1.Id];
+		System.assertEquals('Apple Updated', a1Reload.Name);
 	}
 
 	static testMethod void systemDelete(){
@@ -143,7 +145,7 @@ private class Test_DMLManager {
 			DMLManager.deleteAsSystem(new Account[]{a1});
 		}
 	}
-	
+
 	@IsTest
 	static void mergeAsSystem_Expect_Success(){
 		// Insert a master account and two merge accounts
@@ -151,38 +153,38 @@ private class Test_DMLManager {
 			new Account(Name = 'Master Account'),
 			new Account(Name = 'Merge One'),
 			new Account(Name = 'Merge Two')
-			
+
 		};
-		
+
 		User restrictedUser = getRestrictedUser();
-		
+
 		System.runAs(restrictedUser){
 			insert accList;
-			
+
 			Account masterAcct = [SELECT Id, Name FROM Account WHERE Name = 'Master Account'];
 			List<Account> mergeList = [SELECT Id, Name FROM Account WHERE Name LIKE 'Merge%'];
 			System.assertEquals(2, mergeList.size());
-			
+
 			DMLManager.mergeAsSystem(masterAcct, mergeList);
 		}
-		
+
 		// Make sure 'Master Account' is still there.
 		Account masterAcct = [SELECT Id FROM Account WHERE Name = 'Master Account'];
-		
+
 		//Make sure merge accounts are gone
 		List<Account> mergeList = [SELECT Id FROM Account WHERE Name LIKE 'Merge%'];
 		System.assertEquals(0, mergeList.size());
-	
+
 	}
-	
+
 	static testMethod void flsRestrictedInsert(){
 		Campaign c1 = new Campaign(Name = 'Test1 Campaign');
 		System.runAs(new User(Id = UserInfo.getUserId())){
 			insert new Campaign[]{c1};
 		}
-		
+
 		Opportunity o1 = new Opportunity(Name='Original1 Opp',CampaignId=c1.Id,StageName='Won',CloseDate=Date.today());
-		
+
 		User restrictedUser = getRestrictedUser();
 
 		// Grant "Create" perm, in addition to "Read"
@@ -209,16 +211,16 @@ private class Test_DMLManager {
 		System.runAs(new User(Id = UserInfo.getUserId())){
 			insert new Campaign[]{c1,c2};
 		}
-		
+
 		Opportunity o1 = new Opportunity(Name='Original1 Opp',CampaignId=c1.Id,StageName='Won',CloseDate=Date.today());
 		DMLManager.upsertAsUser(new Opportunity[]{o1});
 		System.assert(o1.Id != null);
 
 		o1.Name='Updated1 Opp';
 		o1.CampaignId = c2.Id;
-		
+
 		Opportunity o2 = new Opportunity(Name='Test2 Opp',CampaignId=c2.Id,StageName='Won',CloseDate=Date.today());
-		
+
 		DMLManager.upsertAsUser(new Opportunity[]{o1,o2});
 
 		List<Opportunity> reload = [SELECT Id, Name, CampaignId FROM Opportunity ORDER BY Id];
@@ -238,14 +240,14 @@ private class Test_DMLManager {
 		System.runAs(new User(Id = UserInfo.getUserId())){
 			insert new SObject[]{c1,c2,o1};
 		}
-		
+
 		System.assert(o1.Id != null);
 
 		o1.Name='Updated1 Opp';
 		o1.CampaignId = c2.Id;
-		
+
 		Opportunity o2 = new Opportunity(Name='Test2 Opp',CampaignId=c2.Id,StageName='Won',CloseDate=Date.today());
-		
+
 		User restrictedUser = getRestrictedUser();
 
 		// Grant "Create" and "Edit" perm, in addition to "Read"
@@ -265,7 +267,7 @@ private class Test_DMLManager {
 		}
 
 	}
-	
+
 	//Tests that FLS is enforced even if field is not selected in SOQL query
 	static testMethod void flsRestrictedUpdateOfFieldNotSelected(){
 		Campaign c1 = new Campaign(Name = 'Test1 Campaign');
@@ -275,13 +277,13 @@ private class Test_DMLManager {
 		System.runAs(new User(Id = UserInfo.getUserId())){
 			insert new SObject[]{c1,c2,o1};
 		}
-		
+
 		System.assert(o1.Id != null);
-		
+
 		Opportunity o1Reload = [SELECT Id, Name FROM Opportunity WHERE Id = :o1.Id];
 		o1Reload.Name='Updated1 Opp';
 		o1Reload.CampaignId = c2.Id;
-		
+
 		User restrictedUser = getRestrictedUser();
 
 		// Grant "Create" and "Edit" perm, in addition to "Read"
@@ -300,22 +302,22 @@ private class Test_DMLManager {
 			}
 		}
 	}
-	
+
 	static testMethod void crudUnrestrictedInsertUpdateDelete(){
 		Campaign c1 = new Campaign(Name='Test1 Campaign');
 		DMLManager.insertAsUser(c1);
 
-		//Would blow up if the Campaign wasn't inserted (List has no rows for assignment)		
+		//Would blow up if the Campaign wasn't inserted (List has no rows for assignment)
 		Campaign c1Reload = [SELECT Id, Name, StartDate FROM Campaign WHERE Id = :c1.Id];
 		System.assert(c1Reload.StartDate == null);
 
-		c1Reload.StartDate = Date.today();		 
+		c1Reload.StartDate = Date.today();
 
 		DMLManager.updateAsUser(c1Reload);
 
 		c1Reload = [SELECT Id, Name, StartDate FROM Campaign WHERE Id = :c1.Id];
 		System.assertEquals(Date.today(),c1Reload.StartDate);
-		
+
 		DMLManager.deleteAsUser(c1Reload);
 
 		List<Campaign> reloaded = [SELECT Id, Name FROM Campaign];
@@ -354,7 +356,7 @@ private class Test_DMLManager {
 				System.assertEquals(Campaign.SObjectType,crude.objType);
 				System.assertEquals(DMLManager.Operation.OP_UPDATE,crude.op);
 			}
-			
+
 			try{
 				DMLManager.deleteAsUser(c1);
 				System.assert(false,'Expected a DML Error!, Restricted User shouldn\'t be able to delete a Campaign');
@@ -366,7 +368,7 @@ private class Test_DMLManager {
 			}
       	}
 	}
-	
+
 	@IsTest
 	static void mergeAsUser_When_UserHasCorrectPermissions_Expect_Success(){
 		// Insert a master account and two merge accounts
@@ -375,31 +377,31 @@ private class Test_DMLManager {
 			new Account(Name = 'Merge One'),
 			new Account(Name = 'Merge Two')
 		};
-		
+
 		User restrictedUser = getRestrictedUser();
 
 		// Grant "Update" and "Delete" permissions to the Account, in addition to "Read"
 		assignObjectPermission(restrictedUser,'Account',false,true,true);
-		
+
 		System.runAs(restrictedUser){
 			insert accList;
-			
+
 			Account masterAcct = [SELECT Id, Name FROM Account WHERE Name = 'Master Account'];
 			List<Account> mergeList = [SELECT Id, Name FROM Account WHERE Name LIKE 'Merge%'];
 			System.assertEquals(2, mergeList.size());
-			
+
 			DMLManager.mergeAsUser(masterAcct, mergeList);
 		}
-		
+
 		// Make sure 'Master Account' is still there.
 		Account masterAcct = [SELECT Id FROM Account WHERE Name = 'Master Account'];
-		
+
 		//Make sure merge accounts are gone
 		List<Account> mergeList = [SELECT Id FROM Account WHERE Name LIKE 'Merge%'];
 		System.assertEquals(0, mergeList.size());
-	
+
 	}
-	
+
 	@IsTest
 	static void mergeAsUser_When_UserDoesNotHaveEditPermission_Expect_Error(){
 		// Insert a master account and two merge accounts
@@ -408,19 +410,19 @@ private class Test_DMLManager {
 			new Account(Name = 'Merge One'),
 			new Account(Name = 'Merge Two')
 		};
-		
+
 		User restrictedUser = getRestrictedUser();
 
 		// Grant "Create" perms on Account in addition to "Read", but not "Edit" or "Delete"
 		assignObjectPermission(restrictedUser,'Account',true,false,false);
-		
+
 		System.runAs(restrictedUser){
 			insert accList;
-			
+
 			Account masterAcct = [SELECT Id, Name FROM Account WHERE Name = 'Master Account'];
 			List<Account> mergeList = [SELECT Id, Name FROM Account WHERE Name LIKE 'Merge%'];
 			System.assertEquals(2, mergeList.size());
-			
+
 			try {
 				DMLManager.mergeAsUser(masterAcct, mergeList);
 				System.assert(false,'Expected a DML Error, Restricted User shouldn\'t be able to merge Account because they don\'t have EDIT permission');
@@ -430,13 +432,13 @@ private class Test_DMLManager {
 				System.assertEquals(DMLManager.Operation.OP_UPDATE,crudex.op);
 			}
 		}
-		
+
 		// 'Master Account' and merge accounts should still be there.
 		accList = [SELECT Id FROM Account];
 		System.assertEquals(3, accList.size());
-	
+
 	}
-	
+
 	@IsTest
 	static void mergeAsUser_When_UserDoesNotHaveDeletePermission_Expect_Error(){
 		// Insert a master account and two merge accounts
@@ -445,19 +447,19 @@ private class Test_DMLManager {
 			new Account(Name = 'Merge One'),
 			new Account(Name = 'Merge Two')
 		};
-		
+
 		User restrictedUser = getRestrictedUser();
 
 		// Grant "Create" and "Edit" perms on Account in addition to "Read", but not "Delete"
 		assignObjectPermission(restrictedUser,'Account',true,true,false);
-		
+
 		System.runAs(restrictedUser){
 			insert accList;
-			
+
 			Account masterAcct = [SELECT Id, Name FROM Account WHERE Name = 'Master Account'];
 			List<Account> mergeList = [SELECT Id, Name FROM Account WHERE Name LIKE 'Merge%'];
 			System.assertEquals(2, mergeList.size());
-			
+
 			try {
 				DMLManager.mergeAsUser(masterAcct, mergeList);
 				System.assert(false,'Expected a DML Error, Restricted User shouldn\'t be able to merge Account because they don\'t have DELETE permission');
@@ -467,21 +469,21 @@ private class Test_DMLManager {
 				System.assertEquals(DMLManager.Operation.OP_DELETE,crudex.op);
 			}
 		}
-		
+
 		// 'Master Account' and merge accounts should still be there.
 		accList = [SELECT Id FROM Account];
 		System.assertEquals(3, accList.size());
-	
+
 	}
-	
+
 	static testmethod void testFailedUpdateWithErroneousId(){
 		Campaign c1 = new Campaign(Name = 'Test1 Campaign');
 		Id cId = null;
-	
+
 		insert new SObject[]{c1};
 		cId = c1.Id;
 		delete c1;
-		
+
 		try{
 			Campaign c1Resurrected = new Campaign(Id = cId, Name = 'Resurrected Campaign');
 			DMLManager.upsertAsUser(c1Resurrected);
@@ -491,22 +493,22 @@ private class Test_DMLManager {
 			//expected
 			System.assert(dmle.getMessage().contains('An existing record could not be found'));
 		}
-	} 
+	}
 
 	private static void assignObjectPermission(User u, String objectType, Boolean create, Boolean edit, Boolean remove){
       	PermissionSet ps = new PermissionSet(Name = 'Enable' + objectType, Label = 'Enable ' + objectType);
-  		insert ps;									
-  											
+  		insert ps;
+
   		ObjectPermissions oPerm = new ObjectPermissions(ParentId = ps.Id,
   			PermissionsRead = true,
   			PermissionsCreate = create,
   			PermissionsEdit = edit,
   			PermissionsDelete = remove,
   			SObjectType = objectType);
-  			
-  		insert oPerm;									
-  					
-  		PermissionSetAssignment assign = new PermissionSetAssignment(AssigneeId = u.Id, PermissionSetId = ps.Id);						
-		insert assign;      											
+
+  		insert oPerm;
+
+  		PermissionSetAssignment assign = new PermissionSetAssignment(AssigneeId = u.Id, PermissionSetId = ps.Id);
+		insert assign;
 	}
 }

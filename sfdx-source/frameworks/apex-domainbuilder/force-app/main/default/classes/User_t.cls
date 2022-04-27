@@ -1,6 +1,6 @@
-public with sharing class User_t extends DomainBuilder {
-
-	private static final Id STANDARD_USER = [SELECT Id FROM Profile WHERE Name='Standard User'].Id;
+@IsTest
+public class User_t extends DomainBuilder {
+	private static final Id STANDARD_USER = [SELECT Id FROM Profile WHERE Name = 'Standard User'].Id;
 
 	public User_t() {
 		super(User.SObjectType);
@@ -17,13 +17,11 @@ public with sharing class User_t extends DomainBuilder {
 		set(User.isActive, true);
 		set(User.username, name + '@scott.com');
 		set(User.profileId, STANDARD_USER);
-		set(User.UserPermissionsSFContentUser, false);
+		// Note: alternative way to improve test coverage
+		set('UserPermissionsSFContentUser', false);
 	}
 
-
 	public static User standard() {
-		return (User) new User_t()
-							.set(User.profileId, STANDARD_USER)
-							.persist();
+		return (User) new User_t().persist();
 	}
 }
