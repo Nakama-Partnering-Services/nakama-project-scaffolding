@@ -5,13 +5,13 @@
 			"package": "Frameworks",
 			"versionNumber": "1.0.0.NEXT",
 			"definitionFile": "config/project-scratch-def.json",
-			"default": false
+			"default": true
 		}
 	],
 	"name": "project-scaffolding",
 	"sfdcLoginUrl": "https://login.salesforce.com",
 	"sourceApiVersion": "53.0",
 	"packageAliases": {
-		"Frameworks": "0Ho7Q0000008OIoSAM"
+		"Frameworks": "0Ho7Q0000008OO8SAM"
 	}
 }

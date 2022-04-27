@@ -25,9 +25,3 @@ README.md
 
 # Default folder
 sfdx-source/core/main/default/**
-
-# All
-sfdx-source/**
-
-# Frameworks
-!sfdx-source/frameworks/**
