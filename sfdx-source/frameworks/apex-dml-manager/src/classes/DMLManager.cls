@@ -23,14 +23,14 @@
 *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
-public without sharing class DMLManager {
+public inherited sharing class DMLManager {
 	// Items in the following set must be entered in lower case
 	private static Set<String> exceptionValues = new Set<String> {'id','isdeleted','createddate','systemmodstamp','lastmodifiedbyid','createdbyid','lastmodifieddate'};
 
 	private static Map<Operation,Map<SObjectType,List<String>>> cachedRestrictedFields = new Map<Operation,Map<SObjectType,List<String>>>();
-
+	
 	public enum Operation {OP_INSERT,OP_UPDATE,OP_DELETE,OP_UPSERT}
-
+	
 	// CRUD/FLS-safe DML operations. These honor the CRUD and FLS permissions of the running user
 	public static void insertAsUser(sObject obj){performDMLOperation(new List<sObject>{obj},Operation.OP_INSERT);}
 	public static void updateAsUser(sObject obj){performDMLOperation(new List<sObject>{obj},Operation.OP_UPDATE);}
@@ -42,20 +42,20 @@ public without sharing class DMLManager {
 	public static void upsertAsUser(List<SObject> objList){performDMLOperation(objList,Operation.OP_UPSERT);}
 	public static void deleteAsUser(List<SObject> objList){performDMLOperation(objList,Operation.OP_DELETE);}
 	public static void mergeAsUser(SObject masterObj, List<SObject> mergeList){ performDMLMergeOperation(masterObj, mergeList);}
-
-	// Pass-thru methods to raw DML operations.
+	
+	// Pass-thru methods to desired DML operations as configured by consumer.
 	// Use these sparingly, and only with good reason, since the DML operations are not CRUD/FLS safe
-	public static void insertAsSystem(sObject obj){ insert obj; }
-	public static void updateAsSystem(sObject obj){ update obj; }
-	public static void upsertAsSystem(sObject obj){ upsert obj; }
-	public static void deleteAsSystem(sObject obj){ delete obj; }
-	public static void mergeAsSystem(SObject masterObj, SObject mergeObj){ Database.merge(masterObj, mergeObj); }
-	public static void insertAsSystem(List<SObject> objList){ insert objList; }
-	public static void updateAsSystem(List<SObject> objList){ update objList; }
-	public static void upsertAsSystem(List<SObject> objList){ upsert objList; }
-	public static void deleteAsSystem(List<SObject> objList){ delete objList; }
-	public static void mergeAsSystem(SObject masterObj, List<SObject> mergeList){ Database.merge(masterObj, mergeList); }
-
+	public static void insertAsSystem(sObject obj){ dmlOperations.dmlInsert(new List<SObject> {obj}); }
+	public static void updateAsSystem(sObject obj){ dmlOperations.dmlUpdate(new List<SObject> {obj}); }
+	public static void upsertAsSystem(sObject obj){ dmlOperations.dmlUpsert(new List<SObject> {obj}); }
+	public static void deleteAsSystem(sObject obj){ dmlOperations.dmlDelete(new List<SObject> {obj}); }
+	public static void mergeAsSystem(SObject masterObj, SObject mergeObj){ dmlOperations.dmlMerge(masterObj, new List<SObject> {mergeObj}); }
+	public static void insertAsSystem(List<SObject> objList){ dmlOperations.dmlInsert(objList); }
+	public static void updateAsSystem(List<SObject> objList){ dmlOperations.dmlUpdate(objList); }
+	public static void upsertAsSystem(List<SObject> objList){ dmlOperations.dmlUpsert(objList); }
+	public static void deleteAsSystem(List<SObject> objList){ dmlOperations.dmlDelete(objList); }
+	public static void mergeAsSystem(SObject masterObj, List<SObject> mergeList){ dmlOperations.dmlMerge(masterObj, mergeList); }
+	
 	// Custom Exception Classes
 	public virtual class DMLManagerException extends Exception{
 		public SObjectType objType {get; private set;}
@@ -69,9 +69,9 @@ public without sharing class DMLManager {
 			this.op = op;
 		}
 	}
-
+ 
 	public class FLSException extends DMLManagerException{
-		public SObjectField field{get; private set;}
+		public SObjectField field{get; private set;}	
 		public FLSException(SObjectType objType, SObjectField field, Operation op){
 			this('Access Denied: ' + op + ' on ' + objType + '.' + field);
 			this.objType = objType;
@@ -79,7 +79,7 @@ public without sharing class DMLManager {
 			this.field = field;
 		}
 	}
-
+		
 	private static void performDMLOperation(List<SObject> objList, Operation dmlOperation){
 		Map<SObjectType,List<Id>> objTypeMap = analyzeDMLCollection(objList, dmlOperation);
 
@@ -90,7 +90,7 @@ public without sharing class DMLManager {
 				checkCreateAction(obj);
 			}
 		} else if (dmlOperation == Operation.OP_UPDATE || dmlOperation == Operation.OP_UPSERT){
-
+			
 			Map<Id,SObject> existingRecords = getExistingRecords(objTypeMap);
 
 			for(SObject obj : objList){
@@ -102,49 +102,38 @@ public without sharing class DMLManager {
 				}
 			}
 		}
-		// If no errors have been thrown to this point, execute the dml operation.
-		if(dmlOperation == Operation.OP_INSERT){insert objList;}
-			else if (dmlOperation == Operation.OP_UPDATE){update objList;}
-				else if (dmlOperation == Operation.OP_UPSERT){upsertCollection(objList);}
-					else if (dmlOperation == Operation.OP_DELETE){delete objList;}
+		// If no errors have been thrown to this point, execute the dml operation via pass-through methods.
+		if(dmlOperation == Operation.OP_INSERT){insertAsSystem(objList);} 
+			else if (dmlOperation == Operation.OP_UPDATE){updateAsSystem(objList);} 
+				else if (dmlOperation == Operation.OP_UPSERT){upsertAsSystem(objList);}
+					else if (dmlOperation == Operation.OP_DELETE){deleteAsSystem(objList);}
 	}
-
+	
 	/**
 	 * Checks for CRUD on the master & merge objects and throws error if they don't have the proper object permission
 	 * If all checks pass, the merge operation is performed.
-	 *
+	 * 
 	 * @param masterObj SObject the data will be merged into
 	 * @param mergeList List of SObjects that will be merged into the masterObj
-	 *
+	 * 
 	 */
 	private static void performDMLMergeOperation(SObject masterObj, List<SObject> mergeList) {
-
+		
 		// Make sure the master object can be updated.
 		checkCRUDPermission(new Set<SObjectType>{masterObj.getSObjectType()},Operation.OP_UPDATE);
-
+		
 		// Make sure the merge object can be deleted.
 		checkCRUDPermission(new Set<SObjectType>{mergeList[0].getSObjectType()},Operation.OP_DELETE);
-
+		
 		// If no errors have been thrown to this point, execute the merge operation.
-		Database.merge(masterObj, mergeList);
+		mergeAsSystem(masterObj, mergeList);
 	}
-
-	private static void upsertCollection(List<SObject> objList){
-		// This is to deal with a call to upsertAsUser with a singular object.
-		// Since we wrap that into a List<SObject> (which can't be passed into an upsert)
-		// we unpack it and upsert the object individually.
-		if(objList.size() == 1){
-			upsert objList.get(0);
-		} else {
-			upsert objList;
-		}
-	}
-
+	
 	private static Map<String,Object> getFieldMapFromExistingSObject(SObject obj){
 		// Get actual fields present in object.  The getPopulatedFieldsAsMap method removes implicit nulls.
 		return obj.getPopulatedFieldsAsMap();
 	}
-
+	
 	private static void checkCreateAction(SObject obj){
 		List<String> restrictedFields = cachedRestrictedFields.get(Operation.OP_INSERT).get(obj.getSObjectType());
 		//Save ourselves a trip through the loop below if there are no restricted fields
@@ -153,13 +142,13 @@ public without sharing class DMLManager {
 		}
 
 		Map<String,Object> fieldsMap = getFieldMapFromExistingSObject(obj);
-
+		
 		// If any restricted fields are present, throw an exception
 		for(String fieldName : restrictedFields){
 			if(fieldsMap.get(fieldName) != null){ // if any of the restricted fields are present in the candidate, throw an exception
 				throw new FLSException(obj.getSObjectType(),obj.getSObjectType().getDescribe().fields.getMap().get(fieldName),Operation.OP_INSERT);
 			}
-		}
+		}  
 	}
 
 	private static void checkUpdateAction(SObject obj, SObject existingRecord){
@@ -168,19 +157,19 @@ public without sharing class DMLManager {
 		if(restrictedFields == null || restrictedFields.isEmpty()){
 			return;
 		}
-
+		
 		if(existingRecord == null){
-		    throw new DMLManagerException('DMLManager ERROR:  An existing record could not be found for object with Id = ' + obj.Id);
+			throw new DMLManagerException('DMLManager ERROR:  An existing record could not be found for object with Id = ' + obj.Id);
 		}
 
 		Map<String,Object> fieldsMap = getFieldMapFromExistingSObject(obj);
-
+		
 		// If any of the restricted values are present and have changed in the dml candidate object, throw an exception
 		for(String fieldName : restrictedFields){
 			if(fieldsMap.get(fieldName) != null && fieldsMap.get(fieldName) != existingRecord.get(fieldName) ){
 				throw new FLSException(obj.getSObjectType(),obj.getSObjectType().getDescribe().fields.getMap().get(fieldName),Operation.OP_UPDATE);
 			}
-		}
+		}	 
 	}
 
 
@@ -190,10 +179,10 @@ public without sharing class DMLManager {
 		Map<ID, SObject> result = new Map<Id,SObject>();
 
 		Map<SObjectType,List<String>> operationRestrictedFields = cachedRestrictedFields.get(Operation.OP_UPDATE);
-
+		
 		for(SObjectType objType : objTypeMap.keySet()){
 			List<String> restrictedFields = operationRestrictedFields.get(objType);
-
+			
 			if(restrictedFields == null || restrictedFields.isEmpty()){
 				continue;
 			}
@@ -206,10 +195,10 @@ public without sharing class DMLManager {
 			String fieldList = String.join(restrictedFields,',');
 			result.putAll((Database.query('SELECT ' + fieldList + ' FROM ' + objType.getDescribe().getName() + ' WHERE Id IN :seenIds')));
 		}
-
+		
 		return result;
 	}
-
+		
 	// Check CRUD permissions for the current user on the object
 	private static void checkCRUDPermission(Set<SObjectType> objTypeList, Operation dmlOperation){
 		for(SObjectType objType : objTypeList){
@@ -222,31 +211,31 @@ public without sharing class DMLManager {
 			}
 		}
 	}
-
-	// Get a Map of all the object types in the dml request and the list of fields for each
+	
+	// Get a Map of all the object types in the dml request and the list of fields for each 
 	// that the current user cannot update, based on FLS security settings
 	private static Map<SObjectType,List<Id>> analyzeDMLCollection(List<SObject> objList, Operation dmlOperation){
 		Map<SObjectType,List<Id>> result = new Map<SObjectType,List<Id>>();
-
+		
 		for(SObject obj : objList){
 			ensureRestrictedFieldsEntry(obj, dmlOperation);
-
+		
 			List<Id> seenIds = result.get(obj.getSObjectType());
 			if(seenIds == null){
 				seenIds = new List<Id>();
 				result.put(obj.getSObjectType(),seenIds);
 			}
-
+			
 			if(obj.Id == null){
 				continue;
-			}
-
+			}	
+			
 			seenIds.add(obj.Id);
-
+			
 		}
 		return result;
 	}
-
+	
 	private static void ensureRestrictedFieldsEntry(SObject obj, Operation dmlOperation){
 		if(dmlOperation == Operation.OP_UPSERT){
 			ensureRestrictedFields(obj,Operation.OP_INSERT);
@@ -256,14 +245,14 @@ public without sharing class DMLManager {
 			ensureRestrictedFields(obj,dmlOperation);
 		}
 	}
-
+	
 	private static void ensureRestrictedFields(SObject obj, Operation dmlOperation){
 		Map<SObjectType,List<String>> operationRestrictedFields = cachedRestrictedFields.get(dmlOperation);
 		if(operationRestrictedFields == null){
 			operationRestrictedFields = new Map<SObjectType,List<String>>();
 			cachedRestrictedFields.put(dmlOperation,operationRestrictedFields);
 		}
-
+		
 		if(!operationRestrictedFields.containsKey(obj.getSObjectType())){
 
 			DescribeSObjectResult describeObject = obj.getSObjectType().getDescribe();
@@ -276,7 +265,7 @@ public without sharing class DMLManager {
 				if(!exceptionValues.contains(nm.toLowerCase())){
 					DescribeFieldResult fr = objectFields.get(nm).getDescribe();
 					if((!fr.isCalculated()) && ((dmlOperation == Operation.OP_INSERT && !fr.isCreateable()) ||
-					   (dmlOperation == Operation.OP_UPDATE && !fr.isUpdateable()))
+					   (dmlOperation == Operation.OP_UPDATE && !fr.isUpdateable())) 
 					){
 						restrictedFields.add(fr.getName());
 					}  // there is not an isDeletable method at the field level
@@ -286,4 +275,49 @@ public without sharing class DMLManager {
 		}
 	}
 
+	// If the consumer desires a customized DML experience, including mock SObject unit testing:
+	// 1. Create an Apex class that either extends SimpleDML and overrides the method(s) you wish to customize 
+	//    or create a new Apex class that implements the IDML interface
+	// 2. Set DMLManager.dmlOperations property to an instance of the Apex class
+	// 3. Execute the appropriate *AsUser or *AsSystem methods as usual
+	private static IDML dmlOperations = new SimpleDML();
+
+	public static void setDMLImplementation(IDML dmlImplementation) {
+		dmlOperations = dmlImplementation;
+	}
+
+	// "Operation" suffix needed since the root DML operation name is an Apex keyword.
+	public interface IDML
+	{
+		void dmlInsert(List<SObject> objList);
+		void dmlUpdate(List<SObject> objList);
+		void dmlDelete(List<SObject> objList);
+		void dmlMerge(SObject masterRecord, List<SObject> objList);
+		void dmlUpsert(List<SObject> objList);
+	}
+
+	public inherited sharing virtual class SimpleDML
+		implements IDML
+	{
+		public virtual void dmlInsert(List<SObject> objList)
+		{
+			insert objList;
+		}
+		public virtual void dmlUpdate(List<SObject> objList)
+		{
+			update objList;
+		}
+		public virtual void dmlDelete(List<SObject> objList)
+		{
+			delete objList;
+		}
+		public virtual void dmlMerge(SObject masterRecord, List<SObject> objList)
+		{
+			Database.merge(masterRecord, objList);
+		}
+		public virtual void dmlUpsert(List<SObject> objList)
+		{
+			upsert objList;
+		}
+	}
 }
