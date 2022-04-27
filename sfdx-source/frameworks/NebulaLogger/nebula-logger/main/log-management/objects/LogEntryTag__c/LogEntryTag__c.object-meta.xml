@@ -171,7 +171,6 @@
     <searchLayouts>
         <customTabListAdditionalFields>LogEntry__c</customTabListAdditionalFields>
         <customTabListAdditionalFields>Tag__c</customTabListAdditionalFields>
-        <excludedStandardButtons>OpenListInQuip</excludedStandardButtons>
         <excludedStandardButtons>Accept</excludedStandardButtons>
         <excludedStandardButtons>PrintableListView</excludedStandardButtons>
         <excludedStandardButtons>Import</excludedStandardButtons>

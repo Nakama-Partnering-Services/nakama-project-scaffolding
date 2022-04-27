@@ -12,25 +12,55 @@
     'PMD.NcssTypeCount, PMD.ApexCRUDViolation, PMD.AvoidGlobalModifier, PMD.PropertyNamingConventions, PMD.CognitiveComplexity, PMD.StdCyclomaticComplexity, PMD.CyclomaticComplexity'
 )
 global with sharing class LogEntryEventBuilder {
-    private final LogEntryEvent__e logEntryEvent;
-    private final LoggingLevel entryLoggingLevel;
-
-    @TestVisible
-    private String debugMessage = '';
-
-    private Boolean detailsAreSet = false;
-    private Boolean shouldSave;
-    private Set<String> tags = new Set<String>();
-    private Boolean tagDetailsAreSet = true;
-
     private static final String API_VERSION = getApiVersion();
     private static final List<String> IGNORED_CLASSES = getIgnoredClasses();
     private static final String NAMESPACE_PREFIX = getNamespacePrefix();
     private static final Map<String, String> SOBJECT_NAME_TO_CLASSIFICATION = new Map<String, String>();
     private static final Map<String, String> SOBJECT_SUFFIX_TO_CLASSIFICATION = getSObjectSuffixToClassification();
 
+    private final LogEntryEvent__e logEntryEvent;
+    private final LoggingLevel entryLoggingLevel;
+
+    @TestVisible
+    private String debugMessage = '';
+    private Boolean detailsAreSet = false;
+    private Boolean shouldSave;
+    private Set<String> tags = new Set<String>();
+    private Boolean tagDetailsAreSet = true;
+
     // These constants all involve queries and/or increasing heap size, so custom getters are used for lazy-loading
     // This avoids unnecessarily consuming resources when logging is disabled, etc.
+
+    // Public constants - exposed as public so other code can leverage the cached query results
+    /**
+     * @description Returns the current org's `Organization` record
+     * @return The current org's `Organization` record
+     */
+    public static final Organization CACHED_ORGANIZATION {
+        get {
+            if (CACHED_ORGANIZATION == null) {
+                CACHED_ORGANIZATION = queryOrganization();
+            }
+            return CACHED_ORGANIZATION;
+        }
+        set;
+    }
+
+    /**
+     * @description Returns the current user, including parent fields for profile and user role
+     * @return The current user's record
+     */
+    public static final User CACHED_USER {
+        get {
+            if (CACHED_USER == null) {
+                CACHED_USER = queryUser();
+            }
+            return CACHED_USER;
+        }
+        set;
+    }
+
+    // Private constants
     private static final AuthSession CACHED_AUTH_SESSION {
         get {
             if (CACHED_AUTH_SESSION == null) {
@@ -61,32 +91,12 @@ global with sharing class LogEntryEventBuilder {
         set;
     }
 
-    private static final Organization CACHED_ORGANIZATION {
-        get {
-            if (CACHED_ORGANIZATION == null) {
-                CACHED_ORGANIZATION = queryOrganization();
-            }
-            return CACHED_ORGANIZATION;
-        }
-        set;
-    }
-
     private static final String CACHED_ORGANIZATION_ENVIRONMENT_TYPE {
         get {
             if (CACHED_ORGANIZATION_ENVIRONMENT_TYPE == null) {
                 CACHED_ORGANIZATION_ENVIRONMENT_TYPE = getOrganizationEnvironmentType();
             }
             return CACHED_ORGANIZATION_ENVIRONMENT_TYPE;
-        }
-        set;
-    }
-
-    private static final User CACHED_USER {
-        get {
-            if (CACHED_USER == null) {
-                CACHED_USER = queryUser();
-            }
-            return CACHED_USER;
         }
         set;
     }
@@ -142,7 +152,7 @@ global with sharing class LogEntryEventBuilder {
      * @return            The same instance of `LogEntryEventBuilder`, useful for chaining methods
      */
     global LogEntryEventBuilder setMessage(LogMessage logMessage) {
-        if (this.shouldSave == false && Test.isRunningTest() == false) {
+        if (this.shouldSave == false && System.Test.isRunningTest() == false || logMessage == null) {
             return this;
         }
 
@@ -156,7 +166,7 @@ global with sharing class LogEntryEventBuilder {
      */
     global LogEntryEventBuilder setMessage(String message) {
         // To help with debugging unit tests, always run System.debug statement in a test context
-        if ((this.shouldSave == true || Test.isRunningTest() == true) && this.logEntryEvent != null) {
+        if ((this.shouldSave == true || System.Test.isRunningTest() == true) && this.logEntryEvent != null) {
             String cleanedMessage = applyDataMaskRules(message, true, false);
             Boolean messageMasked = cleanedMessage != message;
             String truncatedMessage = truncateFieldValue(Schema.LogEntryEvent__e.Message__c, cleanedMessage);
@@ -490,7 +500,7 @@ global with sharing class LogEntryEventBuilder {
 
     /**
      * @description Appends the tag to the existing list of tags
-     * @param tags The string to use as a tag for the current entry
+     * @param tags The list of strings to use as tags for the current entry
      * @return The same instance of `LogEntryEventBuilder`, useful for chaining methods
      */
     global LogEntryEventBuilder addTags(List<String> tags) {
@@ -541,12 +551,14 @@ global with sharing class LogEntryEventBuilder {
                     continue;
                 }
             }
-
-            if (ignoreLine) {
-                continue;
+            // Some lines, especially in the managed package, can result in '()' or '(Nebula)'
+            if (isValidStackTrace(currentStackTraceLine) == false) {
+                ignoreLine = true;
             }
 
-            stackTraceLines.add(currentStackTraceLine);
+            if (ignoreLine == false) {
+                stackTraceLines.add(currentStackTraceLine);
+            }
         }
 
         // In a managed package, we can end up with an invalid (unhelpful) stack trace, so only store when valid
@@ -586,7 +598,7 @@ global with sharing class LogEntryEventBuilder {
 
         // Lazy-loading of some details to help minimize Apex heap size usage until needed
         if (this.detailsAreSet == false) {
-            if (Logger.getUserSettings().AnonymousMode__c == false) {
+            if (Logger.getUserSettings().IsAnonymousModeEnabled__c == false) {
                 this.setUserDetails();
                 this.setUserSessionDetails();
             }
@@ -732,7 +744,7 @@ global with sharing class LogEntryEventBuilder {
     }
 
     private static String applyDataMaskRules(String dataInput, Boolean applyToMessage, Boolean applyToRecordJson) {
-        if (Logger.getUserSettings().ApplyDataMaskRules__c == false) {
+        if (Logger.getUserSettings().IsDataMaskingEnabled__c == false || String.isBlank(dataInput) == true) {
             return dataInput;
         }
 
@@ -749,7 +761,7 @@ global with sharing class LogEntryEventBuilder {
         // Serializing any SObject w/ an ID will include the API version
         // So, use UserInfo.getUserId() to create the current user's record without querying
         // Then parse the JSON to get the API version
-        // Expected JSON: {"attributes":{"type":"User","url":"/services/data/v52.0/sobjects/User/005J000000AugnYIAR"}
+        // Expected JSON: {"attributes":{"type":"User","url":"/services/data/v53.0/sobjects/User/005J000000AugnYIAR"}
         String userJson = JSON.serialize(new User(Id = UserInfo.getUserId()));
         return userJson.substringAfter('/data/').substringBefore('/sobjects/User');
     }
@@ -761,7 +773,7 @@ global with sharing class LogEntryEventBuilder {
                 activeDataMaskRules.add(dataMaskRule);
             }
         }
-        if (Test.isRunningTest() == true) {
+        if (System.Test.isRunningTest() == true) {
             // Tests shouldn't rely on the actual CMDT rules in the org
             // Clear the org's loaded records during tests, and mock via addMockDataMaskRule()
             activeDataMaskRules.clear();
@@ -841,18 +853,6 @@ global with sharing class LogEntryEventBuilder {
         return sobjectClassification;
     }
 
-    private static String getSObjectTypeNamespace(Schema.SObjectType sobjectType) {
-        String sobjectFullName = sobjectType.getDescribe().getName();
-        String sobjectLocalName = sobjectType.getDescribe().getLocalName();
-
-        // Remove the trailing '__' if present
-        String namespace = sobjectFullName.replace(sobjectLocalName, '').replace('__', '');
-        if (String.isBlank(namespace)) {
-            namespace = null;
-        }
-        return namespace;
-    }
-
     private static Map<String, String> getSObjectSuffixToClassification() {
         // TODO add sample metadata for external object + picklist value + test
         // Example: MyExternalObject__x
@@ -876,6 +876,18 @@ global with sharing class LogEntryEventBuilder {
             // Examples: AccountShare and Log__Share
             'Share' => 'Record Share Object'
         };
+    }
+
+    private static String getSObjectTypeNamespace(Schema.SObjectType sobjectType) {
+        String sobjectFullName = sobjectType.getDescribe().getName();
+        String sobjectLocalName = sobjectType.getDescribe().getLocalName();
+
+        // Remove the trailing '__' if present
+        String namespace = sobjectFullName.replace(sobjectLocalName, '').replace('__', '');
+        if (String.isBlank(namespace)) {
+            namespace = null;
+        }
+        return namespace;
     }
 
     // TODO need to revisit Visualforce logic, re-add fields to either Log__c or LogEntry__c, etc.
@@ -932,8 +944,8 @@ global with sharing class LogEntryEventBuilder {
 
         // Networks (aka experience sites aka community sites aka portal sites ò_ô)
         // may not be enabled in the org (no Network object), so run everything dynamically
-        String queryString = 'SELECT Id, Name, UrlPathPrefix FROM Network WHERE Id = :networkId';
-        return Database.query(queryString);
+        String query = 'SELECT Id, Name, UrlPathPrefix FROM Network WHERE Id = :networkId';
+        return Database.query(String.escapeSingleQuotes(query));
     }
 
     private static Organization queryOrganization() {
@@ -950,7 +962,7 @@ global with sharing class LogEntryEventBuilder {
 
     private static List<SObject> stripInaccessible(List<SObject> records) {
         if (
-            Logger.getUserSettings().StripInaccessibleRecordFields__c == false ||
+            Logger.getUserSettings().IsRecordFieldStrippingEnabled__c == false ||
             records == null ||
             records.get(0).getSObjectType() == Schema.AggregateResult.SObjectType
         ) {

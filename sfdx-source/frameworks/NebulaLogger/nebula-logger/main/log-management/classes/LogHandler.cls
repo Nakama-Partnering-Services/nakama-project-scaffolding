@@ -7,25 +7,17 @@
  * @group Log Management
  * @description Manages setting fields on `Log__c` before insert & before update
  */
+@SuppressWarnings('PMD.ApexCrudViolation, PMD.CognitiveComplexity, PMD.CyclomaticComplexity')
 public without sharing class LogHandler extends LoggerSObjectHandler {
     @TestVisible
-    private static Map<String, LogStatus__mdt> logStatusByName = loadActiveLogStatuses();
+    private static final Map<String, LogStatus__mdt> LOG_STATUS_NAME_TO_STATUS = loadActiveLogStatuses();
+    @TestVisible
+    private static final Map<String, LogScenarioRule__mdt> SCENARIO_TO_MOCK_SCENARIO_RULE = new Map<String, LogScenarioRule__mdt>();
 
     @TestVisible
     private List<Log__c> logs;
     @TestVisible
     private Map<Id, Log__c> oldLogsById;
-
-    private static Map<String, LogStatus__mdt> loadActiveLogStatuses() {
-        Map<String, LogStatus__mdt> logStatusByName = new Map<String, LogStatus__mdt>();
-        for (LogStatus__mdt logStatus : LogStatus__mdt.getAll().values()) {
-            if (logStatus.IsActive__c == true) {
-                logStatusByName.put(logStatus.MasterLabel, logStatus);
-            }
-        }
-
-        return logStatusByName;
-    }
 
     /**
      * @description Returns SObject Type that the handler is responsible for processing
@@ -39,6 +31,8 @@ public without sharing class LogHandler extends LoggerSObjectHandler {
         this.logs = (List<Log__c>) triggerNew;
 
         this.setClosedStatusFields();
+        // The log OwnerId field should support being manually changed, so only auto-set it on insert
+        this.setOwnerId();
         // The log retention date field should support being manually changed, so only auto-set it on insert
         this.setLogRetentionDate();
     }
@@ -61,7 +55,7 @@ public without sharing class LogHandler extends LoggerSObjectHandler {
     private void setClosedStatusFields() {
         for (Log__c log : this.logs) {
             // Determine if the status is considered closed (based on `LogStatus__mdt` custom metadata)
-            LogStatus__mdt logStatus = logStatusByName.get(log.Status__c);
+            LogStatus__mdt logStatus = LOG_STATUS_NAME_TO_STATUS.get(log.Status__c);
             if (logStatus != null) {
                 log.IsClosed__c = logStatus.IsClosed__c;
                 log.IsResolved__c = logStatus.IsResolved__c;
@@ -78,7 +72,42 @@ public without sharing class LogHandler extends LoggerSObjectHandler {
         }
     }
 
+    private void setOwnerId() {
+        // Loop through the logs and figure out what value has been configured as the default owner (if any)
+        Map<Id, String> ownerNamesByLoggingUserId = new Map<Id, String>();
+        List<Log__c> logsToUpdate = new List<Log__c>();
+        for (Log__c log : this.logs) {
+            String loggingUserDefaultLogOwner = getLoggingUserSettings(log).DefaultLogOwner__c;
+
+            if (String.isBlank(loggingUserDefaultLogOwner) == true) {
+                continue;
+            } else if (loggingUserDefaultLogOwner instanceof Id) {
+                log.OwnerId = Id.valueOf(loggingUserDefaultLogOwner);
+            } else {
+                ownerNamesByLoggingUserId.put(log.LoggedBy__c, loggingUserDefaultLogOwner);
+                logsToUpdate.add(log);
+            }
+        }
+
+        if (logsToUpdate.isEmpty()) {
+            return;
+        }
+
+        // Populate OwnerId based on configured usernames
+        Map<String, Id> ownerIdByOwnerName = new Map<String, Id>();
+        ownerIdByOwnerName.putAll(queryQueues(ownerNamesByLoggingUserId.values()));
+        ownerIdByOwnerName.putAll(queryUsers(ownerNamesByLoggingUserId.values()));
+
+        for (Log__c log : logsToUpdate) {
+            String loggingUserDefaultLogOwner = getLoggingUserSettings(log).DefaultLogOwner__c;
+            if (ownerIdByOwnerName.containsKey(loggingUserDefaultLogOwner)) {
+                log.OwnerId = ownerIdByOwnerName.get(loggingUserDefaultLogOwner);
+            }
+        }
+    }
+
     private void setLogRetentionDate() {
+        Map<String, LogScenarioRule__mdt> scenarioToScenarioRule = queryScenarioRules(this.logs);
         for (Log__c log : this.logs) {
             // If the retention date has already been populated, leave it as-is
             if (log.LogRetentionDate__c != null) {
@@ -86,18 +115,26 @@ public without sharing class LogHandler extends LoggerSObjectHandler {
             }
 
             // Load the logging user's settings
-            User loggingUser = new User(Id = log.LoggedBy__c, ProfileId = log.ProfileId__c);
-            LoggerSettings__c loggingUserSettings = Logger.getUserSettings(loggingUser);
-            Integer daysToRetainLog = Integer.valueOf(loggingUserSettings.DefaultNumberOfDaysToRetainLogs__c);
+            LoggerSettings__c loggingUserSettings = getLoggingUserSettings(log);
 
-            // When loggerSettings.DefaultNumberOfDaysToRetainLogs__c is null, assume that the log should be kept forever,
+            // Load the configured scenario rule (if one exists)
+            LogScenarioRule__mdt matchingScenarioRule = scenarioToScenarioRule.get(log.Scenario__c);
+            if (System.Test.isRunningTest() == true) {
+                matchingScenarioRule = SCENARIO_TO_MOCK_SCENARIO_RULE.get(log.Scenario__c);
+            }
+
+            Integer daysToRetainLog = Integer.valueOf(
+                matchingScenarioRule != null ? matchingScenarioRule.NumberOfDaysToRetainLogs__c : loggingUserSettings.DefaultNumberOfDaysToRetainLogs__c
+            );
+
+            // When daysToRetainLog is null, assume that the log should be kept forever,
             // and set the retention date to null so that LogBatchPurger filters out/ignores the record
             log.LogRetentionDate__c = daysToRetainLog == null ? null : System.today().addDays(daysToRetainLog);
         }
     }
 
     private void setPriority() {
-        List<PicklistEntry> picklistEntries = Schema.Log__c.Priority__c.getDescribe().getPicklistValues();
+        List<Schema.PicklistEntry> picklistEntries = Schema.Log__c.Priority__c.getDescribe().getPicklistValues();
 
         // 3 assumptions
         //   1. Assume that that there will always be 3+ picklist values for the Priority__c field (out of the box, the values are: High, Medium, Low)
@@ -127,8 +164,7 @@ public without sharing class LogHandler extends LoggerSObjectHandler {
             }
 
             // Load the logging user's settings
-            User loggingUser = new User(Id = log.LoggedBy__c, ProfileId = log.ProfileId__c);
-            LoggerSettings__c loggingUserSettings = Logger.getUserSettings(loggingUser);
+            LoggerSettings__c loggingUserSettings = getLoggingUserSettings(log);
 
             // Ignore blank and unsupported values
             if (loggingUserSettings.DefaultLogShareAccessLevel__c != 'Read' && loggingUserSettings.DefaultLogShareAccessLevel__c != 'Edit') {
@@ -144,5 +180,60 @@ public without sharing class LogHandler extends LoggerSObjectHandler {
             logShares.add(logShare);
         }
         Database.insert(logShares, false);
+    }
+
+    private static LoggerSettings__c getLoggingUserSettings(Log__c log) {
+        User loggingUser = new User(Id = log.LoggedBy__c, ProfileId = log.ProfileId__c);
+        return Logger.getUserSettings(loggingUser);
+    }
+
+    private static Map<String, LogStatus__mdt> loadActiveLogStatuses() {
+        Map<String, LogStatus__mdt> logStatusNameToStatus = new Map<String, LogStatus__mdt>();
+        for (LogStatus__mdt logStatus : LogStatus__mdt.getAll().values()) {
+            if (logStatus.IsActive__c == true) {
+                logStatusNameToStatus.put(logStatus.MasterLabel, logStatus);
+            }
+        }
+        return logStatusNameToStatus;
+    }
+
+    private static Map<String, Id> queryQueues(List<String> possibleQueueNames) {
+        Map<String, Id> queuesByDeveloperName = new Map<String, Id>();
+        for (Group queue : [SELECT Id, DeveloperName FROM Group WHERE Type = 'Queue' AND DeveloperName IN :possibleQueueNames]) {
+            queuesByDeveloperName.put(queue.DeveloperName, queue.Id);
+        }
+        return queuesByDeveloperName;
+    }
+
+    private static Map<String, Id> queryUsers(List<String> possibleUsernames) {
+        Map<String, Id> usersByUsername = new Map<String, Id>();
+        for (User user : [SELECT Id, Username FROM User WHERE Username IN :possibleUsernames]) {
+            usersByUsername.put(user.Username, user.Id);
+        }
+        return usersByUsername;
+    }
+
+    private static Map<String, LogScenarioRule__mdt> queryScenarioRules(List<Log__c> logs) {
+        List<String> scenarios = new List<String>();
+        for (Log__c log : logs) {
+            if (log.Scenario__c != null) {
+                scenarios.add(log.Scenario__c);
+            }
+        }
+
+        Map<String, LogScenarioRule__mdt> scenarioToScenarioRule = new Map<String, LogScenarioRule__mdt>();
+        for (LogScenarioRule__mdt scenarioRule : [
+            SELECT Scenario__c, NumberOfDaysToRetainLogs__c
+            FROM LogScenarioRule__mdt
+            WHERE IsEnabled__c = TRUE AND Scenario__c IN :scenarios
+        ]) {
+            scenarioToScenarioRule.put(scenarioRule.Scenario__c, scenarioRule);
+        }
+        return scenarioToScenarioRule;
+    }
+
+    @TestVisible
+    private static void setMockScenarioRule(LogScenarioRule__mdt scenarioRule) {
+        SCENARIO_TO_MOCK_SCENARIO_RULE.put(scenarioRule.Scenario__c, scenarioRule);
     }
 }

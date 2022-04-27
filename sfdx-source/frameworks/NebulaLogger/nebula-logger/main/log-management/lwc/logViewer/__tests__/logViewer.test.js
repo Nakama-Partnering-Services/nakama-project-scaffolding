@@ -9,9 +9,7 @@ const mockGetLog = require('./data/getLog.json');
 // Register a test wire adapter
 const getLogAdapter = registerApexTestWireAdapter(getLog);
 
-function flushPromises() {
-    return new Promise(resolve => setTimeout(resolve, 0));
-}
+document.execCommand = jest.fn();
 
 jest.mock(
     '@salesforce/apex/Logger.getLog',
@@ -23,6 +21,9 @@ jest.mock(
     { virtual: true }
 );
 
+test.todo('test for downloading JSON file');
+test.todo('test for downloading log file');
+
 describe('Logger JSON Viewer lwc tests', () => {
     afterEach(() => {
         while (document.body.firstChild) {
@@ -30,43 +31,81 @@ describe('Logger JSON Viewer lwc tests', () => {
         }
         jest.clearAllMocks();
     });
+
     it('sets document title', async () => {
         const logViewerElement = createElement('c-log-viewer', { is: LogViewer });
         document.body.appendChild(logViewerElement);
         getLogAdapter.emit(mockGetLog);
 
-        // Resolve a promise to wait for a rerender of the new content
-        return flushPromises().then(() => {
-            expect(logViewerElement.title).toEqual('JSON for ' + mockGetLog.Name);
-        });
+        await Promise.resolve();
+        expect(logViewerElement.title).toEqual(mockGetLog.Name);
     });
+
     it('defaults to brand button variant', async () => {
         const logViewer = createElement('c-log-viewer', { is: LogViewer });
         document.body.appendChild(logViewer);
 
         getLogAdapter.emit(mockGetLog);
 
-        // Resolve a promise to wait for a rerender of the new content
-        return flushPromises().then(() => {
-            const inputButton = logViewer.shadowRoot.querySelector('lightning-button-stateful');
-            expect(logViewer.title).toEqual('JSON for ' + mockGetLog.Name);
-            expect(inputButton.variant).toEqual('brand');
-        });
+        await Promise.resolve();
+        const inputButton = logViewer.shadowRoot.querySelector('lightning-button-stateful');
+        expect(logViewer.title).toEqual(mockGetLog.Name);
+        expect(inputButton.variant).toEqual('brand');
     });
+
     it('copies the JSON to the clipboard', async () => {
         const logViewer = createElement('c-log-viewer', { is: LogViewer });
         document.body.appendChild(logViewer);
 
         getLogAdapter.emit(mockGetLog);
 
-        // Resolve a promise to wait for a rerender of the new content
-        return flushPromises()
+        return Promise.resolve()
             .then(() => {
-                logViewer.shadowRoot.querySelector('lightning-button-stateful').click();
+                let copyBtn = logViewer.shadowRoot.querySelector('lightning-button-stateful[data-id="copy-btn"]');
+                copyBtn.click();
+            })
+            .then(() => {
+                const tab = logViewer.shadowRoot.querySelector('lightning-tab[data-id="json-content"]');
+                expect(tab.value).toEqual('json');
+                tab.dispatchEvent(new CustomEvent('active'));
             })
             .then(() => {
                 const clipboardContent = JSON.parse(logViewer.shadowRoot.querySelector('pre').textContent);
                 expect(clipboardContent).toEqual(mockGetLog);
+                expect(document.execCommand).toHaveBeenCalledWith('copy');
+            });
+    });
+
+    it('copies the log file to the clipboard', async () => {
+        const logViewer = createElement('c-log-viewer', { is: LogViewer });
+        document.body.appendChild(logViewer);
+
+        getLogAdapter.emit(mockGetLog);
+
+        return Promise.resolve()
+            .then(() => {
+                let copyBtn = logViewer.shadowRoot.querySelector('lightning-button-stateful[data-id="copy-btn"]');
+                copyBtn.click();
+            })
+            .then(() => {
+                const tab = logViewer.shadowRoot.querySelector('lightning-tab[data-id="file-content"]');
+                expect(tab.value).toEqual('file');
+                tab.dispatchEvent(new CustomEvent('active'));
+            })
+            .then(() => {
+                let expectedContentLines = [];
+                mockGetLog.LogEntries__r.forEach(logEntry => {
+                    const columns = [];
+                    columns.push('[' + new Date(logEntry.EpochTimestamp__c).toISOString() + ' - ' + logEntry.LoggingLevel__c + ']');
+                    columns.push('[Message]\n' + logEntry.Message__c);
+                    columns.push('\n[Stack Trace]\n' + logEntry.StackTrace__c);
+
+                    expectedContentLines.push(columns.join('\n'));
+                });
+
+                const clipboardContent = logViewer.shadowRoot.querySelector('pre').textContent;
+                expect(clipboardContent).toEqual(expectedContentLines.join('\n\n' + '-'.repeat(36) + '\n\n'));
+                expect(document.execCommand).toHaveBeenCalledWith('copy');
             });
     });
 });

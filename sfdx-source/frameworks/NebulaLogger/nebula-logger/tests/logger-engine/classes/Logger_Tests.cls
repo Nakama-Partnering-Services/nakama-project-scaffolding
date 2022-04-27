@@ -325,6 +325,25 @@ private class Logger_Tests {
     }
 
     @IsTest
+    static void it_should_default_scenario_when_configured() {
+        String transactionScenarioName = 'some test scenario for this transaction';
+        LoggerSettings__c userSettings = LoggerSettings__c.getInstance();
+        userSettings.DefaultLogScenario__c = transactionScenarioName;
+        upsert userSettings;
+
+        String transactionId = Logger.getTransactionId();
+        for (Integer i = 0; i < 5; i++) {
+            Logger.info('my log entry');
+        }
+        Logger.saveLog();
+        System.assertEquals(transactionScenarioName, Logger.getScenario());
+        Test.getEventBus().deliver();
+
+        Log__c log = [SELECT Id, Scenario__c FROM Log__c WHERE TransactionId__c = :transactionId];
+        System.assertEquals(transactionScenarioName, log.Scenario__c, 'Scenario__c was not properly set on the Log__c record');
+    }
+
+    @IsTest
     static void it_should_set_scenario() {
         String transactionId = Logger.getTransactionId();
         String transactionScenarioName = 'some test scenario for this transaction';
@@ -334,10 +353,36 @@ private class Logger_Tests {
             Logger.info('my log entry');
         }
         Logger.saveLog();
+        System.assertEquals(transactionScenarioName, Logger.getScenario());
         Test.getEventBus().deliver();
 
         Log__c log = [SELECT Id, Scenario__c FROM Log__c WHERE TransactionId__c = :transactionId];
         System.assertEquals(transactionScenarioName, log.Scenario__c, 'Scenario__c was not properly set on the Log__c record');
+    }
+
+    @IsTest
+    static void it_should_set_scenario_and_apply_scenario_rule_logging_level() {
+        String transactionId = Logger.getTransactionId();
+        String transactionScenarioName = 'some test scenario for this transaction';
+        LogScenarioRule__mdt scenarioRule = new LogScenarioRule__mdt(Scenario__c = transactionScenarioName, UserLoggingLevel__c = LoggingLevel.FINER.name());
+        Logger.setMockScenarioRule(scenarioRule);
+        Logger.getUserSettings().LoggingLevel__c = LoggingLevel.ERROR.name();
+        System.assertNotEquals(Logger.getUserSettings().LoggingLevel__c, scenarioRule.UserLoggingLevel__c);
+
+        Logger.setScenario(transactionScenarioName);
+        for (Integer i = 0; i < 5; i++) {
+            Logger.finer('my log entry');
+        }
+        Logger.saveLog();
+        System.assertEquals(transactionScenarioName, Logger.getScenario());
+        Test.getEventBus().deliver();
+
+        Log__c log = [SELECT Id, Scenario__c FROM Log__c WHERE TransactionId__c = :transactionId];
+        System.assertEquals(transactionScenarioName, log.Scenario__c, 'Scenario__c was not properly set on the Log__c record');
+        List<LogEntry__c> logEntries = [SELECT Id, LoggingLevel__c FROM LogEntry__c WHERE Log__c = :log.Id];
+        for (LogEntry__c logEntry : logEntries) {
+            System.assertEquals(LoggingLevel.FINER.name(), logEntry.LoggingLevel__c, 'All log entries should have FINER as the logging level');
+        }
     }
 
     @IsTest
@@ -352,6 +397,7 @@ private class Logger_Tests {
         }
         Logger.setScenario(lastTransactionScenarioName);
         Logger.saveLog();
+        System.assertEquals(lastTransactionScenarioName, Logger.getScenario());
         Test.getEventBus().deliver();
 
         Log__c log = [SELECT Id, Scenario__c FROM Log__c WHERE TransactionId__c = :transactionId];
@@ -610,24 +656,23 @@ private class Logger_Tests {
     @IsTest
     static void it_should_save_accurate_timestamp_when_logging_user_has_different_time_zone() {
         User automatedProcessUser = [SELECT Id, TimeZoneSidKey FROM User WHERE Name = 'Automated Process' AND Profile.Name = NULL];
-        User currentUser = new User(Id = UserInfo.getUserId(), TimeZoneSidKey = UserInfo.getTimeZone().getId());
+        User testStandardUser = LoggerTestUtils.createUser();
 
-        // Make sure that the current user has a different time zone from the automated process user
-        if (automatedProcessUser.TimeZoneSidKey == currentUser.TimeZoneSidKey) {
+        // Make sure that the test user has a different time zone from the automated process user
+        if (automatedProcessUser.TimeZoneSidKey == testStandardUser.TimeZoneSidKey) {
             switch on automatedProcessUser.TimeZoneSidKey {
                 when 'America/Los_Angeles' {
-                    currentUser.TimeZoneSidKey = 'America/New_York';
+                    testStandardUser.TimeZoneSidKey = 'America/New_York';
                 }
                 when else {
-                    currentUser.TimeZoneSidKey = 'America/Los_Angeles';
+                    testStandardUser.TimeZoneSidKey = 'America/Los_Angeles';
                 }
             }
-            System.assertNotEquals(automatedProcessUser.TimeZoneSidKey, currentUser.TimeZoneSidKey);
-            update currentUser;
+            System.assertNotEquals(automatedProcessUser.TimeZoneSidKey, testStandardUser.TimeZoneSidKey);
         }
 
         Datetime originalTimestamp;
-        System.runAs(currentUser) {
+        System.runAs(testStandardUser) {
             Logger.getUserSettings().IsEnabled__c = true;
             Logger.getUserSettings().LoggingLevel__c = LoggingLevel.INFO.name();
 
@@ -662,6 +707,36 @@ private class Logger_Tests {
     }
 
     @IsTest
+    static void it_should_not_save_when_saving_is_disabled() {
+        Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(0, countOfLogEntries);
+
+        setUserLoggingLevel(LoggingLevel.DEBUG);
+
+        Logger.getUserSettings().IsSavingEnabled__c = false;
+
+        System.assertEquals(Logger.SaveMethod.EVENT_BUS, Logger.transactionSaveMethod);
+
+        Logger.debug('test log entry');
+        Logger.debug('another test log entry');
+
+        System.assertEquals(0, Limits.getPublishImmediateDml());
+
+        Test.startTest();
+
+        Logger.saveLog();
+        System.assertEquals(0, Limits.getPublishImmediateDml());
+        System.assertEquals(0, Limits.getQueueableJobs());
+        System.assertEquals(0, Limits.getCallouts());
+        System.assertEquals(0, Limits.getDmlStatements());
+
+        Test.stopTest();
+
+        countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(0, countOfLogEntries);
+    }
+
+    @IsTest
     static void it_should_save_via_event_bus_when_defaulted() {
         Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
         System.assertEquals(0, countOfLogEntries);
@@ -692,7 +767,7 @@ private class Logger_Tests {
     }
 
     @IsTest
-    static void it_should_save_via_event_bus_when_specified() {
+    static void it_should_save_via_event_bus_when_specified_via_settings() {
         Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
         System.assertEquals(0, countOfLogEntries);
 
@@ -706,6 +781,35 @@ private class Logger_Tests {
         Test.startTest();
 
         Logger.saveLog(Logger.SaveMethod.EVENT_BUS);
+        System.assertEquals(1, Limits.getPublishImmediateDml());
+        System.assertEquals(0, Limits.getQueueableJobs());
+        System.assertEquals(0, Limits.getCallouts());
+        System.assertEquals(0, Limits.getDmlStatements());
+
+        Test.stopTest();
+
+        countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(2, countOfLogEntries);
+    }
+
+    @IsTest
+    static void it_should_save_via_event_bus_when_specified_via_setSaveMethod() {
+        Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(0, countOfLogEntries);
+
+        setUserLoggingLevel(LoggingLevel.DEBUG);
+
+        Logger.debug('test log entry');
+        Logger.debug('another test log entry');
+
+        System.assertEquals(0, Limits.getPublishImmediateDml());
+
+        Test.startTest();
+
+        Logger.SaveMethod expectedSaveMethod = Logger.SaveMethod.EVENT_BUS;
+        Logger.setSaveMethod(expectedSaveMethod);
+        System.assertEquals(expectedSaveMethod, Logger.getSaveMethod());
+        Logger.saveLog();
         System.assertEquals(1, Limits.getPublishImmediateDml());
         System.assertEquals(0, Limits.getQueueableJobs());
         System.assertEquals(0, Limits.getCallouts());
@@ -750,7 +854,7 @@ private class Logger_Tests {
     }
 
     @IsTest
-    static void it_should_save_via_queueable_when_specified() {
+    static void it_should_save_via_queueable_when_specified_via_settings() {
         Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
         System.assertEquals(0, countOfLogEntries);
 
@@ -764,6 +868,37 @@ private class Logger_Tests {
         Test.startTest();
 
         Logger.saveLog(Logger.SaveMethod.QUEUEABLE);
+        System.assertEquals(0, Limits.getPublishImmediateDml());
+        System.assertEquals(1, Limits.getQueueableJobs());
+        System.assertEquals(0, Limits.getCallouts());
+        System.assertEquals(0, Limits.getDmlStatements());
+
+        Test.getEventBus().deliver();
+
+        Test.stopTest();
+
+        countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(2, countOfLogEntries);
+    }
+
+    @IsTest
+    static void it_should_save_via_queueable_when_specified_via_setSaveMethod() {
+        Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(0, countOfLogEntries);
+
+        setUserLoggingLevel(LoggingLevel.DEBUG);
+
+        Logger.debug('test log entry');
+        Logger.debug('another test log entry');
+
+        System.assertEquals(0, Limits.getQueueableJobs());
+
+        Test.startTest();
+
+        Logger.SaveMethod expectedSaveMethod = Logger.SaveMethod.QUEUEABLE;
+        Logger.setSaveMethod(expectedSaveMethod);
+        System.assertEquals(expectedSaveMethod, Logger.getSaveMethod());
+        Logger.saveLog();
         System.assertEquals(0, Limits.getPublishImmediateDml());
         System.assertEquals(1, Limits.getQueueableJobs());
         System.assertEquals(0, Limits.getCallouts());
@@ -807,7 +942,7 @@ private class Logger_Tests {
     }
 
     @IsTest
-    static void it_should_save_via_rest_api_when_specified() {
+    static void it_should_save_via_rest_api_when_specified_via_settings() {
         Test.setMock(HttpCalloutMock.class, new SuccessCalloutMock());
 
         Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
@@ -823,6 +958,34 @@ private class Logger_Tests {
         Test.startTest();
 
         Logger.saveLog(Logger.SaveMethod.REST);
+        System.assertEquals(0, Limits.getPublishImmediateDml());
+        System.assertEquals(0, Limits.getQueueableJobs());
+        System.assertEquals(1, Limits.getCallouts());
+        System.assertEquals(0, Limits.getDmlStatements());
+
+        Test.stopTest();
+    }
+
+    @IsTest
+    static void it_should_save_via_rest_api_when_specified_via_setSaveMethod() {
+        Test.setMock(HttpCalloutMock.class, new SuccessCalloutMock());
+
+        Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(0, countOfLogEntries);
+
+        setUserLoggingLevel(LoggingLevel.DEBUG);
+
+        Logger.debug('test log entry');
+        Logger.debug('another test log entry');
+
+        System.assertEquals(0, Limits.getCallouts());
+
+        Test.startTest();
+
+        Logger.SaveMethod expectedSaveMethod = Logger.SaveMethod.REST;
+        Logger.setSaveMethod(expectedSaveMethod);
+        System.assertEquals(expectedSaveMethod, Logger.getSaveMethod());
+        Logger.saveLog();
         System.assertEquals(0, Limits.getPublishImmediateDml());
         System.assertEquals(0, Limits.getQueueableJobs());
         System.assertEquals(1, Limits.getCallouts());
@@ -892,7 +1055,7 @@ private class Logger_Tests {
     }
 
     @IsTest
-    static void it_should_save_via_synchronous_dml_when_specified() {
+    static void it_should_save_via_synchronous_dml_when_specified_via_settings() {
         Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
         System.assertEquals(0, countOfLogEntries);
 
@@ -919,11 +1082,41 @@ private class Logger_Tests {
     }
 
     @IsTest
+    static void it_should_save_via_synchronous_dml_when_specified_via_setSaveMethod() {
+        Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(0, countOfLogEntries);
+
+        setUserLoggingLevel(LoggingLevel.DEBUG);
+
+        Logger.debug('test log entry');
+        Logger.debug('another test log entry');
+
+        System.assertEquals(0, Limits.getCallouts());
+
+        Test.startTest();
+
+        Logger.SaveMethod expectedSaveMethod = Logger.SaveMethod.SYNCHRONOUS_DML;
+        Logger.setSaveMethod(expectedSaveMethod);
+        System.assertEquals(expectedSaveMethod, Logger.getSaveMethod());
+        Logger.saveLog();
+        System.assertEquals(0, Limits.getPublishImmediateDml());
+        System.assertEquals(0, Limits.getQueueableJobs());
+        System.assertEquals(0, Limits.getCallouts());
+        System.assertNotEquals(0, Limits.getDmlStatements());
+
+        // Requery & assert before Test.stopTest() since this is supposed to save synchronously
+        countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
+        System.assertEquals(2, countOfLogEntries);
+
+        Test.stopTest();
+    }
+
+    @IsTest
     static void it_should_not_set_user_fields_when_anonymous_mode_enabled() {
         Integer countOfLogEntries = [SELECT COUNT() FROM LogEntry__c];
         System.assertEquals(0, countOfLogEntries);
 
-        Logger.getUserSettings().AnonymousMode__c = true;
+        Logger.getUserSettings().IsAnonymousModeEnabled__c = true;
         Logger.debug('test log entry');
         Logger.debug('another test log entry');
 

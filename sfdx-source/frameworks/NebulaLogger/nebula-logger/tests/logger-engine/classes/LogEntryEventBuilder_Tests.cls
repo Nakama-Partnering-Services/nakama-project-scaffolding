@@ -3,7 +3,9 @@
 // See LICENSE file or go to https://github.com/jongpie/NebulaLogger for full license details.    //
 //------------------------------------------------------------------------------------------------//
 
-@SuppressWarnings('PMD.ApexDoc, PMD.CyclomaticComplexity, PMD.ExcessiveParameterList, PMD.MethodNamingConventions, PMD.NcssMethodCount')
+@SuppressWarnings(
+    'PMD.ApexDoc, PMD.ApexAssertionsShouldIncludeMessage, PMD.CyclomaticComplexity, PMD.ExcessiveParameterList, PMD.MethodNamingConventions, PMD.NcssMethodCount'
+)
 @IsTest
 private class LogEntryEventBuilder_Tests {
     static String getMessage() {
@@ -89,6 +91,21 @@ private class LogEntryEventBuilder_Tests {
     }
 
     @IsTest
+    static void it_should_set_message_fields_for_null_logMessage() {
+        LogEntryEventBuilder builder = new LogEntryEventBuilder(LoggingLevel.INFO, true);
+        System.assertEquals(false, builder.getLogEntryEvent().MessageTruncated__c);
+        System.assertEquals(false, builder.getLogEntryEvent().MessageMasked__c);
+        System.assertEquals(null, builder.getLogEntryEvent().Message__c);
+
+        LogMessage logMessage = null;
+        builder.setMessage(logMessage);
+
+        System.assertEquals(false, builder.getLogEntryEvent().MessageTruncated__c);
+        System.assertEquals(false, builder.getLogEntryEvent().MessageMasked__c);
+        System.assertEquals(null, builder.getLogEntryEvent().Message__c);
+    }
+
+    @IsTest
     static void it_should_set_message_fields_for_string() {
         LogEntryEventBuilder builder = new LogEntryEventBuilder(LoggingLevel.INFO, true);
         System.assertEquals(false, builder.getLogEntryEvent().MessageTruncated__c);
@@ -104,8 +121,23 @@ private class LogEntryEventBuilder_Tests {
     }
 
     @IsTest
+    static void it_should_set_message_fields_for_null_string() {
+        LogEntryEventBuilder builder = new LogEntryEventBuilder(LoggingLevel.INFO, true);
+        System.assertEquals(false, builder.getLogEntryEvent().MessageTruncated__c);
+        System.assertEquals(false, builder.getLogEntryEvent().MessageMasked__c);
+        System.assertEquals(null, builder.getLogEntryEvent().Message__c);
+
+        String message = null;
+        builder.setMessage(message);
+
+        System.assertEquals(false, builder.getLogEntryEvent().MessageTruncated__c);
+        System.assertEquals(false, builder.getLogEntryEvent().MessageMasked__c);
+        System.assertEquals(message, builder.getLogEntryEvent().Message__c);
+    }
+
+    @IsTest
     static void it_should_apply_data_mask_rule_to_message_when_enabled() {
-        Logger.getUserSettings().ApplyDataMaskRules__c = true;
+        Logger.getUserSettings().IsDataMaskingEnabled__c = true;
         LogEntryDataMaskRule__mdt rule = getSocialSecurityNumberDataMaskRule();
         rule.ApplyToMessage__c = true;
         rule.ApplyToRecordJson__c = false;
@@ -129,7 +161,7 @@ private class LogEntryEventBuilder_Tests {
 
     @IsTest
     static void it_should_apply_data_mask_rule_to_record_json_when_enabled() {
-        Logger.getUserSettings().ApplyDataMaskRules__c = true;
+        Logger.getUserSettings().IsDataMaskingEnabled__c = true;
         LogEntryDataMaskRule__mdt rule = getSocialSecurityNumberDataMaskRule();
         rule.ApplyToMessage__c = false;
         rule.ApplyToRecordJson__c = true;
@@ -153,7 +185,7 @@ private class LogEntryEventBuilder_Tests {
 
     @IsTest
     static void it_should_apply_data_mask_rule_to_record_list_json_when_enabled() {
-        Logger.getUserSettings().ApplyDataMaskRules__c = true;
+        Logger.getUserSettings().IsDataMaskingEnabled__c = true;
         LogEntryDataMaskRule__mdt rule = getSocialSecurityNumberDataMaskRule();
         rule.ApplyToMessage__c = false;
         rule.ApplyToRecordJson__c = true;
@@ -177,7 +209,7 @@ private class LogEntryEventBuilder_Tests {
 
     @IsTest
     static void it_should_not_data_mask_rule_when_disabled_for_message_and_json() {
-        Logger.getUserSettings().ApplyDataMaskRules__c = true;
+        Logger.getUserSettings().IsDataMaskingEnabled__c = true;
         LogEntryDataMaskRule__mdt rule = getSocialSecurityNumberDataMaskRule();
         rule.ApplyToMessage__c = false;
         rule.ApplyToRecordJson__c = false;
@@ -197,7 +229,7 @@ private class LogEntryEventBuilder_Tests {
 
     @IsTest
     static void it_should_not_data_mask_rule_when_disabled_for_user() {
-        Logger.getUserSettings().ApplyDataMaskRules__c = false;
+        Logger.getUserSettings().IsDataMaskingEnabled__c = false;
         LogEntryDataMaskRule__mdt rule = getSocialSecurityNumberDataMaskRule();
         rule.ApplyToMessage__c = true;
         rule.ApplyToRecordJson__c = true;
@@ -801,12 +833,12 @@ private class LogEntryEventBuilder_Tests {
 
     @IsTest
     static void it_should_skip_stripping_inaccessible_fields_for_aggregate_result() {
-        User standardUser = LoggerTestUtils.createStandardUser();
+        User standardUser = LoggerTestUtils.createUser();
         AggregateResult mockAggregateResult = LoggerTestUtils.createMockAggregateResult();
 
         LogEntryEventBuilder builder;
         System.runAs(standardUser) {
-            Logger.getUserSettings().StripInaccessibleRecordFields__c = true;
+            Logger.getUserSettings().IsRecordFieldStrippingEnabled__c = true;
             builder = new LogEntryEventBuilder(LoggingLevel.INFO, true).setRecord(mockAggregateResult);
         }
 
@@ -815,12 +847,12 @@ private class LogEntryEventBuilder_Tests {
 
     @IsTest
     static void it_should_skip_stripping_inaccessible_fields_for_aggregate_results() {
-        User standardUser = LoggerTestUtils.createStandardUser();
+        User standardUser = LoggerTestUtils.createUser();
         List<AggregateResult> mockAggregateResults = new List<AggregateResult>{ LoggerTestUtils.createMockAggregateResult() };
 
         LogEntryEventBuilder builder;
         System.runAs(standardUser) {
-            Logger.getUserSettings().StripInaccessibleRecordFields__c = true;
+            Logger.getUserSettings().IsRecordFieldStrippingEnabled__c = true;
             builder = new LogEntryEventBuilder(LoggingLevel.INFO, true).setRecord(mockAggregateResults);
         }
 
@@ -997,7 +1029,7 @@ private class LogEntryEventBuilder_Tests {
         // Get expected data
         Organization organization = LoggerTestUtils.getOrganization();
         String organizationEnvironmentType = LoggerTestUtils.getOrganizationEnvironmentType();
-        User user = LoggerTestUtils.getUser();
+        User user = LoggerTestUtils.getCurrentUser();
 
         LogEntryEventBuilder builder = new LogEntryEventBuilder(LoggingLevel.INFO, true);
 

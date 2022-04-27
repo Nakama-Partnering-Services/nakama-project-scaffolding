@@ -40,7 +40,52 @@ private class FlowRecordLogEntry_Tests {
         System.assertEquals(1, Logger.getBufferSize());
 
         Logger.saveLog();
+        Test.getEventBus().deliver();
 
+        Test.stopTest();
+
+        String expectedUserJson = JSON.serializePretty(currentUser);
+
+        LogEntry__c logEntry = [
+            SELECT Id, LoggingLevel__c, Message__c, OriginType__c, OriginLocation__c, RecordId__c, RecordJson__c
+            FROM LogEntry__c
+            ORDER BY CreatedDate
+            LIMIT 1
+        ];
+        System.assertEquals(flowRecordEntry.loggingLevelName, logEntry.LoggingLevel__c);
+        System.assertEquals(flowRecordEntry.message, logEntry.Message__c);
+        System.assertEquals('Flow', logEntry.OriginType__c);
+        System.assertEquals(currentUser.Id, logEntry.RecordId__c);
+        System.assertEquals(expectedUserJson, logEntry.RecordJson__c);
+    }
+
+    @IsTest
+    static void it_should_auto_save_entry_with_save_method_when_saveMethodName_specified() {
+        User currentUser = new User(
+            Id = UserInfo.getUserId(),
+            FirstName = UserInfo.getFirstName(),
+            LastName = UserInfo.getLastName(),
+            Username = UserInfo.getUserName()
+        );
+
+        LoggingLevel userLoggingLevel = LoggingLevel.FINEST;
+        LoggingLevel flowRecordEntryLoggingLevel = LoggingLevel.DEBUG;
+        System.assert(userLoggingLevel.ordinal() < flowRecordEntryLoggingLevel.ordinal());
+
+        Test.startTest();
+        System.assertEquals(0, Limits.getQueueableJobs(), 'Test should start with 0 queueable jobs used');
+
+        Logger.getUserSettings().LoggingLevel__c = userLoggingLevel.name();
+
+        FlowRecordLogEntry flowRecordEntry = createFlowRecordLogEntry();
+        flowRecordEntry.loggingLevelName = flowRecordEntryLoggingLevel.name();
+        flowRecordEntry.record = currentUser;
+        flowRecordEntry.saveLog = true;
+        flowRecordEntry.saveMethodName = Logger.SaveMethod.QUEUEABLE.name();
+        FlowRecordLogEntry.addFlowRecordEntries(new List<FlowRecordLogEntry>{ flowRecordEntry });
+        Test.getEventBus().deliver();
+
+        System.assertEquals(1, Limits.getQueueableJobs(), 'Log entries should have been saved using the QUEUEABLE save method');
         Test.stopTest();
 
         String expectedUserJson = JSON.serializePretty(currentUser);
@@ -80,6 +125,7 @@ private class FlowRecordLogEntry_Tests {
         flowRecordEntry.record = currentUser;
         flowRecordEntry.saveLog = true;
         FlowRecordLogEntry.addFlowRecordEntries(new List<FlowRecordLogEntry>{ flowRecordEntry });
+        Test.getEventBus().deliver();
 
         Test.stopTest();
 
@@ -119,6 +165,7 @@ private class FlowRecordLogEntry_Tests {
         flowRecordEntry.loggingLevelName = flowRecordEntryLoggingLevel.name();
         flowRecordEntry.record = currentUser;
         FlowRecordLogEntry.addFlowRecordEntries(new List<FlowRecordLogEntry>{ flowRecordEntry });
+        Test.getEventBus().deliver();
 
         System.assertEquals(0, Logger.getBufferSize());
 
@@ -142,6 +189,7 @@ private class FlowRecordLogEntry_Tests {
         System.assertEquals(1, Logger.getBufferSize());
 
         Logger.saveLog();
+        Test.getEventBus().deliver();
 
         Test.stopTest();
 
@@ -175,6 +223,7 @@ private class FlowRecordLogEntry_Tests {
         System.assertEquals(1, Logger.getBufferSize());
 
         Logger.saveLog();
+        Test.getEventBus().deliver();
 
         Test.stopTest();
 
@@ -205,6 +254,7 @@ private class FlowRecordLogEntry_Tests {
         System.assertEquals(1, Logger.getBufferSize());
 
         Logger.saveLog();
+        Test.getEventBus().deliver();
         String transactionId = Logger.getTransactionId();
 
         Test.stopTest();
@@ -232,6 +282,7 @@ private class FlowRecordLogEntry_Tests {
         System.assertEquals(1, Logger.getBufferSize());
 
         Logger.saveLog();
+        Test.getEventBus().deliver();
 
         Test.stopTest();
 

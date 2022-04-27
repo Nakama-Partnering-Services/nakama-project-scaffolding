@@ -7,7 +7,7 @@
  * @group Log Management
  * @description Manages setting fields on `LogEntry__c` before insert & before update
  */
-@SuppressWarnings('PMD.StdCyclomaticComplexity, PMD.CyclomaticComplexity, PMD.NcssMethodCount, PMD.CognitiveComplexity')
+@SuppressWarnings('PMD.ApexCrudViolation, PMD.CognitiveComplexity, PMD.CyclomaticComplexity, PMD.NcssMethodCount, PMD.StdCyclomaticComplexity')
 public without sharing class LogEntryHandler extends LoggerSObjectHandler {
     @TestVisible
     private List<LogEntry__c> logEntries;
@@ -74,6 +74,7 @@ public without sharing class LogEntryHandler extends LoggerSObjectHandler {
             SELECT ApiVersion, CreatedById, CreatedDate, Id, LastModifiedById, LastModifiedDate, Name
             FROM ApexClass
             WHERE Name IN :apexClassNames
+            ORDER BY NamespacePrefix NULLS LAST
         ]) {
             classNameToApexClass.put(apexClass.Name, apexClass);
         }
@@ -251,7 +252,7 @@ public without sharing class LogEntryHandler extends LoggerSObjectHandler {
                 new List<Object>{ sobjectDisplayFieldName, sobjectType, sobjectTypeRecordIds }
             );
 
-            List<SObject> results = Database.query(query);
+            List<SObject> results = Database.query(String.escapeSingleQuotes(query));
             recordIdToRecord.putAll(results);
         }
 
@@ -320,5 +321,12 @@ public without sharing class LogEntryHandler extends LoggerSObjectHandler {
         }
 
         return displayFieldApiName;
+    }
+
+    private static String getNamespacePrefix() {
+        String className = LogEntryHandler.class.getName();
+        String namespacePrefix = className.contains('.') ? className.substringBefore('.') : '';
+
+        return namespacePrefix;
     }
 }

@@ -9,19 +9,23 @@
  * @see LogEntryEventBuilder
  * @see LogMessage
  */
-@SuppressWarnings('PMD.AvoidDebugStatements, PMD.AvoidGlobalModifier, PMD.CyclomaticComplexity, PMD.CognitiveComplexity, PMD.ExcessiveClassLength')
+@SuppressWarnings(
+    'PMD.ApexCrudViolation, PMD.AvoidDebugStatements, PMD.AvoidGlobalModifier, PMD.CyclomaticComplexity, PMD.CognitiveComplexity, PMD.ExcessiveClassLength'
+)
 global with sharing class Logger {
     // There's no reliable way to get the version number dynamically in Apex
     @TestVisible
-    private static final String CURRENT_VERSION_NUMBER = 'v4.6.10';
+    private static final String CURRENT_VERSION_NUMBER = 'v4.7.0';
     private static final LoggingLevel DEFAULT_LOGGING_LEVEL = LoggingLevel.DEBUG;
     private static final List<LogEntryEventBuilder> LOG_ENTRIES_BUFFER = new List<LogEntryEventBuilder>();
+    @TestVisible
+    private static final Map<String, LogScenarioRule__mdt> SCENARIO_TO_MOCK_SCENARIO_RULE = new Map<String, LogScenarioRule__mdt>();
     private static final String TRANSACTION_ID = setTransactionId();
     private static final Quiddity TRANSACTION_QUIDDITY = setTransactionQuiddity();
 
     private static Integer currentTransactionEntryNumber = 1;
     private static String parentLogTransactionId;
-    private static String transactionScenario;
+    private static String transactionScenario = getUserSettings().DefaultLogScenario__c;
     private static Boolean suspendSaving = false;
     private static LoggerSettings__c userSettings;
 
@@ -2447,12 +2451,48 @@ global with sharing class Logger {
 
     // Save control methods
     /**
+     * @description Returns the scenario name for the current transaction - this is stored in `LogEntryEvent__e.Scenario__c`
+     *              and `Log__c.Scenario__c`, and can be used to filter & group logs
+     * @return   The value currently set as the current transaction's scenario
+     */
+    global static String getScenario() {
+        return transactionScenario;
+    }
+
+    /**
      * @description Sets the scenario name for the current transaction - this is stored in `LogEntryEvent__e.Scenario__c`
      *              and `Log__c.Scenario__c`, and can be used to filter & group logs
      * @param  scenario The name to use for the current transaction's scenario
      */
-    public static void setScenario(String scenario) {
+    global static void setScenario(String scenario) {
         transactionScenario = scenario;
+
+        // LogScenarioRule__mdt scenarioRule = LogScenarioRule__mdt.getInstance(scenario);
+        LogScenarioRule__mdt matchingScenarioRule;
+        for (LogScenarioRule__mdt scenarioRule : [SELECT UserLoggingLevel__c FROM LogScenarioRule__mdt WHERE IsEnabled__c = TRUE AND Scenario__c = :scenario]) {
+            matchingScenarioRule = scenarioRule;
+        }
+
+        if (System.Test.isRunningTest() == true) {
+            matchingScenarioRule = SCENARIO_TO_MOCK_SCENARIO_RULE.get(scenario);
+        }
+
+        if (matchingScenarioRule != null) {
+            getUserSettings().LoggingLevel__c = matchingScenarioRule.UserLoggingLevel__c;
+        }
+    }
+
+    @TestVisible
+    private static void setMockScenarioRule(LogScenarioRule__mdt scenarioRule) {
+        SCENARIO_TO_MOCK_SCENARIO_RULE.put(scenarioRule.Scenario__c, scenarioRule);
+    }
+
+    /**
+     * @description Returns the default save method used when calling saveLog() - set via LoggerSettings__c or by calling setSaveMethod(SaveMethod saveMethod)
+     * @return   The enum value of Logger.SaveMethod to use for any calls to saveLog() in the current transaction
+     */
+    global static SaveMethod getSaveMethod() {
+        return transactionSaveMethod;
     }
 
     /**
@@ -2478,7 +2518,7 @@ global with sharing class Logger {
      */
     @SuppressWarnings('PMD.NcssMethodCount')
     global static void saveLog(SaveMethod saveMethod) {
-        if (LOG_ENTRIES_BUFFER.isEmpty()) {
+        if (LOG_ENTRIES_BUFFER.isEmpty() || getUserSettings().IsSavingEnabled__c == false) {
             return;
         }
 
@@ -2522,9 +2562,8 @@ global with sharing class Logger {
 
         switch on saveMethod {
             when EVENT_BUS {
-                // TODO add error handling for when event bus fails to publish
-                List<Database.SaveResult> results = EventBus.publish(logEntryEvents);
-                System.debug(DEFAULT_LOGGING_LEVEL, 'Logger - LogEntryEvent__e save results: ' + results);
+                List<Database.SaveResult> saveResults = EventBus.publish(logEntryEvents);
+                LoggerEmailUtils.sendErrorEmail(Schema.LogEntryEvent__e.SObjectType, saveResults);
             }
             when QUEUEABLE {
                 System.enqueueJob(new QueueableSaver(logEntryEvents));
@@ -2607,13 +2646,17 @@ global with sharing class Logger {
         logFieldNames.addAll(new List<String>{ 'Owner.Name', 'Owner.Type' });
         List<String> logEntryFieldNames = new List<String>(Schema.LogEntry__c.SObjectType.getDescribe().fields.getMap().keySet());
 
-        List<String> textReplacements = new List<String>{ String.join(logFieldNames, ','), String.join(logEntryFieldNames, ',') };
+        List<String> textReplacements = new List<String>{
+            String.join(logFieldNames, ','),
+            String.join(logEntryFieldNames, ','),
+            Schema.LogEntry__c.TransactionEntryNumber__c.getDescribe().getName()
+        };
         String query = String.format(
-            'SELECT {0}, (SELECT {1} FROM LogEntries__r) FROM Log__c WHERE Id = :logId OR TransactionId__c = :logId',
+            'SELECT {0}, (SELECT {1} FROM LogEntries__r ORDER BY {2}) FROM Log__c WHERE Id = :logId OR TransactionId__c = :logId',
             textReplacements
         );
 
-        SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.READABLE, Database.query(query));
+        SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.READABLE, Database.query(String.escapeSingleQuotes(query)));
         return securityDecision.getRecords().isEmpty() ? null : (Log__c) securityDecision.getRecords().get(0);
     }
 
@@ -2773,7 +2816,7 @@ global with sharing class Logger {
 
     // Inner class for saving log entries via the REST API (using the current user's session ID)
     private class RestApiSaver {
-        private final String baseURL = System.Url.getSalesforceBaseUrl().toExternalForm() + '/services/data/v52.0';
+        private final String baseURL = System.Url.getSalesforceBaseUrl().toExternalForm() + '/services/data/v53.0';
         private final String compositeEndpoint = '/composite/sobjects';
 
         @SuppressWarnings('PMD.ApexSuggestUsingNamedCred')
