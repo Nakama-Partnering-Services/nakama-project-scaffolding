@@ -2,8 +2,6 @@
 # More information: https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_exclude_source.htm
 #
 
-package.xml
-
 # LWC configuration files
 **/jsconfig.json
 **/.eslintrc.json
@@ -11,11 +9,25 @@ package.xml
 # LWC Jest
 **/__tests__/**
 
-# Environment specific
-**/environment-specific/**
+# Non apex tests
+**/test/aura-jasmine/**
+**/test/aura-mocha/**
+**/test/lwc-jest/**
+
+# Specific environments
+specific-environments/**
+
+# Untracked
+sfdx-source/untracked/**
 
 # README.md files
 README.md
 
 # Default folder
 sfdx-source/core/main/default/**
+
+# All
+sfdx-source/**
+
+# Frameworks
+!sfdx-source/frameworks/**
