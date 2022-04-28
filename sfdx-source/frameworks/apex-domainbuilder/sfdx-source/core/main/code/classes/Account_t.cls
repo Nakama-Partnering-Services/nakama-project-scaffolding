@@ -9,11 +9,6 @@ public virtual class Account_t extends DomainBuilder {
 		return (Account_t) set(Account.Name, value);
 	}
 
-	public virtual Account_t contact(Contact_t c) {
-		setParent(Account.MainContact__c, c);
-		return this;
-	}
-
 	public virtual Account_t add(Opportunity_t o) {
 		return (Account_t) o.setParent(Opportunity.AccountId, this);
 	}

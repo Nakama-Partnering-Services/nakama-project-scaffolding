@@ -5,7 +5,7 @@ private class DomainBuilderExtra_Test {
 		// Setup & Exercise
 		Contact_t c = new Contact_t();
 
-		new Account_t().add(c).contact(c).persist();
+		((AccountExtra_t) new AccountExtra_t().add(c)).contact(c).persist();
 
 		// Verify
 		System.assertEquals(1, [SELECT COUNT() FROM Account WHERE MainContact__c != NULL]);
