@@ -2,9 +2,7 @@ public abstract class DomainBuilder {
 	private static DirectedGraph graph = new DirectedGraph();
 	private static Set<DomainBuilder> objects = new Set<DomainBuilder>();
 
-	private Boolean isSetupObject;
 	private Map<SObjectField, DomainBuilder> parentByRelationship = new Map<SObjectField, DomainBuilder>();
-
 	public SObject record;
 	public SObjectType type;
 	public Id id {
@@ -16,24 +14,22 @@ public abstract class DomainBuilder {
 
 	// CONSTRUCTORS
 
-	// Note: isSetupObject is not used so we can remove it?
-	public DomainBuilder(SObjectType type, Boolean isSetupObject) {
+	public DomainBuilder(SObjectType type) {
 		this.type = type;
 		this.record = type.newSObject(null, true);
-		this.isSetupObject = isSetupObject;
 
 		graph.node(type);
 		objects.add(this);
 	}
 
-	public DomainBuilder(SObjectType type) {
-		this(type, false);
-	}
-
 	// PUBLIC
 
 	public SObject persist() {
-		fflib_SObjectUnitOfWork uow = unitOfWork();
+		return persist(new fflib_SObjectUnitOfWork.SimpleDML());
+	}
+
+	public SObject persist(fflib_SObjectUnitOfWork.IDML dml) {
+		fflib_SObjectUnitOfWork uow = unitOfWork(dml);
 
 		for (DomainBuilder obj : objects) {
 			if (obj.record.Id == null) {
@@ -53,9 +49,8 @@ public abstract class DomainBuilder {
 		return record;
 	}
 
-	// TODO: make this virtual, so it can be extended by implementations in order to cast the return type to its specifyc type,
-	// rather than renaming method to type like in LoanApplication_t
-	public DomainBuilder recordType(String developerName) {
+	// Note: virtual so it can be extended by implementations in order to cast the return type to its specifyc type
+	public virtual DomainBuilder recordType(String developerName) {
 		Id rtId = type.getDescribe().getRecordTypeInfosByDeveloperName().get(developerName).getRecordTypeId();
 		return set('RecordTypeId', rtId);
 	}
@@ -115,15 +110,14 @@ public abstract class DomainBuilder {
 		}
 	}
 
-	// TODO: make this method virtual or extendable so we can also use other constructors of fflib_SObjectUnitOfWork, for example to accept other IDML implemetantions like DebugDML
-	private static fflib_SObjectUnitOfWork unitOfWork() {
+	private static fflib_SObjectUnitOfWork unitOfWork(fflib_SObjectUnitOfWork.IDML dml) {
 		List<SObjectType> insertOrder = new List<SObjectType>();
 		List<SObjectType> sorted = graph.sortTopologically();
 
 		for (Integer i = sorted.size() - 1; i >= 0; i--) {
 			insertOrder.add(sorted[i]);
 		}
-		return new fflib_SObjectUnitOfWork(insertOrder);
+		return new fflib_SObjectUnitOfWork(insertOrder, dml);
 	}
 
 	// INNER

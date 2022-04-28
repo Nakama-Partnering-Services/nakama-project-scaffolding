@@ -1,5 +1,4 @@
-@IsTest
-public class User_t extends DomainBuilder {
+public virtual class User_t extends DomainBuilder {
 	private static final Id STANDARD_USER = [SELECT Id FROM Profile WHERE Name = 'Standard User'].Id;
 
 	public User_t() {
@@ -21,7 +20,7 @@ public class User_t extends DomainBuilder {
 		set('UserPermissionsSFContentUser', false);
 	}
 
-	public static User standard() {
+	public static virtual User standard() {
 		return (User) new User_t().persist();
 	}
 }
