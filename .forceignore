@@ -25,3 +25,6 @@ README.md
 
 # Default folder
 sfdx-source/core/main/default/**
+
+# DomainBuilder extra-tests
+sfdx-source/frameworks/apex-domainbuilder/sfdx-source/extra-tests/**
