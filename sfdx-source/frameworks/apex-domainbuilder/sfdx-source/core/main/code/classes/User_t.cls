@@ -20,7 +20,7 @@ public virtual class User_t extends DomainBuilder {
 		set('UserPermissionsSFContentUser', false);
 	}
 
-	public static virtual User standard() {
+	public static User standard() {
 		return (User) new User_t().persist();
 	}
 }
