@@ -10,8 +10,9 @@
 	],
 	"name": "project-scaffolding",
 	"sfdcLoginUrl": "https://login.salesforce.com",
-	"sourceApiVersion": "53.0",
+	"sourceApiVersion": "54.0",
 	"packageAliases": {
-		"Frameworks": "0Ho7Q0000008OO8SAM"
+		"Frameworks": "0Ho7Q0000008OO8SAM",
+		"Frameworks@1.0.0-7": "04t7Q000000cifCQAQ"
 	}
 }
