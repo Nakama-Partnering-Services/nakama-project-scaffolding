@@ -23,4 +23,3 @@ This project is licensed under the MIT license - see the [LICENSE](/LICENSE) fil
 ## Latest package version installation links
 
 -   [Frameworks](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cFXmQAM)
--   [Core](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cFXrQAM)
