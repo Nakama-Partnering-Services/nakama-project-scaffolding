@@ -49,7 +49,7 @@ public abstract class DomainBuilder {
 		return record;
 	}
 
-	// Note: virtual so it can be extended by implementations in order to cast the return type to its specifyc type
+	// Note: it is virtual so it can be extended by implementations in order to cast the return type to its specifyc type
 	public virtual DomainBuilder recordType(String developerName) {
 		Id rtId = type.getDescribe().getRecordTypeInfosByDeveloperName().get(developerName).getRecordTypeId();
 		return set('RecordTypeId', rtId);
