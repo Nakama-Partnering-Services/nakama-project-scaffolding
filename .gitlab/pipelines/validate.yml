@@ -19,7 +19,7 @@ stages:
     - delete-scratch-org
 
 include:
-    - pipelines/.code-quality.yml
+    - .gitlab/pipelines/code-quality.yml
 
 install-npm-dependancies:
     stage: install-npm
