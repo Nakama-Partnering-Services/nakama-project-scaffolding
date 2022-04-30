@@ -3,11 +3,14 @@ generate-deltas-push:
     rules:
         - if: $CI_PIPELINE_SOURCE == "push"
           changes: !reference [.sfdx-changes]
+    environment: integration
+    resource_group: integration
     script:
         - sf plugins install sfdx-git-delta
         - mkdir deltas
-        # This command may not work as desired if many commits are being pushed together
-        - sf sgd source delta --source sfdx-source --from HEAD^ --to HEAD --output deltas --ignore .forceignore --generate-delta
+        # Note: upon rebasing release branch onto main, even if the previous commit SHA for the target environment does not exists,
+        # deltas against HEAD are calculated from the previous branch status, and hence, only the changes on the rebased commits appear as deltas
+        - sf sgd source delta --source sfdx-source --from $INTEGRATION_SFDX_LAST_DEPLOYMENT_COMMIT_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
     artifacts:
         paths:
             - deltas
@@ -15,7 +18,9 @@ generate-deltas-push:
 generate-deltas-merge-request:
     stage: generate-deltas
     rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && ($VALIDATE_INTEGRATION == "true" || $VALIDATE_SCRATCH_ORG == "true")
+        - if: $VALIDATE_INTEGRATION_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
           changes: !reference [.sfdx-changes]
     script:
         - sf plugins install sfdx-git-delta
@@ -25,24 +30,52 @@ generate-deltas-merge-request:
         paths:
             - deltas
 
-generate-deltas-manual-deployment:
+generate-deltas-scheduled:
     stage: generate-deltas
     rules:
-        - if: $DESTINATION_ENVIRONMENT != "" && ($METADATA_DEPLOYMENT == "true" || $VLOCITY_DEPLOYMENT == "true") && $DELTAS_FROM != ""
+        - if: $DAILY_DELTAS_DEPLOYMENT_TESTING_DISABLED
+          when: never
+        - if: $DESTINATION_ENVIRONMENT
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "schedule"
+    environment: testing
+    resource_group: testing
     script:
         - sf plugins install sfdx-git-delta
         - mkdir deltas
-        - sf sgd source delta --source sfdx-source --from $DELTAS_FROM --to $DELTAS_TO --output deltas --ignore .forceignore --generate-delta
+        - sf sgd source delta --source sfdx-source --from $TESTING_SFDX_LAST_DEPLOYMENT_COMMIT_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
     artifacts:
         paths:
             - deltas
 
-# If this job is used instead of identify-test-classes, --generate-delta parameter can be removed from sf sgd source delta commands
+generate-deltas-manual-deployment:
+    stage: generate-deltas
+    rules:
+        - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && ($DELTAS_FROM != "" || $AUTOMATIC_DELTAS_FROM == "true")
+    environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
+    script:
+        - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
+        - sf plugins install sfdx-git-delta
+        - mkdir deltas
+        - sf sgd source delta --source sfdx-source/$PACKAGE_TO_DEPLOY --from $DELTAS_FROM --to HEAD --output deltas --ignore .forceignore --generate-delta
+    artifacts:
+        paths:
+            - deltas
+
+# If this job is used instead of identify-test-classes, --generate-delta parameter can be removed from sgd commands
 # identify-test-classes-by-name:
 #     image: python:latest
 #     stage: identify-test-classes
 #     rules:
-#         - if: $CI_PIPELINE_SOURCE == "push" || ($CI_PIPELINE_SOURCE == "merge_request_event" && ($VALIDATE_INTEGRATION == "true" || $VALIDATE_SCRATCH_ORG == "true"))
+#         - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT == ""
+#         - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && ($DELTAS_FROM != "" || $AUTOMATIC_DELTAS_FROM == "true") && ($TEST_LEVEL == "" || $TEST_LEVEL == "RunSpecifiedTests") && $TESTS_TO_RUN == ""
+#           changes: !reference [.sfdx-changes]
+#         - if: $CI_PIPELINE_SOURCE == "push"
+#           changes: !reference [.sfdx-changes]
+#         - if: $VALIDATE_INTEGRATION_DISABLED
+#           when: never
+#         - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 #           changes: !reference [.sfdx-changes]
 #     script:
 #         - apt-get update
@@ -57,10 +90,15 @@ generate-deltas-manual-deployment:
 identify-test-classes:
     stage: identify-test-classes
     rules:
-        - if: $CI_PIPELINE_SOURCE == "push" || ($CI_PIPELINE_SOURCE == "merge_request_event" && ($VALIDATE_INTEGRATION == "true" || $VALIDATE_SCRATCH_ORG == "true")) || ($DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && $DELTAS_FROM != "" && ($TEST_LEVEL == "" || $TEST_LEVEL == "RunSpecifiedTests") && $TESTS_TO_RUN == "")
+        - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && ($DELTAS_FROM != "" || $AUTOMATIC_DELTAS_FROM == "true") && ($TEST_LEVEL == "" || $TEST_LEVEL == "RunSpecifiedTests") && $TESTS_TO_RUN == ""
+        - if: $VALIDATE_INTEGRATION_DISABLED == "" && $CI_PIPELINE_SOURCE == "merge_request_event"
           changes: !reference [.sfdx-changes]
+        # Commented since for now, we are not running specified tests in corresponding jobs
+        # - if: $DAILY_DELTAS_DEPLOYMENT_TESTING_DISABLED != "" && $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT == ""
+        # - if: $CI_PIPELINE_SOURCE == "push"
+        #   changes: !reference [.sfdx-changes]
     script:
-        - TEST_CLASSES=$(egrep -wrli @IsTest deltas | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+        - TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
         - echo "TEST_CLASSES=$TEST_CLASSES" >> tests.env
     artifacts:
         reports:

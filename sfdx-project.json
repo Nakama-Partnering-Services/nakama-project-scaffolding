@@ -5,7 +5,15 @@
 			"package": "Frameworks",
 			"versionNumber": "1.0.0.NEXT",
 			"definitionFile": "config/project-scratch-def.json",
+			"default": false
+		},
+		{
+			"path": "sfdx-source/core",
 			"default": true
+		},
+		{
+			"path": "sfdx-source/unpackaged",
+			"default": false
 		}
 	],
 	"name": "project-scaffolding",

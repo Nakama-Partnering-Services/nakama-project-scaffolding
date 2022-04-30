@@ -26,5 +26,12 @@ README.md
 # Default folder
 sfdx-source/core/main/default/**
 
-# DomainBuilder extra-tests
+# Vlocity
+**/vlocity/**
+vlocity.yaml
+
+# Frameworks
+sfdx-source/frameworks/**
+
+# DomainBuilder extra-tests, to remain when creating a new Frameworks package version
 sfdx-source/frameworks/apex-domainbuilder/sfdx-source/extra-tests/**

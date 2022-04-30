@@ -1,5 +1,3 @@
-# working in gitlab.com but not in altemista, since gl-code-quality-report.json file is not created
-
 include:
     - template: Code-Quality.gitlab-ci.yml
 

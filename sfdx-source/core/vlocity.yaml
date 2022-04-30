@@ -1,0 +1,6 @@
+projectPath: sfdx-source/core/vlocity
+gitCheck: true # in case of issues, set this to false and deploy the whole set of vlocity items to the environment
+gitCheckKey: core
+autoUpdateSettings: true
+autoRetryErrors: true
+queries:

@@ -1,19 +1,21 @@
+# Some variable referenced in job rules, although empty, they exist since they are declared here, so we need to check emptyness specifically
+
 variables:
     DESTINATION_ENVIRONMENT:
         value: ''
-        description: 'Destination environment for the manual deployment. Possible values are: integration, qa, staging, production, hotfix.'
+        description: 'Destination environment for the manual deployment. Possible values are: development environments, integration, testing, staging, production, hotfix.'
+
+    AUTOMATIC_DELTAS_FROM:
+        value: 'false'
+        description: 'If true, DELTAS_FROM is autopopulated by default with the last commit SHA used to the deploy to the target environment (maintained manually in repository CI/CD variables). Not used if DELTAS_FROM is populated.'
 
     DELTAS_FROM:
         value: ''
-        description: 'SHA pointer to specify where to generate the delta deployment from. Populate only when deploying deltas.'
-
-    DELTAS_TO:
-        value: 'HEAD'
-        description: 'SHA pointer to specify where to generate the delta deployment to. Not used if DELTAS_FROM is empty.'
+        description: 'Commit SHA to specify where to generate the delta deployment from. Deltas are calculated against HEAD of the selected branch. Populate only when deploying deltas.'
 
     PACKAGE_TO_DEPLOY:
         value: ''
-        description: 'Package to deploy. Possible values are: frameworks, core, cpq, data, contract, sales, vmo2-101. Leave empty to deploy all packages.'
+        description: 'DISCOURAGED: using PACKAGE_TO_DEPLOY will break AUTOMATIC_DELTAS_FROM integrity, it is recommended to leave it empty to deploy/scope all packages. Package to deploy or scope deltas to. Possible values are frameworks, core, or other top level directories inside of sfdx-source.'
 
     METADATA_DEPLOYMENT:
         value: 'false'
@@ -21,15 +23,15 @@ variables:
 
     VLOCITY_DEPLOYMENT:
         value: 'false'
-        description: 'Set to "true" if Vlocity data should be deployed. Not supported with PACKAGE_TO_DEPLOY empty to deploy all packages. If METADATA_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
+        description: 'Set to "true" if Vlocity data should be deployed. Not supported with PACKAGE_TO_DEPLOY empty to deploy all packages without deltas. If METADATA_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
 
     VALIDATION_ONLY:
         value: 'false'
-        description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true".'
+        description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true". Vlocity deployments can not be only validations.'
 
     TEST_LEVEL:
         value: 'RunLocalTests'
-        description: 'Possible values are: NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg. Only applies when METADATA_DEPLOYMENT is set to "true". If DEPLOY_FROM is speceified, default value is RunSpecifiedTests.'
+        description: 'Possible values are: NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg. Only applies when METADATA_DEPLOYMENT is set to "true". If DEPLOY_FROM is populated, default value is RunSpecifiedTests.'
 
     TESTS_TO_RUN:
         value: ''
@@ -38,56 +40,80 @@ variables:
 manual-metadata-deployment:
     stage: manual-metadata-deployment
     rules:
-        - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && $DELTAS_FROM == ""
+        - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && $DELTAS_FROM == "" && $AUTOMATIC_DELTAS_FROM != "true"
     environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - VALIDATION_PARAMETER=$(if [ $VALIDATION_ONLY == "true" ]; then echo "--checkonly"; else echo ""; fi)
-        - RUN_TEST_PARAMETER=$(if [ $TEST_LEVEL == "RunSpecifiedTests" ]; then echo "--runtests $TESTS_TO_RUN"; else echo ""; fi)
-        - sfdx force:source:deploy --sourcepath sfdx-source/$PACKAGE_TO_DEPLOY --testlevel $TEST_LEVEL --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+        - VALIDATION_PARAMETER=$(if [ "$VALIDATION_ONLY" = "true" ]; then echo "--checkonly"; else echo ""; fi)
+        - RUN_TEST_PARAMETER=$(if [ "$TEST_LEVEL" = "RunSpecifiedTests" ]; then echo "--runtests $TESTS_TO_RUN"; else echo ""; fi)
+        - npm install fast-xml-parser
+        - node scripts/node/sandbox-replacements/main.js
+        - cp --recursive specific-environments/$DESTINATION_ENVIRONMENT/. sfdx-source/
+        - sfdx force:source:deploy --sourcepath sfdx-source/$PACKAGE_TO_DEPLOY --verbose $VALIDATION_PARAMETER --testlevel $TEST_LEVEL $RUN_TEST_PARAMETER
+        - |
+            if [ ! $VALIDATION_PARAMETER ]; then
+                curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+            fi
 
 manual-metadata-delta-deployment:
     stage: manual-metadata-deployment
     rules:
-        - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && $DELTAS_FROM != ""
+        - if: $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true" && ($DELTAS_FROM != "" || $AUTOMATIC_DELTAS_FROM == "true")
     environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - VALIDATION_PARAMETER=$(if [ $VALIDATION_ONLY == "true" ]; then echo "--checkonly"; else echo ""; fi)
-        - TESTS_TO_RUN=$(if [ $!TESTS_TO_RUN ]; then echo "$TEST_CLASSES"; fi)
-        - RUN_TEST_PARAMETER=$(if [[ ( $TEST_LEVEL == "RunSpecifiedTests" || $!TEST_LEVEL ) && $TESTS_TO_RUN ]]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $TEST_LEVEL ]; then echo "--testlevel $TEST_LEVEL"; else echo ""; fi)
-        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
+        - VALIDATION_PARAMETER=$(if [ "$VALIDATION_ONLY" = "true" ]; then echo "--checkonly"; else echo ""; fi)
+        - TESTS_TO_RUN=$(if [ ! $TESTS_TO_RUN ]; then echo $TEST_CLASSES; else echo $TESTS_TO_RUN; fi)
+        - RUN_TEST_PARAMETER=$(if { [ "$TEST_LEVEL" = "RunSpecifiedTests" ] || [ ! $TEST_LEVEL ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $TEST_LEVEL ]; then echo "--testlevel $TEST_LEVEL"; else echo ""; fi)
+        - npm install fast-xml-parser
+        - node scripts/node/sandbox-replacements/main.js
+        - cp --recursive specific-environments/$DESTINATION_ENVIRONMENT/. sfdx-source/
+        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+        - |
+            if [ ! $VALIDATION_PARAMETER ]; then
+                curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                    "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+            fi
 
 manual-vlocity-deployment:
     stage: manual-vlocity-deployment
     rules:
-        - if: $DESTINATION_ENVIRONMENT != "" && $VLOCITY_DEPLOYMENT == "true" && $DELTAS_FROM == ""
+        - if: $DESTINATION_ENVIRONMENT != "" && $VLOCITY_DEPLOYMENT == "true" && $DELTAS_FROM == "" && $AUTOMATIC_DELTAS_FROM != "true"
     environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
-        - DESTINATION_ALIAS=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_ALIAS})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias $DESTINATION_ALIAS --setdefaultusername
-        - npm install vlocity puppeteer
-        - npx vlocity -sfdx.username $DESTINATION_ALIAS -job sfdx-source/$PACKAGE_TO_DEPLOY/vlocity.yaml packDeploy --verbose true --simpleLogging true
-        - npx vlocity -sfdx.username $DESTINATION_ALIAS -job sfdx-source/$PACKAGE_TO_DEPLOY/vlocity.yaml packRetry --verbose true --simpleLogging true
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
+        - npx vlocity -sfdx.username Org -job sfdx-source/$PACKAGE_TO_DEPLOY/vlocity.yaml packDeploy --verbose true --simpleLogging true
+        - npx vlocity -sfdx.username Org -job sfdx-source/$PACKAGE_TO_DEPLOY/vlocity.yaml packRetry --verbose true --simpleLogging true
+        - |
+            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
 
 manual-vlocity-delta-deployment:
     stage: manual-vlocity-deployment
     rules:
-        - if: $DESTINATION_ENVIRONMENT != "" && $VLOCITY_DEPLOYMENT == "true" && $DELTAS_FROM != ""
+        - if: $DESTINATION_ENVIRONMENT != "" && $VLOCITY_DEPLOYMENT == "true" && ($DELTAS_FROM != "" || $AUTOMATIC_DELTAS_FROM == "true")
     environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
-        - DESTINATION_ALIAS=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_ALIAS})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias $DESTINATION_ALIAS --setdefaultusername
-        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM $DELTAS_TO -- **/vlocity/**)
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
+        - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
+        - SCOPE=$( if [ $PACKAGE_TO_DEPLOY ]; then echo "sfdx-source/$PACKAGE_TO_DEPLOY/vlocity/**"; else echo "**/vlocity/**"; fi )
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM HEAD -- $SCOPE)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - npm install vlocity puppeteer
         - |
             for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
             do
-                npx vlocity -sfdx.username $DESTINATION_ALIAS -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
-                npx vlocity -sfdx.username $DESTINATION_ALIAS -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
             done
+        - |
+            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"

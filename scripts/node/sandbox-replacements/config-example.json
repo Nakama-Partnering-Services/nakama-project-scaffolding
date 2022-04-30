@@ -1,0 +1,12 @@
+[
+	{
+		"path": "sfdx-source/core/main/auth-management/namedCredentials",
+		"replacementTagPath": "NamedCredential.endpoint",
+		"replacementValue": "https://www.example.com"
+	},
+	{
+		"path": "sfdx-source/core/main/auth-management/connectedApps",
+		"replacementTagPath": "ConnectedApp.oauthConfig.callbackUrl",
+		"replacementValue": "https://www.example.com"
+	}
+]

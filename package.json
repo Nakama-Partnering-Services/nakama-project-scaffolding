@@ -13,7 +13,13 @@
 		"prettier": "prettier --write \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
 		"prettier:verify": "prettier --list-different \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
 		"postinstall": "husky install",
-		"precommit": "lint-staged"
+		"precommit": "lint-staged",
+		"scratch-org:prepare": "sh scripts/shell/prepare-scratch-org.sh",
+		"scratch-org:build": "sh scripts/shell/build-scratch-org.sh",
+		"scratch-org:pool:create:base": "sf sfpowerkit pool create -f so_pool_config-base.schema.json",
+		"scratch-org:pool:create:full": "sf sfpowerkit pool create -f so_pool_config-full.schema.json",
+		"scratch-org:pool:fetch:base": "sf sfpowerkit pool fetch --tag base --setdefaultusername",
+		"scratch-org:pool:fetch:full": "sf sfpowerkit pool fetch --tag full --setdefaultusername"
 	},
 	"devDependencies": {
 		"@lwc/eslint-plugin-lwc": "^1.0.1",

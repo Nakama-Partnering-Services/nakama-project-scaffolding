@@ -5,10 +5,13 @@
 **/staticresources/**
 .localdevserver
 .sfdx
-.vscode
 
 coverage/
 
-#sfdx-source/frameworks/**
+sfdx-source/frameworks/**
 
 config/pmd-ruleset.xml
+
+# Tables in markdown files are formatted differently if they placed directly after text without blank like. This format is our ideal one. Examples are in our runbooks.
+
+**/*-meta.xml

@@ -1,21 +1,19 @@
-name: Validate pull request
+name: 'Validate pull request'
 on:
-    # Note: workflow will be executed even if the .yaml file exists only in source branch but not in the base branch
     pull_request:
-        branches: main
+        branches:
+            - 'main'
+            - 'release/**'
         paths:
             - sfdx-source/**
 
+# Note: secrets can not be used to conditionally run jobs: https://github.com/actions/runner/issues/520
 jobs:
-    local-validations:
-        name: 'Execute local validations'
+    verify-formatting:
+        name: 'Verify formatting'
         runs-on: ubuntu-latest
-        container:
-            # Warning: when running in container, git commands will not work since it will not be a repository
-            image: docker://salesforce/salesforcedx:latest-full
         steps:
-            - name: 'Checkout source code'
-              uses: actions/checkout@v2
+            - uses: actions/checkout@v2
 
             - name: 'Restore node_modules cache'
               id: cache-npm
@@ -28,33 +26,152 @@ jobs:
                       npm-
 
             - name: 'Install npm dependencies'
-              if: steps.cache-npm.outputs.cache-hit != 'true'
+              if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
               run: npm ci
 
-            - name: 'Install SFDX Scanner'
-              run: sf plugins install @salesforce/sfdx-scanner
+            - name: 'Verify formatting'
+              run: |
+                  git fetch origin $GITHUB_BASE_REF
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
+                  IFS=$'\n'
+                  for FILE in $CHANGED_FILES;
+                  do
+                      npx prettier --list-different "$FILE"
+                  done
+                  unset IFS
 
-            - name: 'Verify formatting with Prettier'
-              run: npm run prettier:verify
+    verify-linting:
+        name: 'Verify linting'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
 
-            - name: 'Verify Aura and Lightning Web Components with ESLint'
-              run: npm run lint
+            - name: 'Restore node_modules cache'
+              id: cache-npm
+              uses: actions/cache@v2
+              with:
+                  path: node_modules
+                  key: npm-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ env.cache-name }}-
+                      npm-
 
-            - name: 'Verify Apex with SFDX Scanner and save results in a file'
-              run: sf scanner run --pmdconfig config/pmd-ruleset.xml --target '.,!sfdx-source/frameworks/**/*.cls' --engine pmd --severity-threshold 3 --format table
+            - name: 'Install npm dependencies'
+              if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+              run: npm ci
 
-            # - name: 'Test Lightning Web Components'
-            #   run: npm run test:unit:coverage
+            - name: 'Verify linting'
+              run: |
+                  git fetch origin $GITHUB_BASE_REF
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**)
+                  npx eslint $CHANGED_FILES
 
-            # - name: 'Upload code coverage for Lightning Web Components to Codecov.io'
-            #   uses: codecov/codecov-action@v2.0.2
-            #   with:
-            #       token: ${{ secrets.CODECOV_TOKEN }}
-            #       flags: LWC
+    verify-pmd:
+        name: 'Verify PMD'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
 
-    org-validations:
-        name: 'Execute validations against scratch org'
-        needs: local-validations
+            - name: 'Restore node_modules cache'
+              id: cache-npm
+              uses: actions/cache@v2
+              with:
+                  path: node_modules
+                  key: npm-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ env.cache-name }}-
+                      npm-
+
+            - name: 'Install npm dependencies'
+              if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+              run: npm ci
+
+            - name: 'Verify PMD'
+              run: |
+                  git fetch origin $GITHUB_BASE_REF
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD)
+                  CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
+                  npm install sfdx-cli --global
+                  sfdx plugins:install @salesforce/sfdx-scanner
+                  sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!sfdx-source/frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
+
+    devint-validations:
+        name: 'Execute DevInt validations'
+        needs: [verify-formatting, verify-linting, verify-pmd]
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: 'Restore node_modules cache'
+              id: cache-npm
+              uses: actions/cache@v2
+              with:
+                  path: node_modules
+                  key: npm-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ env.cache-name }}-
+                      npm-
+
+            - name: 'Install npm dependencies'
+              if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+              run: npm ci
+
+            - name: 'Install SFDX CLI'
+              run: npm install sfdx-cli --global
+
+            - name: 'Create DevInt auth file'
+              run: echo ${{ secrets.DEVINT_SFDX_AUTH_URL }} > ./DEVINT_SFDX_AUTH_URL.txt
+
+            - name: 'Authorize DevInt'
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVINT_SFDX_AUTH_URL.txt --setalias 'DevInt' --setdefaultusername
+
+            - name: 'Remove DevInt auth file'
+              run: rm --force ./DEVINT_SFDX_AUTH_URL.txt
+
+            - name: 'Get deltas and deploy'
+              run: |
+                  git fetch origin $GITHUB_BASE_REF
+                  echo 'y' | sfdx plugins:install sfdx-git-delta
+                  mkdir deltas
+                  sfdx sgd:source:delta --source sfdx-source --from origin/$GITHUB_BASE_REF --to HEAD --output deltas --ignore .forceignore --generate-delta
+                  TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                  RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+                  npm install fast-xml-parser
+                  node scripts/node/sandbox-replacements/main.js
+                  cp --recursive specific-environments/devint/. sfdx-source/
+                  sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
+
+    scratch-org-validations:
+        name: 'Execute scratch org validations'
+        needs: [verify-formatting, verify-linting, verify-pmd]
+        runs-on: ubuntu-latest
+        container:
+            # Warning: when running in container, git commands will not work since it will not be a repository
+            image: docker://salesforce/salesforcedx:latest-full
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: 'Create Dev Hub auth file'
+              run: echo ${{ secrets.DEVHUB_SFDX_AUTH_URL }} > ./DEVHUB_SFDX_AUTH_URL.txt
+
+            - name: 'Authorize Dev Hub'
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Dev Hub' --setdefaultdevhubusername
+
+            - name: 'Remove Dev Hub auth file'
+              run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
+
+            - name: 'Fetch scratch org'
+              run: |
+                  echo 'y' | sfdx plugins:install sfpowerkit
+                  sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
+                  sh scripts/shell/environment-replacements/scratch-org.sh
+
+            - name: 'Push source to scratch org'
+              run: sfdx force:source:push # if this fails due to limitations, change to run scripts/shell/deploy-packages.sh instead
+
+    package-validations:
+        name: 'Create unlocked package versions and install'
+        needs: scratch-org-validations
         runs-on: ubuntu-latest
         steps:
             - name: 'Checkout source branch'
@@ -84,39 +201,16 @@ jobs:
               run: echo ${{ secrets.DEVHUB_SFDX_AUTH_URL }} > ./DEVHUB_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Dev Hub'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Nakama Dev Hub' --setdefaultdevhubusername --setdefaultusername
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Dev Hub' --setdefaultdevhubusername
 
             - name: 'Remove Dev Hub auth file'
               run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
 
-            # TODO: comment this when scratch orgs limit is reached
-
-            # - name: 'Create scratch org'
-            #   run: sfdx force:org:create --definitionfile config/project-scratch-def.json --setalias 'Nakama scratch org' --setdefaultusername --durationdays 1
-
-            # - name: 'Push source to scratch org'
-            #   run: sfdx force:source:push
-
-            # - name: 'Assign permissionset to default user'
-            #   run: |
-            #       sfdx force:user:permset:assign --permsetname PermissionSetName
-
-            # - name: 'Import sample data'
-            #   run: |
-            #       sfdx force:data:tree:import --plan ./data/fileName.json
-
-            - name: 'Run Apex tests'
-              run: sfdx force:apex:test:run --codecoverage --resultformat human --outputdir ./tests/apex --wait 20
-
-            # Delete temporary test file that Codecov is unable to parse
-            - name: 'Delete coverage file (temporary step)'
-              run: rm ./tests/apex/test-result-707*-codecoverage.json
-
-            - name: 'Upload code coverage for Apex to Codecov.io'
-              uses: codecov/codecov-action@v2.0.2
-              with:
-                  token: ${{ secrets.CODECOV_TOKEN }}
-                  flags: Apex
+            - name: 'Fetch scratch org'
+              run: |
+                  echo 'y' | sfdx plugins:install sfpowerkit
+                  sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
+                  sh scripts/shell/environment-replacements/scratch-org.sh
 
             - name: 'Check for package changes'
               id: checkForChanges
@@ -126,32 +220,15 @@ jobs:
 
                   changedPackages=()
 
-                  if [ $(echo "$changedPaths" | grep -c '^sfdx-source/frameworks') > 0 ]; then
-                      changedPackages+=( 'Frameworks' )
-                  fi
-
                   if [ $(echo "$changedPaths" | grep -c '^sfdx-source/core') > 0 ]; then
                       changedPackages+=( 'Core' )
                   fi
-
-                  echo "Changed packages (${#changedPackages[@]}):"
-                  for i in ${changedPackages[@]}; do
-                      echo "- $i"
-                  done
 
                   changedPackagesJson='[]'
                   if (( ${#changedPackages[@]} > 0 )); then
                       changedPackagesJson=$(printf '%s\n' "${changedPackages[@]}" | jq -R . | jq -c -s .)
                   fi
                   echo "::set-output name=changes::$changedPackagesJson"
-
-            - name: 'Create package version - Frameworks'
-              id: package-frameworks
-              if: ${{ contains(steps.checkForChanges.outputs.changes, 'Frameworks') }}
-              run: |
-                  json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --skipvalidation --wait 10 --json)
-                  packageVersionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
-                  echo "::set-output name=packageVersionId::$packageVersionId"
 
             - name: 'Create package version - Core'
               id: package-core
@@ -165,6 +242,9 @@ jobs:
               uses: trailheadapps/github-action-sfdx-packaging-updater@1.1.0
 
             - name: 'Persist sfdx-project.json and README.md'
+              # Note: the commit done as part of this job was causing the PR to need to be validated again without actions being triggered,
+              # which is the default behaviour to avoid infinite loops. So for now we are not running this job until finding a workaround.
+              if: ${{ false }}
               run: |
                   git config --local user.email "action@github.com"
                   git config --local user.name "GitHub Action Bot"
@@ -178,18 +258,7 @@ jobs:
               with:
                   args: 120
 
-            - name: 'Install Frameworks'
-              run: |
-                  versionId=$(echo '${{ steps.package-frameworks.outputs.packageVersionId }}')
-                  sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt
-
             - name: 'Install Core'
               run: |
                   versionId=$(echo '${{ steps.package-core.outputs.packageVersionId }}')
                   sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt
-
-            # TODO: comment this when scratch orgs limit is reached
-
-            # - name: 'Delete scratch org'
-            #   if: always()
-            #   run: sfdx force:org:delete --noprompt

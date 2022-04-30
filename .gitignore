@@ -49,3 +49,7 @@ sfdx-source/core/main/default/**
 
 # Local History for Visual Studio Code
 .history/
+
+# Untracked source
+sfdx-source/untracked/*
+!sfdx-source/untracked/README.md

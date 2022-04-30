@@ -10,6 +10,8 @@
 	"trailing-spaces.trimOnSave": true,
 	"files.trimTrailingWhitespace": true,
 	"diffEditor.ignoreTrimWhitespace": false,
+	"editor.bracketPairColorization.enabled": true,
+	"editor.guides.bracketPairs": "active",
 	"editor.insertSpaces": false,
 	"editor.detectIndentation": false,
 	"editor.renderWhitespace": "all",
@@ -21,5 +23,6 @@
 	"prettier.useTabs": true,
 	"[xml]": {
 		"editor.defaultFormatter": "DotJoshJohnson.xml"
-	}
+	},
+	"apexPMD.rulesets": ["config/pmd-ruleset.xml"]
 }

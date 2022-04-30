@@ -4,9 +4,9 @@ This folder is to organize apex classes in the domain (SObject) layer.
 
 Considerations:
 
--   The name of these classes should correspond to the plural name of the SObject they act upon. E.g.: `core_Accounts.cls`.
+-   The name of these classes should correspond to the plural name of the SObject they act upon. E.g.: `Accounts.cls`.
 
--   These classes should usually be `inherited sharing`, and services or trigger handlers should specify `with sharing` or `without sharing`.
+-   These classes should usually be `inherited sharing`, and services or trigger handlers should specify `with sharing` or `without sharing` respectively.
 
 -   These classes should extend from `fflib_SObjects`.
 

@@ -1,0 +1,102 @@
+name: Manual deployment
+on:
+    workflow_dispatch:
+        inputs:
+            destination:
+                description: 'Destination environment for the manual deployment. Mainly used for deployments to STAGING and PRODUCTION.'
+                required: true
+                type: choice
+                options:
+                    - DEVINT
+                    - TESTING
+                    - STAGING
+                    - PRODUCTION
+                    - HOTFIX
+            checkonly:
+                description: 'If true, changes are not actually deployed, but just validated.'
+                required: false
+                type: boolean
+            testlevel:
+                description: 'Environment to run tests against'
+                default: RunLocalTests
+                required: false
+                type: choice
+                options:
+                    - NoTestRun
+                    - RunSpecifiedTests
+                    - RunLocalTests
+                    - RunAllTestsInOrg
+            runtests:
+                description: 'Lists of the Apex classes containing the deployment tests to run. Use this parameter when you set testlevel to RunSpecifiedTests. Default value is based on autoidentified test classes.'
+                type: string
+                required: false
+
+jobs:
+    deploy-deltas:
+        name: 'Deploy deltas'
+        runs-on: ubuntu-latest
+        steps:
+            - name: 'Checkout source code'
+              uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+
+            - name: 'Restore node_modules cache'
+              id: cache-npm
+              uses: actions/cache@v2
+              with:
+                  path: node_modules
+                  key: npm-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      npm-${{ env.cache-name }}-
+                      npm-
+
+            - name: 'Install npm dependencies'
+              if: steps.cache-npm.outputs.cache-hit != 'true'
+              run: npm ci
+
+            - name: Install Salesforce CLI
+              run: npm install sfdx-cli --global
+
+            - name: 'Create Destination auth file'
+              env:
+                  SFDX_AUTH_URL: ${{ github.event.inputs.destination }}_SFDX_AUTH_URL
+              run: |
+                  echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
+
+            - name: 'Authorize Destination'
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias 'Destination' --setdefaultusername
+
+            - name: 'Remove Destination auth file'
+              run: rm --force ./DESTINATION_SFDX_AUTH_URL.txt
+
+            # Note: Tests do not run since it is redundant with PR and will take longer.
+            - name: 'Get deltas and deploy'
+              env:
+                  LAST_DEPLOYMENT_COMMIT_SHA: ${{ github.event.inputs.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
+              run: |
+                  echo 'y' | sfdx plugins:install sfdx-git-delta
+                  mkdir deltas
+                  sfdx sgd:source:delta --source sfdx-source --from ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} --to HEAD --output deltas --ignore .forceignore --generate-delta
+                  VALIDATION_PARAMETER=$(if [ ${{ github.event.inputs.checkonly }} = true ]; then echo "--checkonly"; else echo ""; fi)
+                  TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                  TESTS_TO_RUN=$(if [ ${{ github.event.inputs.runtests }} ]; then echo ${{ github.event.inputs.runtests }}; else echo $TEST_CLASSES; fi)
+                  RUN_TEST_PARAMETER=$(if { [ ${{ github.event.inputs.testlevel == 'RunSpecifiedTests' }} ] || [ ${{ github.event.inputs.testlevel == '' }} ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ ${{ github.event.inputs.testlevel }} ]; then echo "--testlevel ${{ github.event.inputs.testlevel }}"; else echo ""; fi)
+                  npm install fast-xml-parser
+                  node scripts/node/sandbox-replacements/main.js
+                  DESTINATION=$(echo ${{ github.event.inputs.destination }})
+                  DESTINATION=${DESTINATION,,}
+                  cp --recursive specific-environments/$DESTINATION/. sfdx-source/
+                  sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+
+            - name: 'Update last deployment commit SHA'
+              # https://github.com/actions/runner/issues/1483
+              if: github.event.inputs.checkonly == 'false'
+              env:
+                  LAST_DEPLOYMENT_COMMIT_SHA: ${{ github.event.inputs.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
+              uses: hmanzur/actions-set-secret@v2.0.0
+              with:
+                  name: ${{ env.LAST_DEPLOYMENT_COMMIT_SHA }}
+                  value: ${{ github.sha }}
+                  repository: ${{ github.repository }}
+                  token: ${{ secrets.ACTIONS_ACCESS_TOKEN }}

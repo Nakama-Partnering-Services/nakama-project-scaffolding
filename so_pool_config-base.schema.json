@@ -1,0 +1,9 @@
+{
+	"pool": {
+		"expiry": 1,
+		"tag": "base",
+		"max_allocation": 10,
+		"config_file_path": "config/project-scratch-def.json",
+		"script_file_path": "scripts/shell/setup-base-scratch-org-pool.sh"
+	}
+}

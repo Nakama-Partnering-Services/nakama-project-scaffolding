@@ -9,8 +9,9 @@
 install-npm-dependancies:
     stage: .pre
     rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && ($EXECUTE_PRETTIER == "true" || $EXECUTE_ESLINT == "true")
-          changes: !reference [.sfdx-changes]
+        - if: $VERIFY_FORMATTING_DISABLED && $VERIFY_LINTING_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     script:
         - npm ci
     artifacts:
@@ -20,16 +21,37 @@ install-npm-dependancies:
 verify-formatting:
     stage: local-validations
     rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $EXECUTE_PRETTIER == "true"
-          changes: !reference [.sfdx-changes]
+        - if: $VERIFY_FORMATTING_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     script:
-        - npm run prettier:verify
+        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
+        - IFS=$'\n'
+        - |
+            for FILE in $CHANGED_FILES;
+            do
+                npx prettier --list-different "$FILE"
+            done
+        - unset IFS
+        # Following approach, fails when many files have changed and parameter list is too large
+        # - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
+        # - NUMBER_OF_FILES=$(echo "$CHANGED_FILES" | tr ',' ' ' | wc -w)
+        # - |
+        #     if [ "$NUMBER_OF_FILES" -gt 1 ]; then
+        #         npx prettier --list-different "{$CHANGED_FILES}"
+        #     elif [ "$CHANGED_FILES" ]; then
+        #         npx prettier --list-different "$CHANGED_FILES"
+        #     fi
 
 verify-linting:
     stage: local-validations
     rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $EXECUTE_ESLINT == "true"
-          changes: !reference [.sfdx-changes]
+        - if: $VERIFY_LINTING_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+          changes:
+              - sfdx-source/frameworks/**/*.js
+              - sfdx-source/**/main/**/*.js
     script:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**)
         - npx eslint $CHANGED_FILES
@@ -38,7 +60,9 @@ verify-pmd:
     stage: local-validations
     needs: []
     rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $EXECUTE_PMD == "true"
+        - if: $VERIFY_PMD_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
           changes: !reference [.sfdx-changes]
     script:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD)
@@ -49,56 +73,61 @@ verify-pmd:
 integration-validations:
     stage: org-validations
     rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $VALIDATE_INTEGRATION == "true"
+        - if: $VALIDATE_INTEGRATION_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
           changes: !reference [.sfdx-changes]
     environment: integration
     resource_group: integration
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $INTEGRATION_SFDX_AUTH_URL --setdefaultusername
-        - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES != "" ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - npm install fast-xml-parser
+        - node scripts/node/sandbox-replacements/main.js
+        - cp --recursive specific-environments/devint/. sfdx-source/
         - sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
 
 scratch-org-validations:
     stage: org-validations
     rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $VALIDATE_SCRATCH_ORG == "true"
+        - if: $VALIDATE_SCRATCH_ORG_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
           changes: !reference [.sfdx-changes]
+    allow_failure: true
     environment:
         name: scratch/$CI_COMMIT_REF_SLUG
         url: $SCRATCH_ORG_URL
         # Dynamic environments stop automatically when their associated branch is deleted
         on_stop: delete-scratch-org
+    resource_group: scratch/$CI_COMMIT_REF_SLUG
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
+        - echo 'y' | sf plugins install sfpowerkit
+        - sf sfpowerkit pool fetch --tag base --setdefaultusername
         - SCRATCH_ORG_DETAILS=$(sfdx force:org:open --urlonly --json)
         - SCRATCH_ORG_URL=$(jq -r '.result.url' <<< $SCRATCH_ORG_DETAILS)
         - echo "SCRATCH_ORG_URL=$SCRATCH_ORG_URL" >> scratch.env
         - SCRATCH_ORG_USERNAME=$(jq -r '.result.username' <<< $SCRATCH_ORG_DETAILS)
         - echo "SCRATCH_ORG_USERNAME=$SCRATCH_ORG_USERNAME" >> scratch.env
-        - sfdx force:source:push
-        # TODO: consider removing redundancy of test execution
-        - |
-            if [ $TEST_CLASSES != "" ]; then
-              sfdx force:apex:test:run --codecoverage --resultformat junit --outputdir ./tests/apex --wait 20 --classnames $TEST_CLASSES
-            fi
-    artifacts:
-        reports:
-            junit: tests/apex/*-junit.xml
-            dotenv: scratch.env
-    # Also configurable in: project > Settings > CI/CD > Expand General pipelines
-    coverage: /name="testRunCoverage" value="([\d]+%)"/
+        - npm install fast-xml-parser
+        - node scripts/node/sandbox-replacements/main.js
+        - sh scripts/shell/environment-replacements/scratch-org.sh
+        - sh scripts/shell/deploy-packages.sh
 
 delete-scratch-org:
-    stage: org-validations
+    stage: delete-scratch-org
     rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $VALIDATE_SCRATCH_ORG == "true"
+        - if: $VALIDATE_SCRATCH_ORG_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
           changes: !reference [.sfdx-changes]
           when: manual
     allow_failure: true
     environment:
         name: scratch/$CI_COMMIT_REF_SLUG
         action: stop
+    resource_group: scratch/$CI_COMMIT_REF_SLUG
     script:
         # Command below does not work because of missing auth information due to different running instance
         # - sfdx force:org:delete --noprompt --targetusername $SCRATCH_ORG_USERNAME

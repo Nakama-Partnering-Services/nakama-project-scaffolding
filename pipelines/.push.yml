@@ -7,18 +7,15 @@ deploy-deltas-integration:
     resource_group: integration
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $INTEGRATION_SFDX_AUTH_URL --setdefaultusername
-        - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES != "" ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
-        # TODO: consider removing redundancy of test execution
+        # RUN_TEST_PARAMETER can be uncommented to double also run tests on deployments to integration, however it is redundant with MR and will take longer.
+        # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - npm install fast-xml-parser
+        - node scripts/node/sandbox-replacements/main.js
+        - cp --recursive specific-environments/devint/. sfdx-source/
+        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose # $RUN_TEST_PARAMETER
         - |
-            if [ $TEST_CLASSES != "" ]; then
-              sfdx force:apex:test:run --codecoverage --resultformat junit --outputdir ./tests/apex --wait 20 --classnames $TEST_CLASSES
-            fi
-    artifacts:
-        reports:
-            junit: tests/apex/*-junit.xml
-    # Also configurable in: project > Settings > CI/CD > Expand General pipelines
-    coverage: /name="testRunCoverage" value="([\d]+%)"/
+            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/INTEGRATION_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
 
 deploy-vlocity-integration:
     stage: deploy-vlocity-integration
@@ -28,58 +25,114 @@ deploy-vlocity-integration:
     environment: integration
     resource_group: integration
     script:
-        # This command may not work as desired if many commits are being pushed together
-        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r HEAD -- **/vlocity/**)
+        # Note: upon rebasing release branch onto main, even if the previous commit SHA for the target environment does not exists,
+        # deltas against HEAD are calculated from the previous branch status, and hence, only the changes on the rebased commits appear as deltas
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $INTEGRATION_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA HEAD -- **/vlocity/**)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - sfdx auth:sfdxurl:store --sfdxurlfile $INTEGRATION_SFDX_AUTH_URL --setalias $INTEGRATION_ALIAS --setdefaultusername
-        - npm install vlocity puppeteer
+        - sfdx auth:sfdxurl:store --sfdxurlfile $INTEGRATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
         - |
             for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
             do
-                npx vlocity -sfdx.username $INTEGRATION_ALIAS -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
-                npx vlocity -sfdx.username $INTEGRATION_ALIAS -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
             done
+        - |
+            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/INTEGRATION_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
 
-manually-deploy-deltas-qa:
-    stage: manually-deploy-deltas-qa
+backpromote-deltas:
+    stage: backpromote-deltas
     rules:
+        - if: $BACKPROMOTE_DELTAS_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "push" && $DESTINATION_ENVIRONMENT
+          changes: !reference [.sfdx-changes]
+    environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
+    script:
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - npm install fast-xml-parser
+        - node scripts/node/sandbox-replacements/main.js
+        - cp --recursive specific-environments/$DESTINATION_ENVIRONMENT/. sfdx-source/
+        # deltas used for this deployment are calculated from INTEGRATION_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA even if DESTINATION_ENVIRONMENT is not integration
+        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml
+        - |
+            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+    parallel:
+        matrix:
+            - DESTINATION_ENVIRONMENT: [dev1, dev2]
+
+backpromote-vlocity:
+    stage: backpromote-vlocity
+    rules:
+        - if: $BACKPROMOTE_VLOCITY_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "push" && $DESTINATION_ENVIRONMENT
+          changes: !reference [.vlocity-changes]
+    environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
+    script:
+        - DELTAS_FROM=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM HEAD -- **/vlocity/**)
+        - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
+        - |
+            for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
+            do
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
+            done
+        - |
+            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+    parallel:
+        matrix:
+            - DESTINATION_ENVIRONMENT: [dev1, dev2]
+
+direct-deploy-deltas-testing:
+    stage: deploy-deltas-testing
+    rules:
+        - if: $DIRECT_DELTAS_DEPLOYMENT_TESTING_DISABLED
+          when: never
         - if: $CI_PIPELINE_SOURCE == "push"
           changes: !reference [.sfdx-changes]
-          when: manual
-    environment: qa
-    resource_group: qa
+    environment: testing
+    resource_group: testing
     script:
-        - sfdx auth:sfdxurl:store --sfdxurlfile $QA_SFDX_AUTH_URL --setdefaultusername
-        - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES != "" ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - sfdx auth:sfdxurl:store --sfdxurlfile $TESTING_SFDX_AUTH_URL --setdefaultusername
+        # RUN_TEST_PARAMETER can be uncommented to double also run tests on deployments to integration, however it is redundant with MR and will take longer.
+        # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - npm install fast-xml-parser
+        - node scripts/node/sandbox-replacements/main.js
+        - cp --recursive specific-environments/testing/. sfdx-source/
+        # deltas used for this deployment are calculated from INTEGRATION_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA even if DESTINATION_ENVIRONMENT is not integration
         - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
-        # TODO: consider removing redundancy of test execution
         - |
-            if [ $TEST_CLASSES != "" ]; then
-              sfdx force:apex:test:run --codecoverage --resultformat junit --outputdir ./tests/apex --wait 20 --classnames $TEST_CLASSES
-            fi
-    artifacts:
-        reports:
-            junit: tests/apex/*-junit.xml
-    # Also configurable in: project > Settings > CI/CD > Expand General pipelines
-    coverage: /name="testRunCoverage" value="([\d]+%)"/
+            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/TESTING_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
 
-manually-deploy-vlocity-qa:
-    stage: manually-deploy-vlocity-qa
+direct-deploy-vlocity-testing:
+    stage: deploy-vlocity-testing
     rules:
+        - if: $DIRECT_VLOCITY_DEPLOYMENT_TESTING_DISABLED
+          when: never
         - if: $CI_PIPELINE_SOURCE == "push"
           changes: !reference [.vlocity-changes]
-          when: manual
-    environment: qa
-    resource_group: qa
+    environment: testing
+    resource_group: testing
     script:
-        # This command may not work as desired if many commits are being pushed together
-        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r HEAD -- **/vlocity/**)
+        - sfdx auth:sfdxurl:store --sfdxurlfile $TESTING_SFDX_AUTH_URL --setalias Org --setdefaultusername
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $TESTING_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA HEAD -- **/vlocity/**)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - sfdx auth:sfdxurl:store --sfdxurlfile $QA_SFDX_AUTH_URL --setalias $QA_ALIAS --setdefaultusername
-        - npm install vlocity puppeteer
         - |
             for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
             do
-                npx vlocity -sfdx.username $QA_ALIAS -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
-                npx vlocity -sfdx.username $QA_ALIAS -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
             done
+        - |
+            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/TESTING_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"

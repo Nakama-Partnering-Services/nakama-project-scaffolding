@@ -14,6 +14,5 @@
 	<rule ref="category/apex/design.xml" />
 	<rule ref="category/apex/errorprone.xml" />
 	<rule ref="category/apex/performance.xml" />
-	<rule ref="category/apex/performance.xml" />
 	<rule ref="category/apex/security.xml" />
 </ruleset>
