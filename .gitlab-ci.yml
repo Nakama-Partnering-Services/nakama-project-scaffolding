@@ -1,117 +1,117 @@
 # Variables for manual-deploment. Some variable referenced in job rules, although empty,
 # they exist since they are declared here, so we need to check emptyness specifically
 variables:
-  DESTINATION_ENVIRONMENT:
-    value: ""
-    description: "Destination environment for the manual deployment. Possible values are: devint, testing, staging, production, hotfix."
+    DESTINATION_ENVIRONMENT:
+        value: ''
+        description: 'Destination environment for the manual deployment. Possible values are: devint, testing, staging, production, hotfix.'
 
-  METADATA_DEPLOYMENT:
-    value: "false"
-    description: 'Set to "true" if Salesforce metadata should be deployed. If VLOCITY_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
+    METADATA_DEPLOYMENT:
+        value: 'false'
+        description: 'Set to "true" if Salesforce metadata should be deployed. If VLOCITY_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
 
-  VLOCITY_DEPLOYMENT:
-    value: "false"
-    description: 'Set to "true" if Vlocity data should be deployed. If METADATA_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
+    VLOCITY_DEPLOYMENT:
+        value: 'false'
+        description: 'Set to "true" if Vlocity data should be deployed. If METADATA_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
 
-  VALIDATION_ONLY:
-    value: "false"
-    description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true". Vlocity deployments can not be only validations.'
+    VALIDATION_ONLY:
+        value: 'false'
+        description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true". Vlocity deployments can not be only validations.'
 
-  TEST_LEVEL:
-    value: "RunLocalTests"
-    description: 'Possible values are: NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is RunSpecifiedTests.'
+    TEST_LEVEL:
+        value: 'RunLocalTests'
+        description: 'Possible values are: NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is RunSpecifiedTests.'
 
-  TESTS_TO_RUN:
-    value: ""
-    description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when TEST_LEVEL is RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is based on autoidentified test classes.'
+    TESTS_TO_RUN:
+        value: ''
+        description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when TEST_LEVEL is RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is based on autoidentified test classes.'
 
 image: salesforce/salesforcedx:latest-full
 
 stages:
-  - dispatch-child-pipeline
+    - dispatch-child-pipeline
 
 .any-changes:
-  - sfdx-source/frameworks/**/*
-  - sfdx-source/**/main/**/*
-  - sfdx-source/**/test/classes/**/*
-  - sfdx-source/**/vlocity/**/*
+    - sfdx-source/frameworks/**/*
+    - sfdx-source/**/main/**/*
+    - sfdx-source/**/test/classes/**/*
+    - sfdx-source/**/vlocity/**/*
 
 merge-request-validation:
-  stage: dispatch-child-pipeline
-  rules:
-    - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
-  trigger:
-    include:
-      # Note: need to specify project and ref since otherwise it will try to find child pipeline in target repo rather than in this one.
-      - project: "Nakama-Partnering-Services/pipelines"
-        ref: "main"
-        file: "pipelines/.merge-request.yml"
-    strategy: depend
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
+    trigger:
+        include:
+            # Note: need to specify project and ref since otherwise it will try to find child pipeline in target repo rather than in this one.
+            - project: 'Nakama-Partnering-Services/pipelines'
+              ref: 'main'
+              file: 'pipelines/.merge-request.yml'
+        strategy: depend
 
 deploy-to-testing-and-backpromote:
-  stage: dispatch-child-pipeline
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
-      when: never
-    - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      changes: !reference [.any-changes]
-  variables:
-    DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
-  trigger:
-    include:
-      - project: "Nakama-Partnering-Services/pipelines"
-        ref: "main"
-        file: "pipelines/.push.yml"
-    strategy: depend
-  parallel:
-    matrix:
-      - DESTINATION_ENVIRONMENT: [integration, testing, product, sales, cpq, clm]
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+          when: never
+        - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+          changes: !reference [.any-changes]
+    variables:
+        DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
+    trigger:
+        include:
+            - project: 'Nakama-Partnering-Services/pipelines'
+              ref: 'main'
+              file: 'pipelines/.push.yml'
+        strategy: depend
+    parallel:
+        matrix:
+            - DESTINATION_ENVIRONMENT: [integration, testing, product, sales, cpq, clm]
 
 deploy-to-staging:
-  stage: dispatch-child-pipeline
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
-      when: never
-    - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^release/
-      changes: !reference [.any-changes]
-  variables:
-    DESTINATION_ENVIRONMENT: staging
-  trigger:
-    include:
-      - project: "Nakama-Partnering-Services/pipelines"
-        ref: "main"
-        file: "pipelines/.push.yml"
-    strategy: depend
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+          when: never
+        - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^release/
+          changes: !reference [.any-changes]
+    variables:
+        DESTINATION_ENVIRONMENT: staging
+    trigger:
+        include:
+            - project: 'Nakama-Partnering-Services/pipelines'
+              ref: 'main'
+              file: 'pipelines/.push.yml'
+        strategy: depend
 
 manual-deployment:
-  stage: dispatch-child-pipeline
-  rules:
-    - if: $DESTINATION_ENVIRONMENT != "" && ($METADATA_DEPLOYMENT == "true" || $VLOCITY_DEPLOYMENT == "true")
-  # Note: ths is not supposed to be needed since as per documentation it should be the default behaviour, however it is a non working issue: https://gitlab.com/gitlab-org/gitlab/-/issues/322772
-  variables:
-    DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
-    # AUTOMATIC_DELTAS_FROM: $AUTOMATIC_DELTAS_FROM
-    METADATA_DEPLOYMENT: $METADATA_DEPLOYMENT
-    VLOCITY_DEPLOYMENT: $VLOCITY_DEPLOYMENT
-    VALIDATION_ONLY: $VALIDATION_ONLY
-    TEST_LEVEL: $TEST_LEVEL
-    TESTS_TO_RUN: $TESTS_TO_RUN
-  trigger:
-    include:
-      - project: "Nakama-Partnering-Services/pipelines"
-        ref: "main"
-        file: "pipelines/.manual-deployment.yml"
-    strategy: depend
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $DESTINATION_ENVIRONMENT != "" && ($METADATA_DEPLOYMENT == "true" || $VLOCITY_DEPLOYMENT == "true")
+    # Note: ths is not supposed to be needed since as per documentation it should be the default behaviour, however it is a non working issue: https://gitlab.com/gitlab-org/gitlab/-/issues/322772
+    variables:
+        DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
+        # AUTOMATIC_DELTAS_FROM: $AUTOMATIC_DELTAS_FROM
+        METADATA_DEPLOYMENT: $METADATA_DEPLOYMENT
+        VLOCITY_DEPLOYMENT: $VLOCITY_DEPLOYMENT
+        VALIDATION_ONLY: $VALIDATION_ONLY
+        TEST_LEVEL: $TEST_LEVEL
+        TESTS_TO_RUN: $TESTS_TO_RUN
+    trigger:
+        include:
+            - project: 'Nakama-Partnering-Services/pipelines'
+              ref: 'main'
+              file: 'pipelines/.manual-deployment.yml'
+        strategy: depend
 
 scheduled-tests:
-  stage: dispatch-child-pipeline
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-  variables:
-    DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
-  trigger:
-    include:
-      - project: "Nakama-Partnering-Services/pipelines"
-        ref: "main"
-        file: "pipelines/.scheduled.yml"
-    strategy: depend
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "schedule"
+    variables:
+        DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
+    trigger:
+        include:
+            - project: 'Nakama-Partnering-Services/pipelines'
+              ref: 'main'
+              file: 'pipelines/.scheduled.yml'
+        strategy: depend

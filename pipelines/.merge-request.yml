@@ -7,155 +7,155 @@
 image: salesforce/salesforcedx:latest-full
 
 .sfdx-changes:
-  - sfdx-source/frameworks/**/*
-  - sfdx-source/**/main/**/*
-  - sfdx-source/**/test/classes/**/*
+    - sfdx-source/frameworks/**/*
+    - sfdx-source/**/main/**/*
+    - sfdx-source/**/test/classes/**/*
 
 stages:
-  - generate-code_quality-report
-  - install-npm
-  - local-validations
-  - generate-deltas
-  - org-validations
-  - delete-scratch-org
+    - generate-code_quality-report
+    - install-npm
+    - local-validations
+    - generate-deltas
+    - org-validations
+    - delete-scratch-org
 
 include:
-  - pipelines/.code-quality.yml
+    - pipelines/.code-quality.yml
 
 install-npm-dependancies:
-  stage: install-npm
-  rules:
-    - if: $VERIFY_FORMATTING_DISABLED && $VERIFY_LINTING_DISABLED
-      when: never
-    # Note: always need to be specified since, default "success" is not reached due to previous parent triggering job being not completed as it follows a depend strategy
-    - when: always
-  script:
-    - npm ci
-  artifacts:
-    paths:
-      - node_modules
+    stage: install-npm
+    rules:
+        - if: $VERIFY_FORMATTING_DISABLED && $VERIFY_LINTING_DISABLED
+          when: never
+        # Note: always need to be specified since, default "success" is not reached due to previous parent triggering job being not completed as it follows a depend strategy
+        - when: always
+    script:
+        - npm ci
+    artifacts:
+        paths:
+            - node_modules
 
 verify-formatting:
-  stage: local-validations
-  rules:
-    - if: $VERIFY_FORMATTING_DISABLED
-      when: never
-    - when: always
-  script:
-    - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
-    - IFS=$'\n'
-    - |
-      for FILE in $CHANGED_FILES;
-      do
-          npx prettier --list-different "$FILE"
-      done
-    - unset IFS
+    stage: local-validations
+    rules:
+        - if: $VERIFY_FORMATTING_DISABLED
+          when: never
+        - when: always
+    script:
+        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
+        - IFS=$'\n'
+        - |
+            for FILE in $CHANGED_FILES;
+            do
+                npx prettier --list-different "$FILE"
+            done
+        - unset IFS
 
 verify-linting:
-  stage: local-validations
-  rules:
-    - if: $VERIFY_LINTING_DISABLED
-      when: never
-    - changes:
-        - sfdx-source/frameworks/**/*.js
-        - sfdx-source/**/main/**/*.js
-  script:
-    - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**)
-    - npx eslint $CHANGED_FILES
+    stage: local-validations
+    rules:
+        - if: $VERIFY_LINTING_DISABLED
+          when: never
+        - changes:
+              - sfdx-source/frameworks/**/*.js
+              - sfdx-source/**/main/**/*.js
+    script:
+        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**)
+        - npx eslint $CHANGED_FILES
 
 verify-pmd:
-  stage: local-validations
-  needs: []
-  rules:
-    - if: $VERIFY_PMD_DISABLED
-      when: never
-    - changes: !reference [.sfdx-changes]
-  script:
-    - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD)
-    - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
-    - sf plugins install @salesforce/sfdx-scanner
-    - sf scanner run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!sfdx-source/frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
+    stage: local-validations
+    needs: []
+    rules:
+        - if: $VERIFY_PMD_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+    script:
+        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD)
+        - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
+        - sf plugins install @salesforce/sfdx-scanner
+        - sf scanner run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!sfdx-source/frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
 
 generate-deltas:
-  stage: generate-deltas
-  rules:
-    - if: $VALIDATION_DEPLOYMENT_DISABLED
-      when: never
-    - changes: !reference [.sfdx-changes]
-  script:
-    - sf plugins install sfdx-git-delta
-    - mkdir deltas
-    - sf sgd source delta --source sfdx-source --from $CI_MERGE_REQUEST_DIFF_BASE_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
-  artifacts:
-    paths:
-      - deltas
+    stage: generate-deltas
+    rules:
+        - if: $VALIDATION_DEPLOYMENT_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+    script:
+        - sf plugins install sfdx-git-delta
+        - mkdir deltas
+        - sf sgd source delta --source sfdx-source --from $CI_MERGE_REQUEST_DIFF_BASE_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
+    artifacts:
+        paths:
+            - deltas
 
 validation-deployment:
-  stage: org-validations
-  rules:
-    - if: $VALIDATION_DEPLOYMENT_DISABLED
-      when: never
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
-      changes: !reference [.sfdx-changes]
-      variables:
-        TARGET_ENVIRONMENT: "devint"
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/
-      changes: !reference [.sfdx-changes]
-      variables:
-        TARGET_ENVIRONMENT: "staging"
-  # Note: DESTINATION_ENVIRONMENT is renamed to TARGET_ENVIRONMENT so it does not conflict with variable declared in .gitlab-ci.yml
-  environment: $TARGET_ENVIRONMENT
-  resource_group: $TARGET_ENVIRONMENT
-  script:
-    - TARGET_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT^^}_SFDX_AUTH_URL})
-    - sfdx auth:sfdxurl:store --sfdxurlfile $TARGET_SFDX_AUTH_URL --setdefaultusername
-    - npm install fast-xml-parser
-    - node scripts/node/environment-replacements/main.js || true
-    - cp --recursive specific-environments/$TARGET_ENVIRONMENT/. sfdx-source/ || true
-    # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-    - sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests
+    stage: org-validations
+    rules:
+        - if: $VALIDATION_DEPLOYMENT_DISABLED
+          when: never
+        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
+          changes: !reference [.sfdx-changes]
+          variables:
+              TARGET_ENVIRONMENT: 'devint'
+        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/
+          changes: !reference [.sfdx-changes]
+          variables:
+              TARGET_ENVIRONMENT: 'staging'
+    # Note: DESTINATION_ENVIRONMENT is renamed to TARGET_ENVIRONMENT so it does not conflict with variable declared in .gitlab-ci.yml
+    environment: $TARGET_ENVIRONMENT
+    resource_group: $TARGET_ENVIRONMENT
+    script:
+        - TARGET_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $TARGET_SFDX_AUTH_URL --setdefaultusername
+        - npm install fast-xml-parser
+        - node scripts/node/environment-replacements/main.js || true
+        - cp --recursive specific-environments/$TARGET_ENVIRONMENT/. sfdx-source/ || true
+        # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests
 
 scratch-org-validations:
-  stage: org-validations
-  rules:
-    - if: $VALIDATE_SCRATCH_ORG_DISABLED
-      when: never
-    - changes: !reference [.sfdx-changes]
-  allow_failure: true
-  environment:
-    name: scratch/$CI_COMMIT_REF_SLUG
-    url: $SCRATCH_ORG_URL
-    # Dynamic environments stop automatically when their associated branch is deleted
-    on_stop: delete-scratch-org
-  resource_group: scratch/$CI_COMMIT_REF_SLUG
-  script:
-    - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-    - echo 'y' | sf plugins install sfpowerkit
-    - sf sfpowerkit pool fetch --tag base --setdefaultusername
-    - SCRATCH_ORG_DETAILS=$(sfdx force:org:open --urlonly --json)
-    - SCRATCH_ORG_URL=$(jq -r '.result.url' <<< $SCRATCH_ORG_DETAILS)
-    - echo "SCRATCH_ORG_URL=$SCRATCH_ORG_URL" >> scratch.env
-    - SCRATCH_ORG_USERNAME=$(jq -r '.result.username' <<< $SCRATCH_ORG_DETAILS)
-    - echo "SCRATCH_ORG_USERNAME=$SCRATCH_ORG_USERNAME" >> scratch.env
-    - npm install fast-xml-parser
-    - node scripts/node/environment-replacements/main.js || true
-    - cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
-    - sfdx force:source:push
+    stage: org-validations
+    rules:
+        - if: $VALIDATE_SCRATCH_ORG_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+    allow_failure: true
+    environment:
+        name: scratch/$CI_COMMIT_REF_SLUG
+        url: $SCRATCH_ORG_URL
+        # Dynamic environments stop automatically when their associated branch is deleted
+        on_stop: delete-scratch-org
+    resource_group: scratch/$CI_COMMIT_REF_SLUG
+    script:
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
+        - echo 'y' | sf plugins install sfpowerkit
+        - sf sfpowerkit pool fetch --tag base --setdefaultusername
+        - SCRATCH_ORG_DETAILS=$(sfdx force:org:open --urlonly --json)
+        - SCRATCH_ORG_URL=$(jq -r '.result.url' <<< $SCRATCH_ORG_DETAILS)
+        - echo "SCRATCH_ORG_URL=$SCRATCH_ORG_URL" >> scratch.env
+        - SCRATCH_ORG_USERNAME=$(jq -r '.result.username' <<< $SCRATCH_ORG_DETAILS)
+        - echo "SCRATCH_ORG_USERNAME=$SCRATCH_ORG_USERNAME" >> scratch.env
+        - npm install fast-xml-parser
+        - node scripts/node/environment-replacements/main.js || true
+        - cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
+        - sfdx force:source:push
 
 delete-scratch-org:
-  stage: delete-scratch-org
-  rules:
-    - if: $VALIDATE_SCRATCH_ORG_DISABLED
-      when: never
-    - changes: !reference [.sfdx-changes]
-      when: manual
-  allow_failure: true
-  environment:
-    name: scratch/$CI_COMMIT_REF_SLUG
-    action: stop
-  resource_group: scratch/$CI_COMMIT_REF_SLUG
-  script:
-    # Command below does not work because of missing auth information due to different running instance
-    # - sfdx force:org:delete --noprompt --targetusername $SCRATCH_ORG_USERNAME
-    - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultusername
-    - sfdx force:data:record:delete --sobjecttype ScratchOrgInfo --where SignupUsername=$SCRATCH_ORG_USERNAME
+    stage: delete-scratch-org
+    rules:
+        - if: $VALIDATE_SCRATCH_ORG_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+          when: manual
+    allow_failure: true
+    environment:
+        name: scratch/$CI_COMMIT_REF_SLUG
+        action: stop
+    resource_group: scratch/$CI_COMMIT_REF_SLUG
+    script:
+        # Command below does not work because of missing auth information due to different running instance
+        # - sfdx force:org:delete --noprompt --targetusername $SCRATCH_ORG_USERNAME
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultusername
+        - sfdx force:data:record:delete --sobjecttype ScratchOrgInfo --where SignupUsername=$SCRATCH_ORG_USERNAME

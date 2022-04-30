@@ -1,8 +1,8 @@
 image: salesforce/salesforcedx:latest-full
 
 stages:
-  - scheduled-tests
-  - scheduled-tests-report
+    - scheduled-tests
+    - scheduled-tests-report
 
 # Noted: commented since we are not using them and otherwsie we would need the stages
 # generate-deltas:
@@ -67,54 +67,54 @@ stages:
 #         "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/TESTING_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
 
 run-validation-deployment:
-  stage: scheduled-tests
-  rules:
-    - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED
-      when: never
-    - if: $DESTINATION_ENVIRONMENT
-  environment: $DESTINATION_ENVIRONMENT
-  resource_group: $DESTINATION_ENVIRONMENT
-  script:
-    - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
-    - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-    - sfdx force:source:deploy --checkonly -m ApexClass:HttpMethod --testlevel RunLocalTests --verbose
+    stage: scheduled-tests
+    rules:
+        - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED
+          when: never
+        - if: $DESTINATION_ENVIRONMENT
+    environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
+    script:
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - sfdx force:source:deploy --checkonly -m ApexClass:HttpMethod --testlevel RunLocalTests --verbose
 
 run-local-tests:
-  stage: scheduled-tests
-  rules:
-    - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
-      when: never
-    - if: $DESTINATION_ENVIRONMENT
-  environment: $DESTINATION_ENVIRONMENT
-  resource_group: $DESTINATION_ENVIRONMENT
-  script:
-    - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
-    - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-    - TEST_RUN_DETAILS=$(sfdx force:apex:test:run --testlevel RunLocalTests --json)
-    - TEST_RUN_ID=$(jq -r '.result.testRunId' <<< $TEST_RUN_DETAILS)
-    - echo "TEST_RUN_ID ==> $TEST_RUN_ID"
-    - echo "TEST_RUN_ID=$TEST_RUN_ID" >> test.env
-  artifacts:
-    reports:
-      dotenv: test.env
+    stage: scheduled-tests
+    rules:
+        - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
+          when: never
+        - if: $DESTINATION_ENVIRONMENT
+    environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
+    script:
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - TEST_RUN_DETAILS=$(sfdx force:apex:test:run --testlevel RunLocalTests --json)
+        - TEST_RUN_ID=$(jq -r '.result.testRunId' <<< $TEST_RUN_DETAILS)
+        - echo "TEST_RUN_ID ==> $TEST_RUN_ID"
+        - echo "TEST_RUN_ID=$TEST_RUN_ID" >> test.env
+    artifacts:
+        reports:
+            dotenv: test.env
 
 run-local-tests-report:
-  stage: scheduled-tests-report
-  needs: [run-local-tests]
-  rules:
-    - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
-      when: never
-    - if: $DESTINATION_ENVIRONMENT
-      when: delayed
-      start_in: 60 minutes
-  environment: $DESTINATION_ENVIRONMENT
-  resource_group: $DESTINATION_ENVIRONMENT
-  script:
-    - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
-    - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-    - sfdx force:apex:test:report -i $TEST_RUN_ID --codecoverage --resultformat junit --outputdir ./tests/apex
-  artifacts:
-    reports:
-      junit: tests/apex/*-junit.xml
-  # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
-  coverage: /name="testRunCoverage" value="([\d]+%)"/
+    stage: scheduled-tests-report
+    needs: [run-local-tests]
+    rules:
+        - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
+          when: never
+        - if: $DESTINATION_ENVIRONMENT
+          when: delayed
+          start_in: 60 minutes
+    environment: $DESTINATION_ENVIRONMENT
+    resource_group: $DESTINATION_ENVIRONMENT
+    script:
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - sfdx force:apex:test:report -i $TEST_RUN_ID --codecoverage --resultformat junit --outputdir ./tests/apex
+    artifacts:
+        reports:
+            junit: tests/apex/*-junit.xml
+    # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
+    coverage: /name="testRunCoverage" value="([\d]+%)"/
