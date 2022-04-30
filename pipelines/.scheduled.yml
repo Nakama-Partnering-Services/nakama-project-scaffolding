@@ -1,101 +1,120 @@
-scheduled-deploy-deltas-testing:
-    stage: deploy-deltas-testing
-    rules:
-        - if: $DAILY_DELTAS_DEPLOYMENT_TESTING_DISABLED
-          when: never
-        - if: $DESTINATION_ENVIRONMENT
-          when: never
-        - if: $CI_PIPELINE_SOURCE == "schedule"
-    environment: testing
-    resource_group: testing
-    script:
-        - sfdx auth:sfdxurl:store --sfdxurlfile $TESTING_SFDX_AUTH_URL --setdefaultusername
-        # RUN_TEST_PARAMETER can be uncommented to double also run tests on deployments to integration, however it is redundant with MR and will take longer.
-        # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-        - npm install fast-xml-parser
-        - node scripts/node/sandbox-replacements/main.js
-        - cp --recursive specific-environments/testing/. sfdx-source/
-        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
-        - |
-            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/TESTING_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+image: salesforce/salesforcedx:latest-full
 
-scheduled-deploy-vlocity-testing:
-    stage: deploy-vlocity-testing
-    rules:
-        - if: $DAILY_VLOCITY_DEPLOYMENT_TESTING_DISABLED
-          when: never
-        - if: $DESTINATION_ENVIRONMENT
-          when: never
-        - if: $CI_PIPELINE_SOURCE == "schedule"
-    environment: testing
-    resource_group: testing
-    script:
-        - sfdx auth:sfdxurl:store --sfdxurlfile $TESTING_SFDX_AUTH_URL --setalias Org --setdefaultusername
-        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $TESTING_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA HEAD -- **/vlocity/**)
-        - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - |
-            for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
-            do
-                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
-                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
-            done
-        - |
-            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-                "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/TESTING_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+stages:
+  - scheduled-tests
+  - scheduled-tests-report
+
+# Noted: commented since we are not using them and otherwsie we would need the stages
+# generate-deltas:
+#   stage: generate-deltas
+#   rules:
+#     - if: $DAILY_DELTAS_DEPLOYMENT_TESTING_DISABLED
+#       when: never
+#     - if: $DESTINATION_ENVIRONMENT
+#       when: never
+#   environment: testing
+#   resource_group: testing
+#   script:
+#     - sf plugins install sfdx-git-delta
+#     - mkdir deltas
+#     - sf sgd source delta --source sfdx-source --from $TESTING_SFDX_LAST_DEPLOYMENT_COMMIT_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
+#   artifacts:
+#     paths:
+#       - deltas
+
+# scheduled-deploy-deltas-testing:
+#   stage: deploy-deltas-testing
+#   rules:
+#     - if: $DAILY_DELTAS_DEPLOYMENT_TESTING_DISABLED
+#       when: never
+#     - if: $DESTINATION_ENVIRONMENT
+#       when: never
+#   environment: testing
+#   resource_group: testing
+#   script:
+#     - sfdx auth:sfdxurl:store --sfdxurlfile $TESTING_SFDX_AUTH_URL --setdefaultusername
+#     - npm install fast-xml-parser
+#     - node scripts/node/environment-replacements/main.js || true
+#     - cp --recursive specific-environments/testing/. sfdx-source/ || true
+#     # RUN_TEST_PARAMETER can be uncommented to double also run tests on deployments to integration, however it is redundant with MR and will take longer.
+#     # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+#     - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
+#     - |
+#       curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+#         "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/TESTING_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+
+# scheduled-deploy-vlocity-testing:
+#   stage: deploy-vlocity-testing
+#   rules:
+#     - if: $DAILY_VLOCITY_DEPLOYMENT_TESTING_DISABLED
+#       when: never
+#     - if: $DESTINATION_ENVIRONMENT
+#       when: never
+#   environment: testing
+#   resource_group: testing
+#   script:
+#     - sfdx auth:sfdxurl:store --sfdxurlfile $TESTING_SFDX_AUTH_URL --setalias Org --setdefaultusername
+#     - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $TESTING_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA HEAD -- **/vlocity/**)
+#     - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
+#     - |
+#       for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
+#       do
+#           npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
+#           npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
+#       done
+#     - |
+#       curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
+#         "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/variables/TESTING_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
 
 run-validation-deployment:
-    stage: scheduled-tests
-    rules:
-        - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED
-          when: never
-        - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT
-    environment: $DESTINATION_ENVIRONMENT
-    resource_group: $DESTINATION_ENVIRONMENT
-    script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - npm install fast-xml-parser
-        - node scripts/node/sandbox-replacements/main.js
-        - cp --recursive specific-environments/$DESTINATION_ENVIRONMENT/. sfdx-source/
-        - sfdx force:source:deploy --checkonly -m ApexClass:AddressResponse --testlevel RunLocalTests --verbose
+  stage: scheduled-tests
+  rules:
+    - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED
+      when: never
+    - if: $DESTINATION_ENVIRONMENT
+  environment: $DESTINATION_ENVIRONMENT
+  resource_group: $DESTINATION_ENVIRONMENT
+  script:
+    - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+    - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+    - sfdx force:source:deploy --checkonly -m ApexClass:HttpMethod --testlevel RunLocalTests --verbose
 
 run-local-tests:
-    stage: scheduled-tests
-    rules:
-        - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
-          when: never
-        - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT
-    environment: $DESTINATION_ENVIRONMENT
-    resource_group: $DESTINATION_ENVIRONMENT
-    script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - TEST_RUN_DETAILS=$(sfdx force:apex:test:run --testlevel RunLocalTests --json)
-        - TEST_RUN_ID=$(jq -r '.result.testRunId' <<< $TEST_RUN_DETAILS)
-        - echo "TEST_RUN_ID ==> $TEST_RUN_ID"
-        - echo "TEST_RUN_ID=$TEST_RUN_ID" >> test.env
-    artifacts:
-        reports:
-            dotenv: test.env
+  stage: scheduled-tests
+  rules:
+    - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
+      when: never
+    - if: $DESTINATION_ENVIRONMENT
+  environment: $DESTINATION_ENVIRONMENT
+  resource_group: $DESTINATION_ENVIRONMENT
+  script:
+    - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+    - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+    - TEST_RUN_DETAILS=$(sfdx force:apex:test:run --testlevel RunLocalTests --json)
+    - TEST_RUN_ID=$(jq -r '.result.testRunId' <<< $TEST_RUN_DETAILS)
+    - echo "TEST_RUN_ID ==> $TEST_RUN_ID"
+    - echo "TEST_RUN_ID=$TEST_RUN_ID" >> test.env
+  artifacts:
+    reports:
+      dotenv: test.env
 
 run-local-tests-report:
-    stage: scheduled-tests-report
-    needs: [run-local-tests]
-    rules:
-        - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
-          when: never
-        - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT
-          when: delayed
-          start_in: 60 minutes
-    environment: $DESTINATION_ENVIRONMENT
-    resource_group: $DESTINATION_ENVIRONMENT
-    script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - sfdx force:apex:test:report -i $TEST_RUN_ID --codecoverage --resultformat junit --outputdir ./tests/apex
-    artifacts:
-        reports:
-            junit: tests/apex/*-junit.xml
-    # Also configurable in: project > Settings > CI/CD > Expand General pipelines
-    coverage: /name="testRunCoverage" value="([\d]+%)"/
+  stage: scheduled-tests-report
+  needs: [run-local-tests]
+  rules:
+    - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
+      when: never
+    - if: $DESTINATION_ENVIRONMENT
+      when: delayed
+      start_in: 60 minutes
+  environment: $DESTINATION_ENVIRONMENT
+  resource_group: $DESTINATION_ENVIRONMENT
+  script:
+    - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+    - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+    - sfdx force:apex:test:report -i $TEST_RUN_ID --codecoverage --resultformat junit --outputdir ./tests/apex
+  artifacts:
+    reports:
+      junit: tests/apex/*-junit.xml
+  # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
+  coverage: /name="testRunCoverage" value="([\d]+%)"/
