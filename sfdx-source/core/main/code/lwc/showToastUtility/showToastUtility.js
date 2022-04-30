@@ -1,8 +1,5 @@
-/* eslint-disable no-console */
-/**
- * A Toast notification handler
- */
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+
 /**
  * Shows a success toast notification
  * @param {object} self - The context (this) where you call the notification. Mandatory.
@@ -21,6 +18,7 @@ const showToastSuccess = (self, options) => {
 	});
 	self.dispatchEvent(showSuccess);
 };
+
 /**
  * Shows an error toast notification
  * @param {object} self - The context (this) where you call the notification. Mandatory.
@@ -41,6 +39,7 @@ const showToastError = (self, options) => {
 	});
 	self.dispatchEvent(showError);
 };
+
 /**
  * Shows a warning toast notification
  * @param {object} self - The context (this) where you call the notification. Mandatory.
@@ -59,6 +58,7 @@ const showToastWarning = (self, options) => {
 	});
 	self.dispatchEvent(showWarn);
 };
+
 /**
  * Shows an info toast notification
  * @param {object} self - The context (this) where you call the notification. Mandatory.

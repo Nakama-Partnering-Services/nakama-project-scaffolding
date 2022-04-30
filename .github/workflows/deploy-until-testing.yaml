@@ -11,8 +11,8 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                destination: [DEVINT, TESTING]
-            max-parallel: 1 # Note: we do not want both dpeloyments to execute in parallel, if devint fails, testing should not start
+                destination: [DEVINT, TESTING, DEV1, DEV2, DEV3]
+            max-parallel: 5
         steps:
             - name: 'Checkout source code'
               uses: actions/checkout@v2
@@ -57,7 +57,7 @@ jobs:
                   mkdir deltas
                   sfdx sgd:source:delta --source sfdx-source --from ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} --to HEAD --output deltas --ignore .forceignore --generate-delta
                   npm install fast-xml-parser
-                  node scripts/node/sandbox-replacements/main.js
+                  node scripts/node/environment-replacements/main.js
                   DESTINATION=$(echo ${{ matrix.destination }})
                   DESTINATION=${DESTINATION,,}
                   cp --recursive specific-environments/$DESTINATION/. sfdx-source/

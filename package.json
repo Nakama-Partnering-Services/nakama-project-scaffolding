@@ -16,10 +16,10 @@
 		"precommit": "lint-staged",
 		"scratch-org:prepare": "sh scripts/shell/prepare-scratch-org.sh",
 		"scratch-org:build": "sh scripts/shell/build-scratch-org.sh",
-		"scratch-org:pool:create:base": "sf sfpowerkit pool create -f so_pool_config-base.schema.json",
-		"scratch-org:pool:create:full": "sf sfpowerkit pool create -f so_pool_config-full.schema.json",
-		"scratch-org:pool:fetch:base": "sf sfpowerkit pool fetch --tag base --setdefaultusername",
-		"scratch-org:pool:fetch:full": "sf sfpowerkit pool fetch --tag full --setdefaultusername"
+		"scratch-org:pool:create:base": "sfdx sfpowerkit:pool:create -f so_pool_config-base.schema.json",
+		"scratch-org:pool:create:full": "sfdx sfpowerkit:pool:create -f so_pool_config-full.schema.json",
+		"scratch-org:pool:fetch:base": "sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername",
+		"scratch-org:pool:fetch:full": "sfdx sfpowerkit:pool:fetch --tag full --setdefaultusername"
 	},
 	"devDependencies": {
 		"@lwc/eslint-plugin-lwc": "^1.0.1",
@@ -34,7 +34,8 @@
 		"husky": "^7.0.0",
 		"lint-staged": "^11.0.0",
 		"prettier": "^2.3.2",
-		"prettier-plugin-apex": "^1.10.0"
+		"prettier-plugin-apex": "^1.10.0",
+		"fast-xml-parser": "^4.0.3"
 	},
 	"lint-staged": {
 		"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [

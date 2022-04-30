@@ -32,7 +32,7 @@ jobs:
             - name: 'Verify formatting'
               run: |
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**')
                   IFS=$'\n'
                   for FILE in $CHANGED_FILES;
                   do
@@ -128,18 +128,19 @@ jobs:
             - name: 'Remove DevInt auth file'
               run: rm --force ./DEVINT_SFDX_AUTH_URL.txt
 
+            # Note: we are temporarily testing sfdx force:source:deploy with RunLocalTests instead of $RUN_TEST_PARAMETER
+            # TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+            # RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
             - name: 'Get deltas and deploy'
               run: |
                   git fetch origin $GITHUB_BASE_REF
                   echo 'y' | sfdx plugins:install sfdx-git-delta
                   mkdir deltas
                   sfdx sgd:source:delta --source sfdx-source --from origin/$GITHUB_BASE_REF --to HEAD --output deltas --ignore .forceignore --generate-delta
-                  TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
-                  RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
                   npm install fast-xml-parser
-                  node scripts/node/sandbox-replacements/main.js
+                  node scripts/node/environment-replacements/main.js
                   cp --recursive specific-environments/devint/. sfdx-source/
-                  sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER
+                  sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests
 
     scratch-org-validations:
         name: 'Execute scratch org validations'
@@ -164,7 +165,9 @@ jobs:
               run: |
                   echo 'y' | sfdx plugins:install sfpowerkit
                   sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
-                  sh scripts/shell/environment-replacements/scratch-org.sh
+                  npm install fast-xml-parser
+                  node scripts/node/environment-replacements/main.js
+                  cp --recursive specific-environments/scratch-org/. sfdx-source/
 
             - name: 'Push source to scratch org'
               run: sfdx force:source:push # if this fails due to limitations, change to run scripts/shell/deploy-packages.sh instead
@@ -210,7 +213,6 @@ jobs:
               run: |
                   echo 'y' | sfdx plugins:install sfpowerkit
                   sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
-                  sh scripts/shell/environment-replacements/scratch-org.sh
 
             - name: 'Check for package changes'
               id: checkForChanges
