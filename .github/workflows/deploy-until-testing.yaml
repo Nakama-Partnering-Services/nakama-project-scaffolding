@@ -3,7 +3,8 @@ on:
     push:
         branches: main
         paths:
-            - sfdx-source/**
+            - sfdx-source/core/**
+            - sfdx-source/unpackaged/**
 
 jobs:
     deploy-deltas:
@@ -49,6 +50,7 @@ jobs:
               run: rm --force ./DESTINATION_SFDX_AUTH_URL.txt
 
             # Note: Tests do not run since it is redundant with PR and will take longer.
+            # TODO: Ignore deltas in frameworks
             - name: 'Get deltas and deploy'
               env:
                   LAST_DEPLOYMENT_COMMIT_SHA: ${{ matrix.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
