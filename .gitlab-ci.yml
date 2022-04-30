@@ -42,7 +42,7 @@ validate-merge-request:
             # Note: need to specify project and ref since otherwise it will try to find child pipeline in target repo rather than in this one.
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'gitlab-pipelines/validate.yml'
+              file: '.gitlab/pipelines/validate.yml'
         strategy: depend
 
 deploy-to-testing-and-backpromote:
@@ -58,7 +58,7 @@ deploy-to-testing-and-backpromote:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'gitlab-pipelines/deploy.yml'
+              file: '.gitlab/pipelines/deploy.yml'
         strategy: depend
     parallel:
         matrix:
@@ -77,7 +77,7 @@ deploy-to-staging:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'gitlab-pipelines/deploy.yml'
+              file: '.gitlab/pipelines/deploy.yml'
         strategy: depend
 
 create-frameworks-package-version:
@@ -92,7 +92,7 @@ create-frameworks-package-version:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'gitlab-pipelines/create-frameworks-package-version.yml'
+              file: '.gitlab/pipelines/create-frameworks-package-version.yml'
         strategy: depend
 
 manual-deployment:
@@ -112,7 +112,7 @@ manual-deployment:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'gitlab-pipelines/manual-deployment.yml'
+              file: '.gitlab/pipelines/manual-deployment.yml'
         strategy: depend
 
 scheduled-tests:
@@ -125,7 +125,7 @@ scheduled-tests:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'gitlab-pipelines/scheduled-tests.yml'
+              file: '.gitlab/pipelines/scheduled-tests.yml'
         strategy: depend
 
 scheduled-scratch-orgs-creation:
@@ -136,5 +136,5 @@ scheduled-scratch-orgs-creation:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'gitlab-pipelines/scheduled-scratch-orgs-creation.yml'
+              file: '.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
         strategy: depend
