@@ -40,7 +40,7 @@ validate-merge-request:
     trigger:
         include:
             # Note: need to specify project and ref since otherwise it will try to find child pipeline in target repo rather than in this one.
-            - project: 'Nakama-Partnering-Services/pipelines'
+            - project: 'jdkgabri/project-scaffolding'
               ref: 'main'
               file: '.gitlab/pipelines/validate.yml'
         strategy: depend
@@ -56,13 +56,13 @@ deploy-to-testing-and-backpromote:
         DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
     trigger:
         include:
-            - project: 'Nakama-Partnering-Services/pipelines'
+            - project: 'jdkgabri/project-scaffolding'
               ref: 'main'
               file: '.gitlab/pipelines/deploy.yml'
         strategy: depend
     parallel:
         matrix:
-            - DESTINATION_ENVIRONMENT: [integration, testing, product, sales, cpq, clm]
+            - DESTINATION_ENVIRONMENT: [dev1, dev2, dev3, devint, testing]
 
 deploy-to-staging:
     stage: dispatch-child-pipeline
@@ -75,7 +75,7 @@ deploy-to-staging:
         DESTINATION_ENVIRONMENT: staging
     trigger:
         include:
-            - project: 'Nakama-Partnering-Services/pipelines'
+            - project: 'jdkgabri/project-scaffolding'
               ref: 'main'
               file: '.gitlab/pipelines/deploy.yml'
         strategy: depend
@@ -90,7 +90,7 @@ create-frameworks-package-version:
               - frameworks/**
     trigger:
         include:
-            - project: 'Nakama-Partnering-Services/pipelines'
+            - project: 'jdkgabri/project-scaffolding'
               ref: 'main'
               file: '.gitlab/pipelines/create-frameworks-package-version.yml'
         strategy: depend
@@ -110,7 +110,7 @@ manual-deployment:
         TESTS_TO_RUN: $TESTS_TO_RUN
     trigger:
         include:
-            - project: 'Nakama-Partnering-Services/pipelines'
+            - project: 'jdkgabri/project-scaffolding'
               ref: 'main'
               file: '.gitlab/pipelines/manual-deployment.yml'
         strategy: depend
@@ -123,7 +123,7 @@ scheduled-tests:
         DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
     trigger:
         include:
-            - project: 'Nakama-Partnering-Services/pipelines'
+            - project: 'jdkgabri/project-scaffolding'
               ref: 'main'
               file: '.gitlab/pipelines/scheduled-tests.yml'
         strategy: depend
@@ -134,7 +134,7 @@ scheduled-scratch-orgs-creation:
         - if: $CI_PIPELINE_SOURCE == "schedule"
     trigger:
         include:
-            - project: 'Nakama-Partnering-Services/pipelines'
+            - project: 'jdkgabri/project-scaffolding'
               ref: 'main'
               file: '.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
         strategy: depend
