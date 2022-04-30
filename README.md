@@ -1,4 +1,4 @@
-# project-scaffolding [![Create Frameworks Package Version](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml) [![pipeline status](https://gitlab.com/jdkgabri/project-scaffolding/badges/main/pipeline.svg)](https://gitlab.com/jdkgabri/project-scaffolding/-/commits/main)
+# project-scaffolding [![Create Frameworks Package Version](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml) [![Daily run local tests](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/scheduled-tests.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/scheduled-tests.yml) [![Latest GitLab pipeline](https://gitlab.com/jdkgabri/project-scaffolding/badges/main/pipeline.svg)](https://gitlab.com/jdkgabri/project-scaffolding/-/commits/main)
 
 This repository aims to contain the resources and frameworks used for the scaffolding of new sfdx projects. It also has a modular project structure with guidelines on how to use it, the purpose of each folder, and some naming conventions and best practices.
 
@@ -24,10 +24,6 @@ Contributions are what make the trailblazer community such an amazing place. I r
 ## License
 
 This project is licensed under the MIT license - see the [LICENSE](/LICENSE) file for details.
-
-## Latest package version installation links
-
--   [Frameworks](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cijtQAA)
 
 ## Roadmap
 
