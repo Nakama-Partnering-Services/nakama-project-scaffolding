@@ -1,4 +1,4 @@
-name: Deploy until Testing
+name: Deploy to Testing and backpromote
 on:
     push:
         branches: main
