@@ -2,11 +2,10 @@ name: 'Validate pull request'
 on:
     pull_request:
         branches:
-            - 'main'
-            - 'release/**'
+            - main
+            - release/**
         paths:
-            - sfdx-source/core/**
-            - sfdx-source/unpackaged/**
+            - sfdx-source/**
 
 # Note: secrets can not be used to conditionally run jobs: https://github.com/actions/runner/issues/520
 jobs:
@@ -94,7 +93,7 @@ jobs:
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
                   npm install sfdx-cli --global
                   sfdx plugins:install @salesforce/sfdx-scanner
-                  sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!sfdx-source/frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
+                  sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
 
     devint-validations:
         name: 'Execute DevInt validations'
@@ -184,6 +183,6 @@ jobs:
               run: sfdx force:source:push # if this fails due to limitations, change to run scripts/shell/deploy-packages.sh instead
 
 
-            # Note: redundant and error prone due to running framworks and project tests together
+            # Note: redundant and error prone due to running frameworks and project tests together
             # - name: 'Run local tests'
             #   run: sfdx force:apex:test:run --testlevel RunLocalTests --synchronous --resultformat json --loglevel error --json

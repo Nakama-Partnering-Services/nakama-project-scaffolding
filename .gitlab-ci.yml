@@ -25,18 +25,15 @@ variables:
         value: ''
         description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when TEST_LEVEL is RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is based on autoidentified test classes.'
 
-image: salesforce/salesforcedx:latest-full
-
 stages:
     - dispatch-child-pipeline
 
 .any-changes:
-    - sfdx-source/frameworks/**/*
     - sfdx-source/**/main/**/*
     - sfdx-source/**/test/classes/**/*
     - sfdx-source/**/vlocity/**/*
 
-merge-request-validation:
+validate-merge-request:
     stage: dispatch-child-pipeline
     rules:
         - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
@@ -45,7 +42,7 @@ merge-request-validation:
             # Note: need to specify project and ref since otherwise it will try to find child pipeline in target repo rather than in this one.
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'pipelines/.merge-request.yml'
+              file: 'gitlab-pipelines/validate.yml'
         strategy: depend
 
 deploy-to-testing-and-backpromote:
@@ -61,7 +58,7 @@ deploy-to-testing-and-backpromote:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'pipelines/.push.yml'
+              file: 'gitlab-pipelines/deploy.yml'
         strategy: depend
     parallel:
         matrix:
@@ -80,7 +77,22 @@ deploy-to-staging:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'pipelines/.push.yml'
+              file: 'gitlab-pipelines/deploy.yml'
+        strategy: depend
+
+create-frameworks-package-version:
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+          when: never
+        - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+          changes:
+              - frameworks/**
+    trigger:
+        include:
+            - project: 'Nakama-Partnering-Services/pipelines'
+              ref: 'main'
+              file: 'gitlab-pipelines/create-frameworks-package-version.yml'
         strategy: depend
 
 manual-deployment:
@@ -100,7 +112,7 @@ manual-deployment:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'pipelines/.manual-deployment.yml'
+              file: 'gitlab-pipelines/manual-deployment.yml'
         strategy: depend
 
 scheduled-tests:
@@ -113,5 +125,16 @@ scheduled-tests:
         include:
             - project: 'Nakama-Partnering-Services/pipelines'
               ref: 'main'
-              file: 'pipelines/.scheduled.yml'
+              file: 'gitlab-pipelines/scheduled-tests.yml'
+        strategy: depend
+
+scheduled-scratch-orgs-creation:
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "schedule"
+    trigger:
+        include:
+            - project: 'Nakama-Partnering-Services/pipelines'
+              ref: 'main'
+              file: 'gitlab-pipelines/scheduled-scratch-orgs-creation.yml'
         strategy: depend

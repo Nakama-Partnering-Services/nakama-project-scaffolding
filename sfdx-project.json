@@ -1,7 +1,7 @@
 {
 	"packageDirectories": [
 		{
-			"path": "sfdx-source/frameworks",
+			"path": "frameworks",
 			"package": "Frameworks",
 			"versionNumber": "1.0.0.NEXT",
 			"definitionFile": "config/project-scratch-def.json",

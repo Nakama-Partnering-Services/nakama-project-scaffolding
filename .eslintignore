@@ -15,5 +15,5 @@
 **/aura/**/*.xml
 **/aura/**/*.app
 **/aura/**/*.md
-sfdx-source/frameworks/**
+frameworks/**
 .sfdx

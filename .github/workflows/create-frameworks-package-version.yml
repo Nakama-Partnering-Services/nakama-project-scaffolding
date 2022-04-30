@@ -4,7 +4,7 @@ on:
     push:
         branches: main
         paths:
-            - sfdx-source/frameworks/**
+            - frameworks/**
 
 jobs:
     create-package-version:
@@ -57,11 +57,6 @@ jobs:
                   git add sfdx-project.json README.md
                   git commit -m "Updated sfdx-project.json and README.md with new package version"
                   git push
-
-            - name: 'Wait for package installation links to be ready'
-              uses: maddox/actions/sleep@master
-              with:
-                  args: 120
 
             - name: 'Install Frameworks in DevHub'
               run: |

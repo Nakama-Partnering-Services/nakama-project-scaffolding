@@ -9,11 +9,6 @@
 # LWC Jest
 **/__tests__/**
 
-# Non apex tests
-**/test/aura-jasmine/**
-**/test/aura-mocha/**
-**/test/lwc-jest/**
-
 # Specific environments
 specific-environments/**
 
@@ -31,4 +26,4 @@ sfdx-source/core/main/default/**
 vlocity.yaml
 
 # DomainBuilder extra-tests
-sfdx-source/frameworks/apex-domainbuilder/sfdx-source/extra-tests/**
+frameworks/apex-domainbuilder/sfdx-source/extra-tests/**

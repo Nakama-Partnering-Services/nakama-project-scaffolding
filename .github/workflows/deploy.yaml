@@ -3,8 +3,7 @@ on:
     push:
         branches: main
         paths:
-            - sfdx-source/core/**
-            - sfdx-source/unpackaged/**
+            - sfdx-source/**
 
 jobs:
     deploy-deltas:

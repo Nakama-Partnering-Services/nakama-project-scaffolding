@@ -1,7 +1,6 @@
 image: salesforce/salesforcedx:latest-full
 
 .sfdx-changes:
-    - sfdx-source/frameworks/**/*
     - sfdx-source/**/main/**/*
     - sfdx-source/**/test/classes/**/*
 

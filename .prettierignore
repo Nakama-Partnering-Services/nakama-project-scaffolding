@@ -8,7 +8,7 @@
 
 coverage/
 
-sfdx-source/frameworks/**
+frameworks/**
 
 config/pmd-ruleset.xml
 

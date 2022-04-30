@@ -16,7 +16,7 @@ generate-deltas:
         - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
         - sf plugins install sfdx-git-delta
         - mkdir deltas
-        - sf sgd source delta --source sfdx-source/$PACKAGE_TO_DEPLOY --from $DELTAS_FROM --to HEAD --output deltas --ignore .forceignore --generate-delta
+        - sf sgd source delta --source sfdx-source --from $DELTAS_FROM --to HEAD --output deltas --ignore .forceignore --generate-delta
     artifacts:
         paths:
             - deltas
