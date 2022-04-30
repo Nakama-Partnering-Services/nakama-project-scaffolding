@@ -39,10 +39,11 @@ jobs:
             - name: 'Remove Dev Hub auth file'
               run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
 
+            # --codecoverage
             - name: 'Create package version - Frameworks'
               id: package-frameworks
               run: |
-                  json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass -c --wait 10 --json)
+                  json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --skipvalidation --wait 10 --json)
                   packageVersionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
                   echo "::set-output name=packageVersionId::$packageVersionId"
 
