@@ -179,7 +179,7 @@ jobs:
             #       node scripts/node/environment-replacements/main.js
             #       cp --recursive specific-environments/scratch-org/. sfdx-source/
 
-            # Note: This also pushes metadata in frameworks folder
+            # Note: This also pushes metadata in frameworks folder, useful to check and prevent circular dependancies between packages
             - name: 'Push source to scratch org'
               run: sfdx force:source:push # if this fails due to limitations, change to run scripts/shell/deploy-packages.sh instead
 
