@@ -2,6 +2,10 @@
 
 This repository aims to contain the resources and frameworks used for the scaffolding of new sfdx projects. It also has a modular project structure with guidelines on how to use it, the purpose of each folder, and some naming conventions and best practices.
 
+## Latest package version installation links
+
+-   [Frameworks](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cijoQAA)
+
 ## Table of contents
 
 -   [Credits](#credits)
