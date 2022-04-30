@@ -8,10 +8,10 @@ on:
                 type: choice
                 options:
                     - DEVINT
-                    - TESTING
-                    - STAGING
-                    - PRODUCTION
-                    - HOTFIX
+                    # - TESTING
+                    # - STAGING
+                    # - PRODUCTION
+                    # - HOTFIX
             checkonly:
                 description: 'If true, changes are not actually deployed, but just validated.'
                 required: false

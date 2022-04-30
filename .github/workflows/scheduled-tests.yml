@@ -13,7 +13,7 @@ jobs:
             image: docker://salesforce/salesforcedx:latest-full
         strategy:
             matrix:
-                destination: [DEVINT, TESTING, STAGING, PRODUCTION, HOTFIX]
+                destination: [DEVINT] # , TESTING, STAGING, PRODUCTION, HOTFIX
         steps:
             - uses: actions/checkout@v2
 
