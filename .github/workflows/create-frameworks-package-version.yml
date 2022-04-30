@@ -34,7 +34,7 @@ jobs:
               run: echo ${{ secrets.DEVHUB_SFDX_AUTH_URL }} > ./DEVHUB_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Dev Hub'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Dev Hub' --setdefaultdevhubusername --setdefaultusername
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Dev Hub' --setdefaultdevhubusername
 
             - name: 'Remove Dev Hub auth file'
               run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
@@ -59,7 +59,10 @@ jobs:
                   git commit -m "Updated sfdx-project.json and README.md with new package version"
                   git push
 
-            - name: 'Install Frameworks in DevHub'
+            - name: 'Create scratch org'
+              run: sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1 --setalias scratch-org
+
+            - name: 'Install Frameworks in scratch org'
               run: |
                   versionId=$(echo '${{ steps.package-frameworks.outputs.packageVersionId }}')
                   sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt

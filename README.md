@@ -1,4 +1,4 @@
-# project-scaffolding [![Package](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/deploy.yaml/badge.svg)](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml) [![pipeline status](https://gitlab.com/jdkgabri/project-scaffolding/badges/main/pipeline.svg)](https://gitlab.com/jdkgabri/project-scaffolding/-/commits/main)
+# project-scaffolding [![Create Frameworks Package Version](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml) [![pipeline status](https://gitlab.com/jdkgabri/project-scaffolding/badges/main/pipeline.svg)](https://gitlab.com/jdkgabri/project-scaffolding/-/commits/main)
 
 This repository aims to contain the resources and frameworks used for the scaffolding of new sfdx projects. It also has a modular project structure with guidelines on how to use it, the purpose of each folder, and some naming conventions and best practices.
 
