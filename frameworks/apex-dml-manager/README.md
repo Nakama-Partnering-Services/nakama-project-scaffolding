@@ -1,5 +1,3 @@
-TODO: improve this framework adding method for converting lead, upsert by externalId, and undelete. Submit a PR.
-
 To investigate: - Check if a record can be updated when user has no row level access because of with sharing.
 
 Considerations:
