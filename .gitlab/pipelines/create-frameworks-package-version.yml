@@ -28,6 +28,23 @@ install-package-in-devhub:
           when: never
         - changes:
               - frameworks/**/*
+    allow_failure: true
+    environment:
+        name: scratch/$CI_COMMIT_REF_SLUG
+        url: $SCRATCH_ORG_URL
+        # Dynamic environments stop automatically when their associated branch is deleted
+        on_stop: delete-scratch-org
+    resource_group: scratch/$CI_COMMIT_REF_SLUG
     script:
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultusername
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
+        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1 --setalias scratch-org
+        # Note: replace scratch org creation if scratch org pool is needed
+        # - echo 'y' | sf plugins install sfpowerkit
+        # - sf sfpowerkit pool fetch --tag base --setdefaultusername
+        - SCRATCH_ORG_DETAILS=$(sfdx force:org:open --urlonly --json)
+        - SCRATCH_ORG_URL=$(jq -r '.result.url' <<< $SCRATCH_ORG_DETAILS)
+        - echo "SCRATCH_ORG_URL=$SCRATCH_ORG_URL" >> scratch.env
         - sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt
+    artifacts:
+        reports:
+            dotenv: scratch.env

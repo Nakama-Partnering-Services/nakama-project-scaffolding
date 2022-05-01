@@ -60,9 +60,11 @@ jobs:
                   git push
 
             - name: 'Create scratch org'
+              continue-on-error: true
               run: sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1 --setalias scratch-org
 
             - name: 'Install Frameworks in scratch org'
+              continue-on-error: true
               run: |
                   versionId=$(echo '${{ steps.package-frameworks.outputs.packageVersionId }}')
                   sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt
