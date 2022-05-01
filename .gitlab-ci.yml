@@ -90,7 +90,7 @@ create-frameworks-package-version:
           when: never
         - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
           changes:
-              - frameworks/**
+              - frameworks/**/*
     trigger:
         include:
             - project: 'jdkgabri/project-scaffolding'
