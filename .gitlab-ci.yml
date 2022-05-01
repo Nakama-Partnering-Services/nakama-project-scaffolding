@@ -1,6 +1,7 @@
 # Possible options aside from empty in GitLab settings are:
 # .gitlab-ci.yml@jdkgabri/project-scaffolding-pipelines
-# https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab-ci.yml
+# https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab-ci.yml
+# try inclues as well with files from another private project on the same GitLab instance, use include:file in combination with include:project only.
 
 # Variables for manual-deploment. Some variable referenced in job rules, although empty,
 # they exist since they are declared here, so we need to check emptyness specifically
@@ -47,7 +48,7 @@ validate-merge-request:
             # - project: 'jdkgabri/project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/validate.yml'
-            - remote: 'https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab/pipelines/validate.yml'
+            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/validate.yml'
         strategy: depend
 
 deploy-to-testing-and-backpromote:
@@ -64,7 +65,7 @@ deploy-to-testing-and-backpromote:
             # - project: 'jdkgabri/project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/deploy.yml'
-            - remote: 'https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab/pipelines/deploy.yml'
+            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/deploy.yml'
         strategy: depend
     parallel:
         matrix:
@@ -84,7 +85,7 @@ deploy-to-staging:
             # - project: 'jdkgabri/project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/deploy.yml'
-            - remote: 'https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab/pipelines/deploy.yml'
+            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/deploy.yml'
         strategy: depend
 
 create-frameworks-package-version:
@@ -100,7 +101,7 @@ create-frameworks-package-version:
             # - project: 'jdkgabri/project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/create-frameworks-package-version.yml'
-            - remote: 'https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab/pipelines/create-frameworks-package-version.yml'
+            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/create-frameworks-package-version.yml'
         strategy: depend
 
 manual-deployment:
@@ -121,7 +122,7 @@ manual-deployment:
             # - project: 'jdkgabri/project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/manual-deployment.yml'
-            - remote: 'https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab/pipelines/manual-deployment.yml'
+            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/manual-deployment.yml'
         strategy: depend
 
 scheduled-tests:
@@ -135,7 +136,7 @@ scheduled-tests:
             # - project: 'jdkgabri/project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/scheduled-tests.yml'
-            - remote: 'https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab/pipelines/scheduled-tests.yml'
+            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/scheduled-tests.yml'
         strategy: depend
 
 scheduled-scratch-orgs-creation:
@@ -147,5 +148,5 @@ scheduled-scratch-orgs-creation:
             # - project: 'jdkgabri/project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
-            - remote: 'https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
+            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
         strategy: depend
