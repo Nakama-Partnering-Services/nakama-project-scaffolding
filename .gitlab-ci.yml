@@ -9,6 +9,7 @@
 
 # Variables for manual-deploment. Some variable referenced in job rules, although empty,
 # they exist since they are declared here, so we need to check emptyness specifically
+
 variables:
     DESTINATION_ENVIRONMENT:
         value: ''
