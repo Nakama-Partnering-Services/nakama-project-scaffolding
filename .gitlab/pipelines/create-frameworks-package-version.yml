@@ -9,10 +9,10 @@ create-package-version:
     rules:
         - if: $CREATE_PACKAGE_VERSION_DISABLED
           when: never
-        - when: always
+        - changes: frameworks/**/*
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass -c --wait 10 --json)
+        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --skipvalidation --wait 10 --json)
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
         # TODO: Persist sfdx-project.json and README.md
         - echo "versionId=$versionId" >> package.env
@@ -25,6 +25,7 @@ install-package-in-devhub:
     rules:
         - if: $CREATE_PACKAGE_VERSION_DISABLED
           when: never
+        - changes: frameworks/**/*
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultusername
         - sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt

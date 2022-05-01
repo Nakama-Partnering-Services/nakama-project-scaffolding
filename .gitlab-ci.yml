@@ -1,3 +1,7 @@
+# Possible options aside from empty in GitLab settings are:
+# .gitlab-ci.yml@jdkgabri/project-scaffolding-pipelines
+# https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab-ci.yml
+
 # Variables for manual-deploment. Some variable referenced in job rules, although empty,
 # they exist since they are declared here, so we need to check emptyness specifically
 variables:
@@ -145,6 +149,3 @@ scheduled-scratch-orgs-creation:
               file: '.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
             # - remote: 'https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
         strategy: depend
-# Possible options aside from empty in GitLab settings:
-# .gitlab-ci.yml@jdkgabri/project-scaffolding-pipelines
-# https://github.com/Nakama-Partnering-Services/project-scaffolding/blob/main/.gitlab-ci.yml
