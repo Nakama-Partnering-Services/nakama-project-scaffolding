@@ -64,7 +64,7 @@ deploy-to-testing-and-backpromote:
         strategy: depend
     parallel:
         matrix:
-            - DESTINATION_ENVIRONMENT: [dev1, dev2, dev3, devint, testing]
+            - DESTINATION_ENVIRONMENT: [devint] # , testing, dev1, dev2, dev3
 
 deploy-to-staging:
     stage: dispatch-child-pipeline
