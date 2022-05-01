@@ -2,6 +2,8 @@
 # .gitlab-ci.yml@jdkgabri/project-scaffolding-pipelines (separate repo with just gitlab-ci.yml and pipeline .yml files)
 # https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab-ci.yml
 
+# TODO: Try to run pipelines for external pull requests in GitHub: https://docs.gitlab.com/ee/ci/ci_cd_for_external_repos/index.html#pipelines-for-external-pull-requests
+
 # TODO: Try gitlab-ci.yml on same repo, but trigger pipelines from another private project on the same GitLab instance,
 # so that pipelines logic remains more private and protected, but members do not have access problems.
 
