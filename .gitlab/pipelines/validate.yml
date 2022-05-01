@@ -56,7 +56,6 @@ verify-linting:
         - if: $VERIFY_LINTING_DISABLED
           when: never
         - changes:
-              - sfdx-source/frameworks/**/*.js
               - sfdx-source/**/main/**/*.js
     script:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**)
@@ -129,8 +128,10 @@ scratch-org-validations:
     resource_group: scratch/$CI_COMMIT_REF_SLUG
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - echo 'y' | sf plugins install sfpowerkit
-        - sf sfpowerkit pool fetch --tag base --setdefaultusername
+        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1 --setalias scratch-org
+        # Note: replace scratch org creation if scratch org pool is needed
+        # - echo 'y' | sf plugins install sfpowerkit
+        # - sf sfpowerkit pool fetch --tag base --setdefaultusername
         - SCRATCH_ORG_DETAILS=$(sfdx force:org:open --urlonly --json)
         - SCRATCH_ORG_URL=$(jq -r '.result.url' <<< $SCRATCH_ORG_DETAILS)
         - echo "SCRATCH_ORG_URL=$SCRATCH_ORG_URL" >> scratch.env
@@ -140,6 +141,9 @@ scratch-org-validations:
         - node scripts/node/environment-replacements/main.js || true
         - cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
         - sfdx force:source:push
+    artifacts:
+        reports:
+            dotenv: scratch.env
 
 delete-scratch-org:
     stage: delete-scratch-org

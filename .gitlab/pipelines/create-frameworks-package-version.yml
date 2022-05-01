@@ -6,13 +6,10 @@ stages:
 
 create-package-version:
     stage: create-package-version
-    image: ubuntu:latest
     rules:
         - if: $CREATE_PACKAGE_VERSION_DISABLED
           when: never
     script:
-        - apt-get update
-        - apt-get install -y jq
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
         - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass -c --wait 10 --json)
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
