@@ -4,6 +4,8 @@
 
 # TODO: Try to run pipelines for external pull requests in GitHub: https://docs.gitlab.com/ee/ci/ci_cd_for_external_repos/index.html#pipelines-for-external-pull-requests
 
+# TODO: Parametrize project level environments, like target environments, so they can be generic.
+
 # TODO: Try gitlab-ci.yml on same repo, but trigger pipelines from another private project on the same GitLab instance,
 # so that pipelines logic remains more private and protected, but members do not have access problems.
 
