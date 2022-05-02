@@ -55,7 +55,8 @@ verify-linting:
     rules:
         - if: $VERIFY_LINTING_DISABLED
           when: never
-        - changes: sfdx-source/**/main/**/*.js
+        - changes:
+              - sfdx-source/**/main/**/*.js
     script:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**)
         - npx eslint $CHANGED_FILES
