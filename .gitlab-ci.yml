@@ -31,7 +31,8 @@ variables:
     TESTS_TO_RUN:
         value: ''
         description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when TEST_LEVEL is RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is based on autoidentified test classes.'
-    ENVS: [devint, testing, dev1, dev2, dev3]
+    ENVS:
+        value: [devint, testing, dev1, dev2, dev3]
 stages:
     - dispatch-child-pipeline
 
