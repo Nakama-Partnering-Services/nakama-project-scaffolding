@@ -40,8 +40,12 @@ stages:
     - sfdx-source/**/test/classes/**/*
     - sfdx-source/**/vlocity/**/*
 
-include:
-    - .gitlab/pipelines/environments.yml
+.dest-envs:
+    - devint
+    - testing
+    - dev1
+    - dev2
+    - dev3
 
 validate-merge-request:
     stage: dispatch-child-pipeline
