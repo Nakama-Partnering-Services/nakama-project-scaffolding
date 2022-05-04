@@ -53,7 +53,7 @@ validate-merge-request:
             - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/validate.yml'
         strategy: depend
 
-include: 'environment.yml'
+include: 'environments.yml'
 
 deploy-to-testing-and-backpromote:
     stage: dispatch-child-pipeline
