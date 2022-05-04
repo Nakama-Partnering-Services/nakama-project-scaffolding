@@ -19,7 +19,15 @@ stages:
     - delete-scratch-org
 
 include:
-    - .gitlab/pipelines/code-quality.yml
+    - template: Code-Quality.gitlab-ci.yml
+
+code_quality:
+    stage: generate-code_quality-report
+    rules:
+        - if: $CODE_QUALITY_DISABLED
+          when: never
+        - if: $CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"
+          changes: !reference [.sfdx-changes]
 
 install-npm-dependancies:
     stage: install-npm
