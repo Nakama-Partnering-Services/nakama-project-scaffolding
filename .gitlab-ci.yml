@@ -4,9 +4,6 @@
 
 # TODO: Try to run pipelines for external pull requests in GitHub: https://docs.gitlab.com/ee/ci/ci_cd_for_external_repos/index.html#pipelines-for-external-pull-requests
 
-# TODO: Try gitlab-ci.yml on same repo, but trigger pipelines from another private project on the same GitLab instance,
-# so that pipelines logic remains more private and protected, but members do not have access problems.
-
 # Variables for manual-deploment. Some variable referenced in job rules, although empty,
 # they exist since they are declared here, so we need to check emptyness specifically
 
@@ -56,6 +53,8 @@ validate-merge-request:
             - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/validate.yml'
         strategy: depend
 
+include: 'environment.yml'
+
 deploy-to-testing-and-backpromote:
     stage: dispatch-child-pipeline
     rules:
@@ -72,10 +71,7 @@ deploy-to-testing-and-backpromote:
             #   file: '.gitlab/pipelines/deploy.yml'
             - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/deploy.yml'
         strategy: depend
-    parallel:
-        matrix:
-            # TODO: Parametrize somehow to specify environments at project level
-            - DESTINATION_ENVIRONMENT: [devint] # , testing, dev1, dev2, dev3
+    parallel: !reference [.deploy-destination-environments]
 
 deploy-to-staging:
     stage: dispatch-child-pipeline

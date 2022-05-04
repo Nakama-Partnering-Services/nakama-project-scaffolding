@@ -1,0 +1,4 @@
+.deploy-destination-environments:
+    parallel:
+        matrix:
+            - DESTINATION_ENVIRONMENT: [devint, testing, dev1, dev2, dev3]

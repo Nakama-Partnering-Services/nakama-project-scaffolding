@@ -129,7 +129,6 @@ jobs:
               run: rm --force ./DEVINT_SFDX_AUTH_URL.txt
 
             # Note: we are temporarily testing sfdx force:source:deploy with RunLocalTests instead of $RUN_TEST_PARAMETER
-            # TODO: Ignore deltas in frameworks
             # TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
             # RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
             - name: 'Get deltas and deploy'
