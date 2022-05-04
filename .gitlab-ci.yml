@@ -40,7 +40,8 @@ stages:
     - sfdx-source/**/test/classes/**/*
     - sfdx-source/**/vlocity/**/*
 
-include: environments.yml
+include:
+    - .gitlab/pipelines/environments.yml
 
 validate-merge-request:
     stage: dispatch-child-pipeline
