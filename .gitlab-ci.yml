@@ -76,7 +76,9 @@ deploy-to-testing-and-backpromote:
             #   file: '.gitlab/pipelines/deploy.yml'
             - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/deploy.yml'
         strategy: depend
-    parallel: !reference [.dest-envs]
+    parallel:
+        matrix:
+            - DESTINATION_ENVIRONMENT: !reference [.dest-envs]
 
 deploy-to-staging:
     stage: dispatch-child-pipeline
