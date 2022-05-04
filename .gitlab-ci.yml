@@ -31,7 +31,7 @@ variables:
     TESTS_TO_RUN:
         value: ''
         description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when TEST_LEVEL is RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is based on autoidentified test classes.'
-
+    ENVS: [devint, testing, dev1, dev2, dev3]
 stages:
     - dispatch-child-pipeline
 
@@ -53,8 +53,6 @@ validate-merge-request:
             - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/validate.yml'
         strategy: depend
 
-include: 'environments.yml'
-
 deploy-to-testing-and-backpromote:
     stage: dispatch-child-pipeline
     rules:
@@ -71,7 +69,7 @@ deploy-to-testing-and-backpromote:
             #   file: '.gitlab/pipelines/deploy.yml'
             - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/deploy.yml'
         strategy: depend
-    parallel: !reference [.deploy-destination-environments]
+    parallel: $ENVS
 
 deploy-to-staging:
     stage: dispatch-child-pipeline
