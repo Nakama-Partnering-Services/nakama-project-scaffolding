@@ -42,10 +42,10 @@ stages:
 
 .dest-envs:
     - devint
-    - testing
-    - dev1
-    - dev2
-    - dev3
+    # - testing
+    # - dev1
+    # - dev2
+    # - dev3
 
 validate-merge-request:
     stage: dispatch-child-pipeline
@@ -78,6 +78,7 @@ deploy-to-testing-and-backpromote:
         strategy: depend
     parallel:
         matrix:
+            # TODO: Parametrize somehow to specify environments at project level
             - DESTINATION_ENVIRONMENT: !reference [.dest-envs]
 
 deploy-to-staging:
