@@ -48,7 +48,7 @@ deploy-deltas:
         - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml
         - |
             curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-              "CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
 
 deploy-vlocity:
     stage: deploy-vlocity
@@ -73,4 +73,4 @@ deploy-vlocity:
             done
         - |
             curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-              "CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
