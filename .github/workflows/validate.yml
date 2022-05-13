@@ -32,7 +32,7 @@ jobs:
             - name: 'Verify formatting'
               run: |
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**')
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
                   IFS=$'\n'
                   for FILE in $CHANGED_FILES;
                   do
@@ -64,7 +64,12 @@ jobs:
               run: |
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**)
-                  npx eslint $CHANGED_FILES
+                  IFS=$'\n'
+                  for FILE in $CHANGED_FILES;
+                      do
+                          npx eslint "$FILE"
+                      done
+                  unset IFS
 
     verify-pmd:
         name: 'Verify PMD'

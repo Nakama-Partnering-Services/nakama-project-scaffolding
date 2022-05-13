@@ -47,19 +47,6 @@ stages:
     # - dev2
     # - dev3
 
-validate-merge-request:
-    stage: dispatch-child-pipeline
-    rules:
-        - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
-    trigger:
-        include:
-            # Note: need to specify project and ref since otherwise it will try to find child pipeline in target repo rather than in this one.
-            # - project: 'jdkgabri/project-scaffolding'
-            #   ref: 'main'
-            #   file: '.gitlab/pipelines/validate.yml'
-            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/validate.yml'
-        strategy: depend
-
 deploy-to-testing-and-backpromote:
     stage: dispatch-child-pipeline
     rules:
@@ -114,6 +101,19 @@ create-frameworks-package-version:
             - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/create-frameworks-package-version.yml'
         strategy: depend
 
+validate-merge-request:
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
+    trigger:
+        include:
+            # Note: need to specify project and ref since otherwise it will try to find child pipeline in target repo rather than in this one.
+            # - project: 'jdkgabri/project-scaffolding'
+            #   ref: 'main'
+            #   file: '.gitlab/pipelines/validate.yml'
+            - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/validate.yml'
+        strategy: depend
+
 manual-deployment:
     stage: dispatch-child-pipeline
     rules:
@@ -138,7 +138,7 @@ manual-deployment:
 scheduled-tests:
     stage: dispatch-child-pipeline
     rules:
-        - if: $CI_PIPELINE_SOURCE == "schedule"
+        - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT != ""
     variables:
         DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
     trigger:
