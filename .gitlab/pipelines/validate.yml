@@ -90,10 +90,10 @@ verify-pmd:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD)
         - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
         - sf plugins install @salesforce/sfdx-scanner
-        - sf scanner run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format junit --outfile junit-reports/TEST-pmd.xml
+        - sf scanner run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format junit --outfile TEST-pmd.xml
     artifacts:
         reports:
-            junit: junit-reports/TEST-pmd.xml
+            junit: TEST-pmd.xml
 
 generate-deltas:
     stage: generate-deltas
