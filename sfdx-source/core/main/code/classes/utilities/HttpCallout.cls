@@ -85,6 +85,7 @@ public inherited sharing virtual class HttpCallout {
 	 */
 	protected virtual Object processResponse() {
 		System.debug('test');
+		System.debug('test2');
 		return apexType != null
 			? JSON.deserialize(response.getBody(), apexType)
 			: JSON.deserializeUntyped(response.getBody());
