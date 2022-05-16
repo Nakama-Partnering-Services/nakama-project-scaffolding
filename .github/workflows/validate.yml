@@ -65,14 +65,16 @@ jobs:
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**)
                   npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
-                # IFS=$'\n'
-                # for FILE in $CHANGED_FILES;
-                #     do
-                #         npx eslint "$FILE"
-                #     done
-                # unset IFS
+              # IFS=$'\n'
+              # for FILE in $CHANGED_FILES;
+              #     do
+              #         npx eslint "$FILE"
+              #     done
+              # unset IFS
 
+              # TODO: consider reporting with sarif as well, using sfdx-scanner instead or @microsoft/eslint-formatter-sarif
             - name: Publish Test Report
+              if: always()
               uses: mikepenz/action-junit-report@v3
 
     verify-pmd:
@@ -104,10 +106,12 @@ jobs:
                   sfdx plugins:install @salesforce/sfdx-scanner
                   sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format sarif --outfile apexScanResults.sarif
 
+            # TODO: consider reporting with junit as well
             - name: Upload SARIF file
+              if: always()
               uses: github/codeql-action/upload-sarif@v1
               with:
-                sarif_file: apexScanResults.sarif
+                  sarif_file: apexScanResults.sarif
 
     devint-validations:
         name: 'Execute DevInt validations'
