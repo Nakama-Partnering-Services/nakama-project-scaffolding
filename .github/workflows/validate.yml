@@ -72,7 +72,7 @@ jobs:
               #     done
               # unset IFS
 
-              # TODO: consider reporting with sarif as well, using sfdx-scanner instead
+              # TODO: consider reporting with sarif as well, using sfdx-scanner instead or @microsoft/eslint-formatter-sarif
             - name: Publish Test Report
               if: always()
               uses: mikepenz/action-junit-report@v3
