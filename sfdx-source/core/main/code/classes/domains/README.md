@@ -6,11 +6,11 @@ Considerations:
 
 -   The name of these classes should correspond to the plural name of the SObject they act upon. E.g.: `Accounts.cls`.
 
--   These classes should usually be `inherited sharing`, and services or trigger handlers should specify `with sharing` or `without sharing` respectively.
+-   These classes should usually be `inherited sharing`, and services or trigger handlers/actions should specify `with sharing` or `inherited (without) sharing` respectively.
 
 -   These classes should extend from `fflib_SObjects`.
 
--   These classes will just be used by trigger handlers and service classes, so, by clients, they are always invoked indirectly.
+-   These classes will just be used by trigger handlers/actions and service classes, so, by clients, they are always invoked indirectly.
 
 -   Operations in these classes include:
 
