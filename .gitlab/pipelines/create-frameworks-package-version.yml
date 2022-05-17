@@ -13,7 +13,7 @@ create-package-version:
               - frameworks/**/*
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 10 --json)
+        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json)
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
         # TODO: Persist sfdx-project.json and README.md
         - echo "versionId=$versionId" >> package.env

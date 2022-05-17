@@ -84,7 +84,6 @@ public inherited sharing virtual class HttpCallout {
 	 * virtual so child classes can override it, for example, for XML or Blob responses
 	 */
 	protected virtual Object processResponse() {
-		System.debug('test');
 		return apexType != null
 			? JSON.deserialize(response.getBody(), apexType)
 			: JSON.deserializeUntyped(response.getBody());

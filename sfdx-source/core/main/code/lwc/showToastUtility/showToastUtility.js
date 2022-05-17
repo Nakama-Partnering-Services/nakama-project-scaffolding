@@ -19,7 +19,6 @@ const showToastSuccess = (self, options) => {
 		message: options.message || '',
 		mode: options.mode || 'dismissable'
 	});
-	alert('test');
 	self.dispatchEvent(showSuccess);
 };
 /**
