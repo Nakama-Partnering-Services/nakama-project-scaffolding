@@ -74,6 +74,15 @@ public class fflib_SObjectDescribe
 		}
 		set;
 	}
+	private FieldSetsMap wrappedFieldSets {
+        get {
+            if (wrappedFieldSets == null){
+                wrappedFieldSets = new FieldSetsMap(this.fieldSets);
+            }
+            return wrappedFieldSets;
+        }
+        set;
+    }
 
 	private fflib_SObjectDescribe(Schema.SObjectType token){
 		if(token == null)
@@ -130,6 +139,24 @@ public class fflib_SObjectDescribe
 	}
 
 	/**
+     * This method is a convenient shorthand for calling getFieldSet(name, true)
+     **/
+    public Schema.FieldSet getFieldSet(String name) {
+        return this.getFieldSet(name, true);
+    }
+    /**
+     * This method provides a simplified shorthand for calling #getFields and getting the provided field.
+     * Additionally it handles finding the correct SObjectField for relationship notation,
+     * e.g. getting the Account field on Contact would fail without being referenced as AccountId - both work here.
+     **/
+    public Schema.FieldSet getFieldSet(String fieldSetName, Boolean implyNamespace) {
+        return wrappedFieldSets.get(
+            fieldSetName,
+            implyNamespace
+        );
+    }
+
+	/**
 	 * Returns the raw Schema.DescribeSObjectResult an fflib_SObjectDescribe instance wraps.
 	**/
 	public Schema.DescribeSObjectResult getDescribe(){
@@ -148,6 +175,9 @@ public class fflib_SObjectDescribe
 	public Map<String,Schema.FieldSet> getFieldSetsMap(){
 		return fieldSets;
 	}
+	public FieldSetsMap getFieldSets() {
+        return wrappedFieldSets;
+    }
 
 
 
@@ -329,8 +359,28 @@ public class fflib_SObjectDescribe
 		public List<Schema.SObjectField> values(){
 			return (List<Schema.SObjectField>) values.values();
 		}
-
 	}
+
+	/**
+     * A subclass of NamespacedAttributeMap for handling the data returned by #Schema.DescribeSObjectResult.fieldSets.getMap
+     **/
+    public class FieldSetsMap extends NamespacedAttributeMap {
+        @TestVisible
+        private FieldSetsMap(Map<String, Schema.FieldSet> values) {
+            super(values);
+        }
+
+        public Schema.FieldSet get(String name) {
+            return this.get(name, true);
+        }
+        public Schema.FieldSet get(String name, Boolean implyNamespace) {
+            return (Schema.FieldSet) this.getObject(name, implyNamespace);
+        }
+        public List<Schema.FieldSet> values() {
+            return (List<Schema.FieldSet>) values.values();
+        }
+    }
+
 	/**
 	 * A subclass of NamespacedAttributeMap for handling the data returned by #Schema.getGlobalDescribe
 	**/

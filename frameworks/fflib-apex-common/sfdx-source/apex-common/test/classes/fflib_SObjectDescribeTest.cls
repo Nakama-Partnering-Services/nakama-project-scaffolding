@@ -93,6 +93,33 @@ private class fflib_SObjectDescribeTest{
 	}
 
 	@isTest
+    static void FieldSetsMap() {
+        String fakeNamespace = 'fflib_test';
+        //values set to null to avoid a requirement on field sets existing
+        Map<String, Schema.FieldSet> fakeFieldData = new Map<String, Schema.FieldSet>{
+            'name__c' => null,
+            fakeNamespace + '__name__c' => null,
+            fakeNamespace + '__otherField__c' => null,
+            'createddate' => null
+        };
+        fflib_SObjectDescribe.FieldSetsMap fieldSets = new fflib_SObjectDescribe.FieldSetsMap(fakeFieldData);
+        fieldSets.currentNamespace = fakeNamespace;
+        System.assertEquals(true, fieldSets.containsKey('name__c'));
+        System.assertEquals(true, fieldSets.containsKey(fakeNamespace.toUpperCase() + '__nAMe__c'));
+        System.assert(fieldSets.get('NAme__c') === fieldSets.get(fakeNamespace + '__namE__c'));
+
+        System.assert(!fieldSets.keySet(false).contains('otherField__c'));
+        System.assert(fieldSets.keySet(false).contains(fakeNamespace + '__otherField__c'));
+
+        System.assert(fieldSets.keySet(true).contains('otherField__c'));
+        System.assert(!fieldSets.keySet(true).contains(fakeNamespace + '__otherField__c'));
+
+        fieldSets.currentNamespace = 'someOtherNamespace';
+        //equals since both will be null as part of the test, but otherwise they would be different
+        System.assertEquals(fieldSets.get('name__C'), fieldSets.get(fakeNamespace.capitalize() + '__nAme__c'));
+    }
+
+	@isTest
 	static void GlobalDescribeMap(){
 		String fakeNamespace = 'fflib_test';
 		Map<String,Schema.SObjectType> fakeFieldData = new Map<String,Schema.SObjectType>{
