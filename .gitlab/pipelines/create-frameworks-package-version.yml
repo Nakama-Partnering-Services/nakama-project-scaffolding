@@ -1,8 +1,22 @@
 image: salesforce/salesforcedx:latest-full
 
 stages:
+    - install-npm
     - create-package-version
     - install-package-in-devhub
+
+install-npm-dependancies:
+    stage: install-npm
+    rules:
+        - if: $CREATE_PACKAGE_VERSION_DISABLED
+          when: never
+        - changes:
+              - frameworks/**/*
+    script:
+        - npm ci
+    artifacts:
+        paths:
+            - node_modules
 
 create-package-version:
     stage: create-package-version
@@ -17,6 +31,10 @@ create-package-version:
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
         # TODO: Persist sfdx-project.json and README.md
         - echo "versionId=$versionId" >> package.env
+        - npx prettier --write sfdx-project.json README.md
+        - git add sfdx-project.json README.md
+        - git commit -m "Updated sfdx-project.json and README.md with new package version"
+        - git push
     artifacts:
         reports:
             dotenv: package.env
