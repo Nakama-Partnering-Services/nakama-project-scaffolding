@@ -10,7 +10,6 @@ run-validation-deployment:
     rules:
         - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED
           when: never
-        - if: $DESTINATION_ENVIRONMENT
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
@@ -23,7 +22,6 @@ run-local-tests:
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
-        - if: $DESTINATION_ENVIRONMENT
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
@@ -43,8 +41,7 @@ run-local-tests-report:
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
-        - if: $DESTINATION_ENVIRONMENT
-          when: delayed
+        - when: delayed
           start_in: 60 minutes
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT

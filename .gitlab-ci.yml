@@ -90,6 +90,8 @@ deploy-to-staging:
 create-frameworks-package-version:
     stage: dispatch-child-pipeline
     rules:
+        - if: $CREATE_PACKAGE_VERSION_DISABLED
+          when: never
         - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
           when: never
         - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
