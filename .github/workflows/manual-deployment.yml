@@ -32,6 +32,7 @@ on:
                 required: false
 
 jobs:
+    # TODO: handle vlocity deployments as well
     deploy-deltas:
         name: 'Deploy deltas'
         runs-on: ubuntu-latest
@@ -40,20 +41,6 @@ jobs:
               uses: actions/checkout@v2
               with:
                   fetch-depth: 0
-
-            - name: 'Restore node_modules cache'
-              id: cache-npm
-              uses: actions/cache@v2
-              with:
-                  path: node_modules
-                  key: npm-${{ hashFiles('**/package-lock.json') }}
-                  restore-keys: |
-                      npm-${{ env.cache-name }}-
-                      npm-
-
-            - name: 'Install npm dependencies'
-              if: steps.cache-npm.outputs.cache-hit != 'true'
-              run: npm ci
 
             - name: Install Salesforce CLI
               run: npm install sfdx-cli --global
@@ -65,7 +52,7 @@ jobs:
                   echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Destination'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias 'Destination' --setdefaultusername
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
 
             - name: 'Remove Destination auth file'
               run: rm --force ./DESTINATION_SFDX_AUTH_URL.txt
@@ -83,10 +70,10 @@ jobs:
                   TESTS_TO_RUN=$(if [ ${{ github.event.inputs.runtests }} ]; then echo ${{ github.event.inputs.runtests }}; else echo $TEST_CLASSES; fi)
                   RUN_TEST_PARAMETER=$(if { [ ${{ github.event.inputs.testlevel == 'RunSpecifiedTests' }} ] || [ ${{ github.event.inputs.testlevel == '' }} ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ ${{ github.event.inputs.testlevel }} ]; then echo "--testlevel ${{ github.event.inputs.testlevel }}"; else echo ""; fi)
                   npm install fast-xml-parser
-                  node scripts/node/environment-replacements/main.js
+                  node scripts/node/environment-replacements/main.js || true
                   DESTINATION=$(echo ${{ github.event.inputs.destination }})
                   DESTINATION=${DESTINATION,,}
-                  cp --recursive specific-environments/$DESTINATION/. sfdx-source/
+                  cp --recursive specific-environments/$DESTINATION/. sfdx-source/ || true
                   sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
 
             - name: 'Update last deployment commit SHA'

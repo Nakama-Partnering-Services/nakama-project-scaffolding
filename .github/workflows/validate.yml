@@ -83,20 +83,6 @@ jobs:
         steps:
             - uses: actions/checkout@v2
 
-            - name: 'Restore node_modules cache'
-              id: cache-npm
-              uses: actions/cache@v2
-              with:
-                  path: node_modules
-                  key: npm-${{ hashFiles('**/package-lock.json') }}
-                  restore-keys: |
-                      npm-${{ env.cache-name }}-
-                      npm-
-
-            - name: 'Install npm dependencies'
-              if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
-              run: npm ci
-
             - name: 'Verify PMD'
               run: |
                   git fetch origin $GITHUB_BASE_REF
@@ -113,37 +99,24 @@ jobs:
               with:
                   sarif_file: apexScanResults.sarif
 
-    devint-validations:
-        name: 'Execute DevInt validations'
+    # TODO: add validation against staging for release branches
+    validation-deployment:
+        name: 'Validation deployment'
         needs: [verify-formatting, verify-linting, verify-pmd]
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
 
-            - name: 'Restore node_modules cache'
-              id: cache-npm
-              uses: actions/cache@v2
-              with:
-                  path: node_modules
-                  key: npm-${{ hashFiles('**/package-lock.json') }}
-                  restore-keys: |
-                      npm-${{ env.cache-name }}-
-                      npm-
-
-            - name: 'Install npm dependencies'
-              if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
-              run: npm ci
-
             - name: 'Install SFDX CLI'
               run: npm install sfdx-cli --global
 
-            - name: 'Create DevInt auth file'
+            - name: 'Create Destination auth file'
               run: echo ${{ secrets.DEVINT_SFDX_AUTH_URL }} > ./DEVINT_SFDX_AUTH_URL.txt
 
-            - name: 'Authorize DevInt'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVINT_SFDX_AUTH_URL.txt --setalias 'DevInt' --setdefaultusername
+            - name: 'Authorize Destination'
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVINT_SFDX_AUTH_URL.txt --setdefaultusername
 
-            - name: 'Remove DevInt auth file'
+            - name: 'Remove Destination auth file'
               run: rm --force ./DEVINT_SFDX_AUTH_URL.txt
 
             # Note: we are temporarily testing sfdx force:source:deploy with RunLocalTests instead of $RUN_TEST_PARAMETER
@@ -156,8 +129,8 @@ jobs:
                   mkdir deltas
                   sfdx sgd:source:delta --source sfdx-source --from origin/$GITHUB_BASE_REF --to HEAD --output deltas --ignore .forceignore --generate-delta
                   npm install fast-xml-parser
-                  node scripts/node/environment-replacements/main.js
-                  cp --recursive specific-environments/devint/. sfdx-source/
+                  node scripts/node/environment-replacements/main.js || true
+                  cp --recursive specific-environments/devint/. sfdx-source/ || true
                   sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests
 
     scratch-org-validations:
@@ -174,7 +147,7 @@ jobs:
               run: echo ${{ secrets.DEVHUB_SFDX_AUTH_URL }} > ./DEVHUB_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Dev Hub'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Dev Hub' --setdefaultdevhubusername
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setdefaultdevhubusername
 
             - name: 'Remove Dev Hub auth file'
               run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
@@ -184,8 +157,8 @@ jobs:
               run: |
                   sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1 --setalias scratch-org
                   npm install fast-xml-parser
-                  node scripts/node/environment-replacements/main.js
-                  cp --recursive specific-environments/scratch-org/. sfdx-source/
+                  node scripts/node/environment-replacements/main.js || true
+                  cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
 
             # Note: replace previous step with this one if scratch org pool is needed
             # - name: 'Fetch scratch org'
@@ -193,8 +166,8 @@ jobs:
             #       echo 'y' | sfdx plugins:install sfpowerkit
             #       sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
             #       npm install fast-xml-parser
-            #       node scripts/node/environment-replacements/main.js
-            #       cp --recursive specific-environments/scratch-org/. sfdx-source/
+            #       node scripts/node/environment-replacements/main.js || true
+            #       cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
 
             # Note: This also pushes metadata in frameworks folder, useful to check and prevent circular dependancies between packages
             - name: 'Push source to scratch org'
@@ -202,6 +175,6 @@ jobs:
               run: sfdx force:source:push # if this fails due to limitations, change to run scripts/shell/deploy-packages.sh instead
 
 
-            # Note: redundant and error prone due to running frameworks and project tests together
+            # Note: redundant and error prone due to running frameworks and project tests together, until this issue is fixed: https://trailblazer.salesforce.com/issues_view?id=a1p4V000002JRzNQAW
             # - name: 'Run local tests'
             #   run: sfdx force:apex:test:run --testlevel RunLocalTests --synchronous --resultformat json --loglevel error --json
