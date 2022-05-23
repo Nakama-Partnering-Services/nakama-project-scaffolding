@@ -66,7 +66,6 @@ deploy-to-testing-and-backpromote:
         strategy: depend
     parallel:
         matrix:
-            # TODO: Parametrize somehow to specify environments at project level
             - DESTINATION_ENVIRONMENT: !reference [.dest-envs]
 
 deploy-to-staging:

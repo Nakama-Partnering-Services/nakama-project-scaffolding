@@ -29,6 +29,12 @@ This project is licensed under the MIT license - see the [LICENSE](/LICENSE) fil
 
 ## Roadmap
 
+-   Add staging PR validation for release branches in GitHub workflow validate.yml.
+
+-   Implement vlocity deployment in Github workflows deploy.yml and manual-deployment.yml.
+
+-   Consider user friendly reporting of PMD and ESLINT issues in GitLab, similar to GitHub approach.
+
 -   Add proper badges for pipeline, including RunLocalTests.
 
 -   Consider to automate listing/update Jira tickets for User Stories deployed into testing. Integration GiHub/GitLab - Jira - MS Teams
