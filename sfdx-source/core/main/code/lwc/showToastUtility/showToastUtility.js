@@ -20,6 +20,7 @@ const showToastSuccess = (self, options) => {
 		mode: options.mode || 'dismissable'
 	});
 	self.dispatchEvent(showSuccess);
+	console.log('test')
 };
 /**
  * Shows an error toast notification
