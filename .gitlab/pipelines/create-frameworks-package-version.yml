@@ -13,6 +13,7 @@ install-npm-dependancies:
         paths:
             - node_modules
 
+# TODO: apply something similar to github trailheadapps/github-action-sfdx-packaging-updater@1.1.0
 create-package-version:
     stage: create-package-version
     script:
