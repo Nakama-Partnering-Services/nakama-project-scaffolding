@@ -178,8 +178,8 @@
                     <name>uiBehavior</name>
                     <value>readonly</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.ParentLog__c</fieldItem>
-                <identifier>RecordParentLog__cField</identifier>
+                <fieldItem>Record.ParentLogLink__c</fieldItem>
+                <identifier>RecordParentLogLink__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-af147cb3-e6b1-4ef7-a00b-d4746d5a1c90</name>
@@ -322,6 +322,16 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.LogRetentionDate__c</fieldItem>
                 <identifier>RecordLogRetentionDate__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>readonly</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.LogPurgeAction__c</fieldItem>
+                <identifier>RecordLogPurgeAction_cField1</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-0d174e01-17f8-4c93-8f5a-8983346600f8</name>
