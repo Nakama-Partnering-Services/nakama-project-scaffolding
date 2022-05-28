@@ -18,7 +18,7 @@ create-package-version:
     stage: create-package-version
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json 3>&1)
+        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json 3>&1) || true
           # Note: Output is printed so that a possible error is not obscured
         - echo "Output:$json"
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
