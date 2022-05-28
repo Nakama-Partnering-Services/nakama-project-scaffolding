@@ -10,6 +10,7 @@ run-validation-deployment:
     rules:
         - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED
           when: never
+        - when: always
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
@@ -22,6 +23,7 @@ run-local-tests:
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
+        - when: always
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
@@ -37,7 +39,7 @@ run-local-tests:
 
 run-local-tests-report:
     stage: scheduled-tests-report
-    # needs: [run-local-tests]
+    needs: [run-local-tests]
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never

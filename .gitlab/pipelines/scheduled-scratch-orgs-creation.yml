@@ -8,6 +8,7 @@ create-scratch-orgs:
     rules:
         - if: $DAILY_SCRATCH_ORGS_CREATION_DISABLED
           when: never
+        - when: always
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
         - echo 'y' | sf plugins install sfpowerkit
