@@ -21,6 +21,8 @@ create-package-version:
         - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json)
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
         - echo "versionId=$versionId" >> package.env
+        - git config --local user.email "ci@gitlab.com"
+        - git config --local user.name "GitLab CI Bot"
         - npx prettier --write sfdx-project.json README.md
         - git add sfdx-project.json README.md
         - git commit -m "Updated sfdx-project.json and README.md with new package version"
