@@ -143,6 +143,8 @@ manual-deployment:
 scheduled-tests:
     stage: dispatch-child-pipeline
     rules:
+        - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED && $DAILY_RUN_LOCAL_TESTS_DISABLED
+          when: never
         - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT != ""
     variables:
         DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
@@ -158,6 +160,8 @@ scheduled-tests:
 scheduled-scratch-orgs-creation:
     stage: dispatch-child-pipeline
     rules:
+        - if: $DAILY_SCRATCH_ORGS_CREATION_DISABLED
+          when: never
         - if: $CI_PIPELINE_SOURCE == "schedule"
     trigger:
         include:
