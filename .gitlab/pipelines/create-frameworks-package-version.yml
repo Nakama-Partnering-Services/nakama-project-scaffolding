@@ -1,33 +1,40 @@
 image: salesforce/salesforcedx:latest-full
 
 stages:
+    - install-npm
     - create-package-version
     - install-package-in-devhub
 
+install-npm-dependancies:
+    stage: install-npm
+    script:
+        - npm ci
+    artifacts:
+        paths:
+            - node_modules
+
+# TODO: apply something similar to github trailheadapps/github-action-sfdx-packaging-updater@1.1.0
 create-package-version:
     stage: create-package-version
-    rules:
-        - if: $CREATE_PACKAGE_VERSION_DISABLED
-          when: never
-        - changes:
-              - frameworks/**/*
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json)
+        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json 3>&1) || true
+          # Note: Output is printed so that a possible error is not obscured
+        - echo "Output ==> $json"
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
-        # TODO: Persist sfdx-project.json and README.md
         - echo "versionId=$versionId" >> package.env
+        - git config --local user.email "ci@gitlab.com"
+        - git config --local user.name "GitLab CI Bot"
+        - npx prettier --write sfdx-project.json README.md
+        - git add sfdx-project.json README.md
+        - git commit -m "Updated sfdx-project.json and README.md with new package version"
+        - git push
     artifacts:
         reports:
             dotenv: package.env
 
 install-package-in-devhub:
     stage: install-package-in-devhub
-    rules:
-        - if: $CREATE_PACKAGE_VERSION_DISABLED
-          when: never
-        - changes:
-              - frameworks/**/*
     allow_failure: true
     environment:
         name: scratch/$CI_COMMIT_REF_SLUG
@@ -35,7 +42,7 @@ install-package-in-devhub:
     resource_group: scratch/$CI_COMMIT_REF_SLUG
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1 --setalias scratch-org
+        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
         # Note: replace scratch org creation if scratch org pool is needed
         # - echo 'y' | sf plugins install sfpowerkit
         # - sf sfpowerkit pool fetch --tag base --setdefaultusername

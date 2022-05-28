@@ -29,24 +29,13 @@ This project is licensed under the MIT license - see the [LICENSE](/LICENSE) fil
 
 ## Roadmap
 
+-   Add staging PR validation for release branches in GitHub workflow validate.yml.
+-   Implement vlocity deployment in Github workflows deploy.yml and manual-deployment.yml.
+-   Consider user friendly reporting of PMD and ESLINT issues in GitLab, similar to GitHub approach.
 -   Add proper badges for pipeline, including RunLocalTests.
-
 -   Consider to automate listing/update Jira tickets for User Stories deployed into testing. Integration GiHub/GitLab - Jira - MS Teams
-
--   Consider to use scripts to automate manual steps after sandbox creation/refresh.
-
 -   Consider reorganizing jobs and stages to make pipelines faster.
-
 -   Code quality report to analyse Apex.
-
 -   Consider [Codacy](https://docs.codacy.com/coverage-reporter/) and [CodeCov](https://about.codecov.io/tool/gitlab-ci/).
-
--   (Consider feasibility) Avoid running the pipelines if .md, eslintrc.json or jsconfig.json are the only files changing in sfdx-source.
-
--   (Requires GitLab 14.5 or later version for desired rules) Include pipeline files conditionally based on rules.
-
 -   (Requires cobertura xml file) Leverage [Test coverage visualization](https://docs.gitlab.com/ee/user/project/merge_requests/test_coverage_visualization.html) for Apex.
-
--   Identify changed files to split package version creation and leverage unlocked package installation for deployments. This will allow us to easily introduce isolated changes on demand.
-
 -   Consider ideas from [here](https://github.com/dxatscale/dxatscale-template/blob/main/.gitlab-ci.yml) and [here](https://gitlab.com/sfdx/sfdx-cicd-template/-/blob/master/Salesforce.gitlab-ci.yml).

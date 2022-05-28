@@ -18,7 +18,7 @@ jobs:
               run: echo ${{ secrets.DEVHUB_SFDX_AUTH_URL }} > ./DEVHUB_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Dev Hub'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Dev Hub' --setdefaultdevhubusername
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setdefaultdevhubusername
 
             - name: 'Remove Dev Hub auth file'
               run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt

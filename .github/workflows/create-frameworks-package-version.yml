@@ -34,15 +34,17 @@ jobs:
               run: echo ${{ secrets.DEVHUB_SFDX_AUTH_URL }} > ./DEVHUB_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Dev Hub'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setalias 'Dev Hub' --setdefaultdevhubusername
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setdefaultdevhubusername
 
             - name: 'Remove Dev Hub auth file'
               run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
 
+            # Note: Output is printed so that a possible error is not obscured
             - name: 'Create package version - Frameworks'
               id: package-frameworks
               run: |
-                  json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json)
+                  json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json 3>&1) || true
+                  echo "Output ==> $json"
                   packageVersionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
                   echo "::set-output name=packageVersionId::$packageVersionId"
 
@@ -60,7 +62,16 @@ jobs:
 
             - name: 'Create scratch org'
               continue-on-error: true
-              run: sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1 --setalias scratch-org
+              run: sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
+
+            # Note: replace previous step with this one if scratch org pool is needed
+            # - name: 'Fetch scratch org'
+            #   run: |
+            #       echo 'y' | sfdx plugins:install sfpowerkit
+            #       sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
+            #       npm install fast-xml-parser
+            #       node scripts/node/environment-replacements/main.js || true
+            #       cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
 
             - name: 'Install Frameworks in scratch org'
               continue-on-error: true

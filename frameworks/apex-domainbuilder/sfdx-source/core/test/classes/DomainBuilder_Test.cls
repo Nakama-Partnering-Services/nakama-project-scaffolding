@@ -30,19 +30,32 @@ private class DomainBuilder_Test {
 
 		new Account_t()
 			.name('Acme Corp')
-			.add(ron) // .add( new Contact_t() )
+			.add(ron)
 			.add(new Opportunity_t().amount(1000).closes(2019, 12).contact(ron))
 			.persist();
 
 		// Verify
-		// Note: below commented assert is wrong, because when persisting Contact_t ron, the default Contact_t constructor also creates one Account_t, and since we are not adding it as a child of Acme Corp, they default account is created as well
-		// Note: should really Contact_t have a default parent Account? It can be an independant entity itself
-		// System.assertEquals(2, [SELECT Count() FROM Account]); // TODO: Should be 1 actually.
 		System.assertEquals(1, [SELECT COUNT() FROM Account]);
 		System.assertEquals(1, [SELECT COUNT() FROM Opportunity]);
-		// Note: below commented assert is no longer true since we are adding ron in Account_t rather than creating a new Contact_t
-		// System.assertEquals(2, [SELECT Count() FROM Contact]);
 		System.assertEquals(1, [SELECT COUNT() FROM Contact]);
+		System.assertEquals(1, [SELECT COUNT() FROM OpportunityContactRole]);
+	}
+
+	@IsTest
+	private static void happyPathWithContactLeft() {
+		// Setup & Exercise
+		Contact_t ron = new Contact_t().first('Ron').last('Harris');
+
+		new Account_t()
+			.name('Acme Corp')
+			.add(new Contact_t())
+			.add(new Opportunity_t().amount(1000).closes(2019, 12).contact(ron))
+			.persist();
+
+		// Verify
+		System.assertEquals(2, [SELECT COUNT() FROM Account]);
+		System.assertEquals(1, [SELECT COUNT() FROM Opportunity]);
+		System.assertEquals(2, [SELECT COUNT() FROM Contact]);
 		System.assertEquals(1, [SELECT COUNT() FROM OpportunityContactRole]);
 	}
 

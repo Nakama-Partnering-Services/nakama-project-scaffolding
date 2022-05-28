@@ -23,7 +23,7 @@ jobs:
               run: echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Destination'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias 'Destination' --setdefaultusername
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
 
             - name: 'Remove Destination auth file'
               run: rm --force ./DESTINATION_SFDX_AUTH_URL.txt

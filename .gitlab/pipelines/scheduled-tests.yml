@@ -4,12 +4,13 @@ stages:
     - scheduled-tests
     - scheduled-tests-report
 
+# Note: schedule this job rather than run-local-tests until this known issue is fixed https://trailblazer.salesforce.com/issues_view?id=a1p4V000002JRzNQAW
 run-validation-deployment:
     stage: scheduled-tests
     rules:
         - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED
           when: never
-        - if: $DESTINATION_ENVIRONMENT
+        - when: always
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
@@ -22,7 +23,7 @@ run-local-tests:
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
-        - if: $DESTINATION_ENVIRONMENT
+        - when: always
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
@@ -42,8 +43,7 @@ run-local-tests-report:
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
-        - if: $DESTINATION_ENVIRONMENT
-          when: delayed
+        - when: delayed
           start_in: 60 minutes
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT

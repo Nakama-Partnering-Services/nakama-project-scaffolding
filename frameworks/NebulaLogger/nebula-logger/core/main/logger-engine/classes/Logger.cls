@@ -9,33 +9,33 @@
  * @see LogEntryEventBuilder
  * @see LogMessage
  */
-@SuppressWarnings(
-    'PMD.ApexCrudViolation, PMD.AvoidDebugStatements, PMD.AvoidGlobalModifier, PMD.CyclomaticComplexity, PMD.CognitiveComplexity, PMD.ExcessiveClassLength'
-)
+@SuppressWarnings('PMD.AvoidDebugStatements, PMD.AvoidGlobalModifier, PMD.CyclomaticComplexity, PMD.CognitiveComplexity, PMD.ExcessiveClassLength')
 global with sharing class Logger {
     // There's no reliable way to get the version number dynamically in Apex
     @TestVisible
-    private static final String CURRENT_VERSION_NUMBER = 'v4.7.0';
+    private static final String CURRENT_VERSION_NUMBER = 'v4.7.4';
     private static final LoggingLevel DEFAULT_LOGGING_LEVEL = LoggingLevel.DEBUG;
     private static final List<LogEntryEventBuilder> LOG_ENTRIES_BUFFER = new List<LogEntryEventBuilder>();
-    @TestVisible
-    private static final Map<String, LogScenarioRule__mdt> SCENARIO_TO_MOCK_SCENARIO_RULE = new Map<String, LogScenarioRule__mdt>();
-    private static final String TRANSACTION_ID = setTransactionId();
+    private static final Map<String, LogScenarioRule__mdt> MOCK_SCENARIO_TO_SCENARIO_RULE = new Map<String, LogScenarioRule__mdt>();
+    private static final String TRANSACTION_ID = new Uuid().getValue();
     private static final Quiddity TRANSACTION_QUIDDITY = setTransactionQuiddity();
 
     private static Integer currentTransactionEntryNumber = 1;
+    @TestVisible
+    private static String lastSaveMethodNameUsed;
     private static String parentLogTransactionId;
-    private static String transactionScenario = getUserSettings().DefaultLogScenario__c;
+    @TestVisible
+    private static Integer saveLogCallCount = 0;
     private static Boolean suspendSaving = false;
+    private static String transactionScenario = getUserSettings().DefaultLogScenario__c;
     private static LoggerSettings__c userSettings;
 
-    @TestVisible
-    private static SaveMethod transactionSaveMethod {
+    private static String transactionSaveMethodName {
         get {
-            if (transactionSaveMethod == null) {
-                transactionSaveMethod = getDefaultSaveMethod();
+            if (transactionSaveMethodName == null) {
+                transactionSaveMethodName = getUserSettings().DefaultSaveMethod__c;
             }
-            return transactionSaveMethod;
+            return transactionSaveMethodName;
         }
         set;
     }
@@ -51,7 +51,9 @@ global with sharing class Logger {
     }
 
     static {
-        System.debug(LoggingLevel.INFO, 'Logger - Version Number: ' + CURRENT_VERSION_NUMBER);
+        // 1 of 2 places in the codebase (except tests) that should use System.debug()
+        // The rest of the codebase should use a method in Logger.cls
+        System.debug(LoggingLevel.INFO, 'Logger - Version Number: ' + getVersionNumber());
         System.debug(LoggingLevel.INFO, 'Logger - Transaction ID: ' + getTransactionId());
     }
 
@@ -63,6 +65,25 @@ global with sharing class Logger {
         QUEUEABLE,
         REST,
         SYNCHRONOUS_DML
+    }
+
+    // System info methods
+
+    /**
+     * @description Returns the current version number of Nebula Logger
+     * @return The current version number, in the format `v0.0.0`
+     */
+    public static String getVersionNumber() {
+        return CURRENT_VERSION_NUMBER;
+    }
+
+    /**
+     * @description Returns the current namespace of Nebula Logger
+     * @return   The current namespace prefix, or an empty string when no namespace is being used
+     */
+    public static String getNamespacePrefix() {
+        String className = Logger.class.getName();
+        return className.contains('.') ? className.substringBefore('.') : '';
     }
 
     // Settings management methods
@@ -2408,6 +2429,211 @@ global with sharing class Logger {
     }
 
     /**
+     * @description Creates a log entry for any results within the provided `List<DeleteResult>` where `isSuccess() != true`
+     * @param  loggingLevel  The logging level to use for the log entry
+     * @param  logMessage    The instance of `LogMessage` to use to set the entry's message field
+     * @param  deleteResults The instance of `List<Database.DeleteResult>` to log
+     * @return               The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, LogMessage logMessage, List<Database.DeleteResult> deleteResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        } else {
+            return logDatabaseErrors(loggingLevel, logMessage.getMessage(), deleteResults);
+        }
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<DeleteResult>` where `isSuccess() != true`
+     * @param  loggingLevel  The logging level to use for the log entry
+     * @param  message       The string to use to set the entry's message field
+     * @param  deleteResults The instance of `List<Database.DeleteResult>` to log
+     * @return               The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, String message, List<Database.DeleteResult> deleteResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        }
+
+        List<Database.DeleteResult> resultsToLog = new List<Database.DeleteResult>();
+        for (Database.DeleteResult deleteResult : deleteResults) {
+            if (deleteResult.isSuccess() == false) {
+                resultsToLog.add(deleteResult);
+            }
+        }
+
+        LogEntryEventBuilder logEntryEventBuilder;
+        if (resultsToLog.isEmpty() == false) {
+            logEntryEventBuilder = newEntry(loggingLevel, message).setDatabaseResult(resultsToLog);
+        }
+        return logEntryEventBuilder;
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<MergeResult>` where `isSuccess() != true`
+     * @param  loggingLevel The logging level to use for the log entry
+     * @param  logMessage   The instance of `LogMessage` to use to set the entry's message field
+     * @param  mergeResults The instance of `List<Database.MergeResult>` to log
+     * @return              The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, LogMessage logMessage, List<Database.MergeResult> mergeResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        } else {
+            return logDatabaseErrors(loggingLevel, logMessage.getMessage(), mergeResults);
+        }
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<MergeResult>` where `isSuccess() != true`
+     * @param  loggingLevel The logging level to use for the log entry
+     * @param  message      The string to use to set the entry's message field
+     * @param  mergeResults The instance of `List<Database.MergeResult>` to log
+     * @return              The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, String message, List<Database.MergeResult> mergeResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        }
+
+        List<Database.MergeResult> resultsToLog = new List<Database.MergeResult>();
+        for (Database.MergeResult mergeResult : mergeResults) {
+            if (mergeResult.isSuccess() == false) {
+                resultsToLog.add(mergeResult);
+            }
+        }
+
+        LogEntryEventBuilder logEntryEventBuilder;
+        if (resultsToLog.isEmpty() == false) {
+            logEntryEventBuilder = newEntry(loggingLevel, message).setDatabaseResult(resultsToLog);
+        }
+        return logEntryEventBuilder;
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<SaveResult>` where `isSuccess() != true`
+     * @param  loggingLevel The logging level to use for the log entry
+     * @param  logMessage   The instance of `LogMessage` to use to set the entry's message field
+     * @param  saveResults  The instance of `List<Database.SaveResult>` to log
+     * @return              The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, LogMessage logMessage, List<Database.SaveResult> saveResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        } else {
+            return logDatabaseErrors(loggingLevel, logMessage.getMessage(), saveResults);
+        }
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<SaveResult>` where `isSuccess() != true`
+     * @param  loggingLevel The logging level to use for the log entry
+     * @param  message      The string to use to set the entry's message field
+     * @param  saveResults  The instance of `List<Database.SaveResult>` to log
+     * @return              The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, String message, List<Database.SaveResult> saveResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        }
+
+        List<Database.SaveResult> resultsToLog = new List<Database.SaveResult>();
+        for (Database.SaveResult saveResult : saveResults) {
+            if (saveResult.isSuccess() == false) {
+                resultsToLog.add(saveResult);
+            }
+        }
+
+        LogEntryEventBuilder logEntryEventBuilder;
+        if (resultsToLog.isEmpty() == false) {
+            logEntryEventBuilder = newEntry(loggingLevel, message).setDatabaseResult(resultsToLog);
+        }
+        return logEntryEventBuilder;
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<UpsertResult>` where `isSuccess() != true`
+     * @param  loggingLevel  The logging level to use for the log entry
+     * @param  logMessage    The instance of `LogMessage` to use to set the entry's message field
+     * @param  upsertResults The instance of `List<Database.UpsertResult>` to log
+     * @return               The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, LogMessage logMessage, List<Database.UpsertResult> upsertResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        } else {
+            return logDatabaseErrors(loggingLevel, logMessage.getMessage(), upsertResults);
+        }
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<UpsertResult>` where `isSuccess() != true`
+     * @param  loggingLevel  The logging level to use for the log entry
+     * @param  message       The string to use to set the entry's message field
+     * @param  upsertResults The instance of `List<Database.UpsertResult>` to log
+     * @return               The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, String message, List<Database.UpsertResult> upsertResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        }
+
+        List<Database.UpsertResult> resultsToLog = new List<Database.UpsertResult>();
+        for (Database.UpsertResult upsertResult : upsertResults) {
+            if (upsertResult.isSuccess() == false) {
+                resultsToLog.add(upsertResult);
+            }
+        }
+
+        LogEntryEventBuilder logEntryEventBuilder;
+        if (resultsToLog.isEmpty() == false) {
+            logEntryEventBuilder = newEntry(loggingLevel, message).setDatabaseResult(resultsToLog);
+        }
+        return logEntryEventBuilder;
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<UndeleteResult>` where `isSuccess() != true`
+     * @param  loggingLevel    The logging level to use for the log entry
+     * @param  logMessage      The instance of `LogMessage` to use to set the entry's message field
+     * @param  undeleteResults The instance of `List<Database.UndeleteResult>` to log
+     * @return                 The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, LogMessage logMessage, List<Database.UndeleteResult> undeleteResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        } else {
+            return logDatabaseErrors(loggingLevel, logMessage.getMessage(), undeleteResults);
+        }
+    }
+
+    /**
+     * @description Creates a log entry for any results within the provided `List<UndeleteResult>` where `isSuccess() != true`
+     * @param  loggingLevel    The logging level to use for the log entry
+     * @param  message         The string to use to set the entry's message field
+     * @param  undeleteResults The instance of `List<Database.UndeleteResult>` to log
+     * @return                 The instance of `LogEntryBuilder` was generated to log any errors, or `null` if there are no errors
+     */
+    global static LogEntryEventBuilder logDatabaseErrors(LoggingLevel loggingLevel, String message, List<Database.UndeleteResult> undeleteResults) {
+        if (isEnabled(loggingLevel) == false) {
+            return null;
+        }
+
+        List<Database.UndeleteResult> resultsToLog = new List<Database.UndeleteResult>();
+        for (Database.UndeleteResult undeleteResult : undeleteResults) {
+            if (undeleteResult.isSuccess() == false) {
+                resultsToLog.add(undeleteResult);
+            }
+        }
+
+        LogEntryEventBuilder logEntryEventBuilder;
+        if (resultsToLog.isEmpty() == false) {
+            logEntryEventBuilder = newEntry(loggingLevel, message).setDatabaseResult(resultsToLog);
+        }
+        return logEntryEventBuilder;
+    }
+
+    /**
      * @description Adds a new instance of LogEntryEventBuilder to Logger's buffer, if shouldSave == true
      * @param  loggingLevel The logging level enum value for the new entry
      * @param  logMessage   The instance of LogMessage to use as the entry's message
@@ -2464,17 +2690,21 @@ global with sharing class Logger {
      *              and `Log__c.Scenario__c`, and can be used to filter & group logs
      * @param  scenario The name to use for the current transaction's scenario
      */
+    @SuppressWarnings('PMD.ApexCrudViolation')
     global static void setScenario(String scenario) {
         transactionScenario = scenario;
 
         // LogScenarioRule__mdt scenarioRule = LogScenarioRule__mdt.getInstance(scenario);
         LogScenarioRule__mdt matchingScenarioRule;
-        for (LogScenarioRule__mdt scenarioRule : [SELECT UserLoggingLevel__c FROM LogScenarioRule__mdt WHERE IsEnabled__c = TRUE AND Scenario__c = :scenario]) {
-            matchingScenarioRule = scenarioRule;
+        for (LogScenarioRule__mdt scenarioRule : LogScenarioRule__mdt.getAll().values()) {
+            if (scenarioRule.IsEnabled__c = true && scenarioRule.Scenario__c == scenario) {
+                matchingScenarioRule = scenarioRule;
+                break;
+            }
         }
 
         if (System.Test.isRunningTest() == true) {
-            matchingScenarioRule = SCENARIO_TO_MOCK_SCENARIO_RULE.get(scenario);
+            matchingScenarioRule = MOCK_SCENARIO_TO_SCENARIO_RULE.get(scenario);
         }
 
         if (matchingScenarioRule != null) {
@@ -2484,7 +2714,7 @@ global with sharing class Logger {
 
     @TestVisible
     private static void setMockScenarioRule(LogScenarioRule__mdt scenarioRule) {
-        SCENARIO_TO_MOCK_SCENARIO_RULE.put(scenarioRule.Scenario__c, scenarioRule);
+        MOCK_SCENARIO_TO_SCENARIO_RULE.put(scenarioRule.Scenario__c, scenarioRule);
     }
 
     /**
@@ -2492,7 +2722,7 @@ global with sharing class Logger {
      * @return   The enum value of Logger.SaveMethod to use for any calls to saveLog() in the current transaction
      */
     global static SaveMethod getSaveMethod() {
-        return transactionSaveMethod;
+        return getSaveMethod(transactionSaveMethodName);
     }
 
     /**
@@ -2500,7 +2730,7 @@ global with sharing class Logger {
      * @param  saveMethod The enum value of Logger.SaveMethod to use for any other calls to saveLog() in the current transaction
      */
     global static void setSaveMethod(SaveMethod saveMethod) {
-        transactionSaveMethod = saveMethod;
+        transactionSaveMethodName = saveMethod.name();
     }
 
     /**
@@ -2508,7 +2738,7 @@ global with sharing class Logger {
      */
     @InvocableMethod(category='Logging' label='Save Log' description='Saves any log entries that have been generated')
     global static void saveLog() {
-        saveLog(transactionSaveMethod);
+        saveLog(transactionSaveMethodName);
     }
 
     /**
@@ -2516,8 +2746,19 @@ global with sharing class Logger {
      *   All subsequent calls to saveLog() will use the transaction save method.
      * @param  saveMethod The enum value of Logger.SaveMethod to use for this specific save action.
      */
-    @SuppressWarnings('PMD.NcssMethodCount')
     global static void saveLog(SaveMethod saveMethod) {
+        saveLog(saveMethod.name());
+    }
+
+    /**
+     * @description Saves any entries in Logger's buffer, using the specified save method for only this call.
+     *   All subsequent calls to saveLog() will use the transaction save method.
+     * @param  saveMethodName The String value of the save method to use for this specific save action.
+     */
+    @SuppressWarnings('PMD.CognitiveComplexity, PMD.CyclomaticComplexity, PMD.NcssMethodCount')
+    public static void saveLog(String saveMethodName) {
+        saveLogCallCount++;
+        lastSaveMethodNameUsed = saveMethodName;
         if (LOG_ENTRIES_BUFFER.isEmpty() || getUserSettings().IsSavingEnabled__c == false) {
             return;
         }
@@ -2531,7 +2772,7 @@ global with sharing class Logger {
         }
 
         if (LoggerParameter.ENABLE_SYSTEM_MESSAGES == true) {
-            finest(getSavingLogSystemMessage(saveMethod));
+            finest(getSavingLogSystemMessage(saveMethodName));
         }
 
         List<LogEntryEvent__e> logEntryEvents = new List<LogEntryEvent__e>();
@@ -2553,20 +2794,25 @@ global with sharing class Logger {
         // This gives us a chance to run the handler class & handler plugins before insert,
         // allowing the plugins to make further changes to the `LogEntryEvent__e` records
         // So, execute the handler, which internally then executes any plugins
-        new LogEntryEventHandler().executeBeforeInsert(logEntryEvents);
+        LoggerTriggerableContext logEntryEventsBeforeContext = new LoggerTriggerableContext(
+            Schema.LogEntryEvent__e.SObjectType,
+            TriggerOperation.BEFORE_INSERT,
+            logEntryEvents
+        );
+        LoggerSObjectHandler.getHandler(Schema.LogEntryEvent__e.SObjectType)?.overrideTriggerableContext(logEntryEventsBeforeContext).execute();
 
         // Now that the plugins have run, double check to make sure that saving should still happen
         if (getBufferSize() == 0) {
             return;
         }
 
-        switch on saveMethod {
+        switch on getSaveMethod(saveMethodName) {
             when EVENT_BUS {
-                List<Database.SaveResult> saveResults = EventBus.publish(logEntryEvents);
-                LoggerEmailUtils.sendErrorEmail(Schema.LogEntryEvent__e.SObjectType, saveResults);
+                List<Database.SaveResult> saveResults = LoggerDataStore.getEventBus().publishRecords(logEntryEvents);
+                LoggerEmailSender.sendErrorEmail(Schema.LogEntryEvent__e.SObjectType, saveResults);
             }
             when QUEUEABLE {
-                System.enqueueJob(new QueueableSaver(logEntryEvents));
+                LoggerDataStore.getJobQueue().enqueueJob(new QueueableSaver(logEntryEvents));
             }
             when REST {
                 // If the user doesn't have a session ID (e.g., site guest user), the REST API call will fail
@@ -2578,7 +2824,12 @@ global with sharing class Logger {
                 }
             }
             when SYNCHRONOUS_DML {
-                new LogEntryEventHandler().executeAfterInsert(logEntryEvents);
+                LoggerTriggerableContext logEntryEventsAfterContext = new LoggerTriggerableContext(
+                    Schema.LogEntryEvent__e.SObjectType,
+                    TriggerOperation.AFTER_INSERT,
+                    logEntryEvents
+                );
+                LoggerSObjectHandler.getHandler(Schema.LogEntryEvent__e.SObjectType)?.overrideTriggerableContext(logEntryEventsAfterContext).execute();
             }
         }
 
@@ -2593,71 +2844,19 @@ global with sharing class Logger {
      * @return                  The matching instance of LoggingLevel (or a default value if a match is not found)
      */
     global static LoggingLevel getLoggingLevel(String loggingLevelName) {
-        if (loggingLevelName != null) {
-            loggingLevelName = loggingLevelName.trim().toUpperCase();
+        try {
+            return System.LoggingLevel.valueOf(loggingLevelName?.trim().toUpperCase());
+        } catch (NoSuchElementException ex) {
+            if (LoggerParameter.ENABLE_SYSTEM_MESSAGES == true) {
+                LogMessage logMessage = new LogMessage(
+                    'Logger - Unknown logging level {0} specified, using {1}',
+                    loggingLevelName,
+                    DEFAULT_LOGGING_LEVEL.name()
+                );
+                finest(logMessage);
+            }
+            return DEFAULT_LOGGING_LEVEL;
         }
-
-        switch on loggingLevelName {
-            when 'NONE' {
-                return LoggingLevel.NONE;
-            }
-            when 'ERROR' {
-                return LoggingLevel.ERROR;
-            }
-            when 'WARN' {
-                return LoggingLevel.WARN;
-            }
-            when 'INFO' {
-                return LoggingLevel.INFO;
-            }
-            when 'DEBUG' {
-                return LoggingLevel.DEBUG;
-            }
-            when 'FINE' {
-                return LoggingLevel.FINE;
-            }
-            when 'FINER' {
-                return LoggingLevel.FINER;
-            }
-            when 'FINEST' {
-                return LoggingLevel.FINEST;
-            }
-            when else {
-                if (LoggerParameter.ENABLE_SYSTEM_MESSAGES == true) {
-                    String message = 'Logger - Unknown logging level ' + loggingLevelName + 'specified, using ' + DEFAULT_LOGGING_LEVEL.name();
-                    finest(message);
-                }
-                return DEFAULT_LOGGING_LEVEL;
-            }
-        }
-    }
-
-    // For orgs that already have the aura cmp + quickAction deployed, this method is still needed (otherwise, deployment errors will occur)
-    // TODO consider removing this method after converting aura cmp to lwc (and presumably create a dedicated Apex ctrl w/ this method)
-    // But the safe choice is to just keep it now/forever
-    /**
-     * @description Returns a Log__c record from the database, using either the Salesforce ID or transaction ID
-     * @param  logId The Salesforce ID or TransactionId__c of the Log__c
-     * @return       The matching record, with all fields that the current user can access
-     */
-    @AuraEnabled(cacheable=true)
-    public static Log__c getLog(String logId) {
-        List<String> logFieldNames = new List<String>(Schema.Log__c.SObjectType.getDescribe().fields.getMap().keySet());
-        logFieldNames.addAll(new List<String>{ 'Owner.Name', 'Owner.Type' });
-        List<String> logEntryFieldNames = new List<String>(Schema.LogEntry__c.SObjectType.getDescribe().fields.getMap().keySet());
-
-        List<String> textReplacements = new List<String>{
-            String.join(logFieldNames, ','),
-            String.join(logEntryFieldNames, ','),
-            Schema.LogEntry__c.TransactionEntryNumber__c.getDescribe().getName()
-        };
-        String query = String.format(
-            'SELECT {0}, (SELECT {1} FROM LogEntries__r ORDER BY {2}) FROM Log__c WHERE Id = :logId OR TransactionId__c = :logId',
-            textReplacements
-        );
-
-        SObjectAccessDecision securityDecision = Security.stripInaccessible(AccessType.READABLE, Database.query(String.escapeSingleQuotes(query)));
-        return securityDecision.getRecords().isEmpty() ? null : (Log__c) securityDecision.getRecords().get(0);
     }
 
     // Private logging level methods to keep global methods simpler/cleaner
@@ -2704,18 +2903,6 @@ global with sharing class Logger {
         return logEntryEventBuilder;
     }
 
-    private static String setTransactionId() {
-        // An error can sometimes occur when calling System.Request.getCurrent(), such as when logging
-        // from an Auth Provider class (that implements Auth.RegistrationHandler). As a workaround,
-        // skip calling System.Request.getCurrent() if there is no user session.
-        // TODO: see if there is a better approach for this long term (or hopefully Salesforce fixes the gack error)
-        String transactionId;
-        if (String.isNotBlank(UserInfo.getSessionId())) {
-            transactionId = System.Request.getCurrent().getRequestId();
-        }
-        return String.isNotBlank(transactionId) ? transactionId : new Uuid().getValue();
-    }
-
     private static Quiddity setTransactionQuiddity() {
         // An error can sometimes occur when calling System.Request.getCurrent(), such as when logging
         // from an Auth Provider class (that implements Auth.RegistrationHandler). As a workaround,
@@ -2728,33 +2915,19 @@ global with sharing class Logger {
         }
     }
 
-    private static SaveMethod getDefaultSaveMethod() {
-        SaveMethod defaultSaveMethod;
-
-        String saveMethodName = getUserSettings().DefaultSaveMethod__c?.toUpperCase();
-        switch on saveMethodName {
-            when 'QUEUEABLE' {
-                defaultSaveMethod = SaveMethod.QUEUEABLE;
-            }
-            when 'REST' {
-                defaultSaveMethod = SaveMethod.REST;
-            }
-            when 'SYNCHRONOUS_DML' {
-                defaultSaveMethod = SaveMethod.SYNCHRONOUS_DML;
-            }
-            when else {
-                defaultSaveMethod = SaveMethod.EVENT_BUS;
-            }
+    private static SaveMethod getSaveMethod(String saveMethodName) {
+        try {
+            return SaveMethod.valueOf(saveMethodName);
+        } catch (NoSuchElementException ex) {
+            return null;
         }
-
-        return defaultSaveMethod;
     }
 
     private static String getSuspendSavingLogSystemMessage() {
         return 'Logger - Logging suspended, ignoring call to saveLog()';
     }
 
-    private static String getSavingLogSystemMessage(SaveMethod saveMethod) {
+    private static String getSavingLogSystemMessage(String saveMethodName) {
         String savingLogMessage = 'Logger - Saving ' + LOG_ENTRIES_BUFFER.size() + ' log entries via ';
         switch on getCurrentQuiddity() {
             when ANONYMOUS {
@@ -2788,7 +2961,12 @@ global with sharing class Logger {
                 savingLogMessage += getCurrentQuiddity()?.name();
             }
         }
-        savingLogMessage += ', save method is ' + saveMethod.name();
+        savingLogMessage += ', save method is ' + saveMethodName;
+        savingLogMessage +=
+            '. Logger.saveLog() has been called ' +
+            saveLogCallCount +
+            (saveLogCallCount == 1 ? ' time' : ' times') +
+            ' in the current transaction.';
 
         return savingLogMessage;
     }
@@ -2805,12 +2983,11 @@ global with sharing class Logger {
         }
 
         /**
-         * @description Required by the Queueable interface, this method contains the logic executed when
-         * the current instance of the queue runs.
-         * @param queueableContext The context of the current queue.
+         * @description Asynchronoulsy publishes the list of `LogEntryEvent__e` records
+         * @param queueableContext The context of the current queue, provided by the platform
          */
         global void execute(System.QueueableContext queueableContext) {
-            EventBus.publish(this.logEntryEvents);
+            LoggerDataStore.getEventBus().publishRecords(this.logEntryEvents);
         }
     }
 
