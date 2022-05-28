@@ -37,7 +37,7 @@ run-local-tests:
 
 run-local-tests-report:
     stage: scheduled-tests-report
-    needs: [run-local-tests]
+    # needs: [run-local-tests]
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
