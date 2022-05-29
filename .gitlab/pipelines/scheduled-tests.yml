@@ -39,7 +39,7 @@ run-local-tests:
 
 run-local-tests-report:
     stage: scheduled-tests-report
-    needs: [run-local-tests]
+    needs: [run-local-tests] # Since GitLab 14.2, needs does not needed jobs do not need to be on an earlier stage
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
