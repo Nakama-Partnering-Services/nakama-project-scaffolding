@@ -23,8 +23,8 @@ jobs:
             - name: 'Remove Dev Hub auth file'
               run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
 
+            # Note: actions will still succeed if sfdx sfpowerkit:pool:create does not work as expected
             - name: 'Create base Scratch orgs in pool'
               run: |
-                  set -e
                   echo 'y' | sfdx plugins:install sfpowerkit
                   sfdx sfpowerkit:pool:create --configfilepath=so_pool_config-base.schema.json
