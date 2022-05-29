@@ -145,7 +145,8 @@ scheduled-tests:
     rules:
         - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED && $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
-        - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT != null && $DESTINATION_ENVIRONMENT != ""
+          # Note: this second checks, not others as exists or null, works when variable is not even declared, so we check as well in each pipeline job individually
+        - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT != ""
     variables:
         DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
     trigger:
