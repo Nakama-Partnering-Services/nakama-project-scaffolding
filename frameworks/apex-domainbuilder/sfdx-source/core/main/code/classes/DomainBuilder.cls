@@ -12,7 +12,7 @@ public abstract class DomainBuilder {
 		private set;
 	}
 
-	// CONSTRUCTOR
+	// CONSTRUCTORS
 
 	public DomainBuilder(SObjectType type) {
 		this.type = type;

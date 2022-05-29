@@ -25,5 +25,6 @@ jobs:
 
             - name: 'Create base Scratch orgs in pool'
               run: |
+                  set -e
                   echo 'y' | sfdx plugins:install sfpowerkit
                   sfdx sfpowerkit:pool:create --configfilepath=so_pool_config-base.schema.json

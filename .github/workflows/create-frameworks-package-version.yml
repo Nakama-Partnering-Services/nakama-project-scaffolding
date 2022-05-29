@@ -61,7 +61,6 @@ jobs:
                   git push
 
             - name: 'Create scratch org'
-              continue-on-error: true
               run: sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
 
             # Note: replace previous step with this one if scratch org pool is needed
@@ -74,7 +73,6 @@ jobs:
             #       cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
 
             - name: 'Install Frameworks in scratch org'
-              continue-on-error: true
               run: |
                   versionId=$(echo '${{ steps.package-frameworks.outputs.packageVersionId }}')
                   sfdx force:package:install --package $versionId --publishwait 10 --wait 10 --noprompt
