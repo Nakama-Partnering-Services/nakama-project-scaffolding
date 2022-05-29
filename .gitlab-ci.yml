@@ -121,7 +121,7 @@ validate-merge-request:
 manual-deployment:
     stage: dispatch-child-pipeline
     rules:
-        - if: $DESTINATION_ENVIRONMENT != "" && ($METADATA_DEPLOYMENT == "true" || $VLOCITY_DEPLOYMENT == "true")
+        - if: $DESTINATION_ENVIRONMENT && $DESTINATION_ENVIRONMENT != "" && ($METADATA_DEPLOYMENT == "true" || $VLOCITY_DEPLOYMENT == "true")
     # Note: ths is not supposed to be needed since as per documentation it should be the default behaviour, however it is a non working issue: https://gitlab.com/gitlab-org/gitlab/-/issues/322772
     variables:
         DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
@@ -143,9 +143,9 @@ manual-deployment:
 scheduled-tests:
     stage: dispatch-child-pipeline
     rules:
-        - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED && $DAILY_RUN_LOCAL_TESTS_DISABLED || $DESTINATION_ENVIRONMENT == ""
+        - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED && $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
-        - if: $CI_PIPELINE_SOURCE == "schedule"
+        - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT && $DESTINATION_ENVIRONMENT != ""
     variables:
         DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
     trigger:
