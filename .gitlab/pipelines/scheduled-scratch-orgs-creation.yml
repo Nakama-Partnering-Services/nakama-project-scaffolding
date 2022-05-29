@@ -10,4 +10,5 @@ create-scratch-orgs:
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
         - echo 'y' | sf plugins install sfpowerkit
+        # Note: actions will still succeed if sfdx sfpowerkit:pool:create does not work as expected
         - sf sfpowerkit pool create --configfilepath=so_pool_config-base.schema.json
