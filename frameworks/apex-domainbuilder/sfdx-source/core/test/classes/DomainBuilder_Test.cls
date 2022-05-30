@@ -24,6 +24,22 @@ private class DomainBuilder_Test {
 	}
 
 	@IsTest
+	private static void bulkPersist() {
+		// Setup & Exercise
+
+		Account_t aux;
+		for (Integer i = 0; i < 100; i++) {
+			aux = new Account_t().add(new Contact_t());
+		}
+		aux.persist(); // Note: persist() needs to be called on an instance, so last object is used
+
+		// Verify
+		System.assertEquals(201, Limits.getDmlRows());
+		System.assertEquals(100, [SELECT COUNT() FROM Account]);
+		System.assertEquals(100, [SELECT COUNT() FROM Contact]);
+	}
+
+	@IsTest
 	private static void happyPath() {
 		// Setup & Exercise
 		Contact_t ron = new Contact_t().first('Ron').last('Harris');

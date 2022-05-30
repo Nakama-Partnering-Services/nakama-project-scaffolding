@@ -42,8 +42,8 @@ jobs:
             # Note: Output is printed so that a possible error is not obscured
             - name: 'Create package version - Frameworks'
               id: package-frameworks
-              run: | # --codecoverage
-                  json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --skipvalidation --wait 30 --json 3>&1) || true
+              run: | # --skipvalidation
+                  json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json 3>&1) || true
                   echo "Output ==> $json"
                   packageVersionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
                   echo "::set-output name=packageVersionId::$packageVersionId"
