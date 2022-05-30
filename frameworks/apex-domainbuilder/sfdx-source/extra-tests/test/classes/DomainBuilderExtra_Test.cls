@@ -1,7 +1,7 @@
 @IsTest
 private class DomainBuilderExtra_Test {
 	@IsTest
-	private static void doesntAllowCircularRelations() {
+	private static void allowCircularRelations() {
 		// Setup & Exercise
 		Contact_t c = new Contact_t();
 
