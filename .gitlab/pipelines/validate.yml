@@ -143,7 +143,7 @@ scratch-org-validations:
     resource_group: scratch/$CI_COMMIT_REF_SLUG
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1 --setalias scratch-org
+        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
         # Note: replace scratch org creation if scratch org pool is needed
         # - echo 'y' | sf plugins install sfpowerkit
         # - sf sfpowerkit pool fetch --tag base --setdefaultusername
