@@ -1,6 +1,6 @@
-[![Create Frameworks Package Version](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/create-frameworks-package-version.yml) [![Daily run local tests](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/scheduled-tests.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/project-scaffolding/actions/workflows/scheduled-tests.yml) [![pipeline](https://gitlab.com/jdkgabri/project-scaffolding/badges/main/pipeline.svg)](https://gitlab.com/jdkgabri/project-scaffolding/-/commits/main)
+[![Create Frameworks Package Version](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/actions/workflows/create-frameworks-package-version.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/actions/workflows/create-frameworks-package-version.yml) [![Daily run local tests](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/actions/workflows/scheduled-tests.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/actions/workflows/scheduled-tests.yml) [![pipeline](https://gitlab.com/jdkgabri/nakama-project-scaffolding/badges/main/pipeline.svg)](https://gitlab.com/jdkgabri/nakama-project-scaffolding/-/commits/main)
 
-# project-scaffolding
+# nakama-project-scaffolding
 
 This repository aims to contain the resources and frameworks used for the scaffolding of new sfdx projects. It also has a modular project structure with guidelines on how to use it, the purpose of each folder, and some naming conventions and best practices.
 
