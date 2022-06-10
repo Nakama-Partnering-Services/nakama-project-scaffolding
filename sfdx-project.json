@@ -16,7 +16,7 @@
 			"default": false
 		}
 	],
-	"name": "project-scaffolding",
+	"name": "nakama-project-scaffolding",
 	"sfdcLoginUrl": "https://login.salesforce.com",
 	"sourceApiVersion": "54.0",
 	"packageAliases": {
