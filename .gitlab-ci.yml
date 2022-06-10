@@ -1,6 +1,6 @@
 # Possible options aside from empty in GitLab settings are:
 # .gitlab-ci.yml@jdkgabri/project-scaffolding-pipelines (separate repo with just gitlab-ci.yml and pipeline .yml files)
-# https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab-ci.yml
+# https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab-ci.yml
 
 # TODO: Try to run pipelines for external pull requests in GitHub: https://docs.gitlab.com/ee/ci/ci_cd_for_external_repos/index.html#pipelines-for-external-pull-requests
 
@@ -59,10 +59,10 @@ deploy-to-testing-and-backpromote:
     trigger:
         include:
             '.gitlab/pipelines/deploy.yml'
-            # - project: 'jdkgabri/project-scaffolding'
+            # - project: 'jdkgabri/nakama-project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/deploy.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/deploy.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/deploy.yml'
         strategy: depend
     parallel:
         matrix:
@@ -80,10 +80,10 @@ deploy-to-staging:
     trigger:
         include:
             '.gitlab/pipelines/deploy.yml'
-            # - project: 'jdkgabri/project-scaffolding'
+            # - project: 'jdkgabri/nakama-project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/deploy.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/deploy.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/deploy.yml'
         strategy: depend
 
 create-frameworks-package-version:
@@ -99,10 +99,10 @@ create-frameworks-package-version:
     trigger:
         include:
             '.gitlab/pipelines/create-frameworks-package-version.yml'
-            # - project: 'jdkgabri/project-scaffolding'
+            # - project: 'jdkgabri/nakama-project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/create-frameworks-package-version.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/create-frameworks-package-version.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/create-frameworks-package-version.yml'
         strategy: depend
 
 validate-merge-request:
@@ -112,10 +112,10 @@ validate-merge-request:
     trigger:
         include:
             '.gitlab/pipelines/validate.yml'
-            # - project: 'jdkgabri/project-scaffolding'
+            # - project: 'jdkgabri/nakama-project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/validate.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/validate.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/validate.yml'
         strategy: depend
 
 manual-deployment:
@@ -134,10 +134,10 @@ manual-deployment:
     trigger:
         include:
             '.gitlab/pipelines/manual-deployment.yml'
-            # - project: 'jdkgabri/project-scaffolding'
+            # - project: 'jdkgabri/nakama-project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/manual-deployment.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/manual-deployment.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/manual-deployment.yml'
         strategy: depend
 
 scheduled-tests:
@@ -152,10 +152,10 @@ scheduled-tests:
     trigger:
         include:
             '.gitlab/pipelines/scheduled-tests.yml'
-            # - project: 'jdkgabri/project-scaffolding'
+            # - project: 'jdkgabri/nakama-project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/scheduled-tests.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/scheduled-tests.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/scheduled-tests.yml'
         strategy: depend
 
 scheduled-scratch-orgs-creation:
@@ -167,8 +167,8 @@ scheduled-scratch-orgs-creation:
     trigger:
         include:
             '.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
-            # - project: 'jdkgabri/project-scaffolding'
+            # - project: 'jdkgabri/nakama-project-scaffolding'
             #   ref: 'main'
             #   file: '.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/project-scaffolding/main/.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
         strategy: depend
