@@ -19,7 +19,7 @@ sfdx-source/untracked/**
 README.md
 
 # Default folder
-sfdx-source/core/main/default/**
+**/default/**
 
 # Vlocity
 **/vlocity/**
