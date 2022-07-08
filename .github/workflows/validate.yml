@@ -177,4 +177,4 @@ jobs:
 
             # Note: redundant and error prone due to running frameworks and project tests together, until this issue is fixed: https://trailblazer.salesforce.com/issues_view?id=a1p4V000002JRzNQAW
             # - name: 'Run local tests'
-            #   run: sfdx force:apex:test:run --testlevel RunLocalTests --synchronous --resultformat json --loglevel error --json
+            #   run: sfdx force:apex:test:run --testlevel RunLocalTests --synchronous --resultformat human --loglevel error

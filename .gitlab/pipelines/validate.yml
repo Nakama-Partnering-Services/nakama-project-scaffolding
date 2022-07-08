@@ -156,6 +156,8 @@ scratch-org-validations:
         - node scripts/node/environment-replacements/main.js || true
         - cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
         - sfdx force:source:push
+        # Note: redundant and error prone due to running frameworks and project tests together, until this issue is fixed: https://trailblazer.salesforce.com/issues_view?id=a1p4V000002JRzNQAW
+        # - sfdx force:apex:test:run --testlevel RunLocalTests --synchronous --resultformat human --loglevel error
     artifacts:
         reports:
             dotenv: scratch.env
