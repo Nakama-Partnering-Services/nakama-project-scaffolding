@@ -3,7 +3,7 @@
 		{
 			"path": "frameworks",
 			"package": "Frameworks",
-			"versionNumber": "1.0.2.NEXT",
+			"versionNumber": "1.0.3.NEXT",
 			"definitionFile": "config/project-scratch-def.json",
 			"default": false
 		},
@@ -21,6 +21,6 @@
 	"sourceApiVersion": "54.0",
 	"packageAliases": {
 		"Frameworks": "0Ho7Q0000008OO8SAM",
-		"Frameworks@1.0.2-2": "04t7Q000000cvHPQAY"
+		"Frameworks@1.0.3-1": "04t7Q000000cvHUQAY"
 	}
 }

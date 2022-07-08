@@ -1,5 +1,5 @@
 echo "Installing frameworks package..."
-sfdx force:package:install -p 04t7Q000000cntxQAA -w 10 --noprompt -u $1
+sfdx force:package:install -p 04t7Q000000cvHUQAY -w 10 --noprompt -u $1
 
 echo "Replacing environment specific metadata..."
 cp --recursive specific-environments/scratch-org/. sfdx-source/
