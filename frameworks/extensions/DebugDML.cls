@@ -1,4 +1,3 @@
-// Note: THIS CLASS IS NOT DELIVERED NOR INSTALLED INTO ORGS AND IS JUST AN EXAMPLE
 public inherited sharing class DebugDML extends fflib_SObjectUnitOfWork.SimpleDML {
 	public override void dmlInsert(List<SObject> objList) {
 		Database.SaveResult[] srList = Database.insert(objList, false);
