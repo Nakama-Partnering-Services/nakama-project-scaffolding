@@ -36,7 +36,8 @@ $RECYCLE.BIN/
 # Local environment variables
 .env
 
-sfdx-source/core/main/default/**
+# Default folders
+sfdx-source/**/default/**
 
 # Visual Studio Code ignore
 

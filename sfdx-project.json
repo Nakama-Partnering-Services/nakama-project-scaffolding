@@ -3,7 +3,7 @@
 		{
 			"path": "frameworks",
 			"package": "Frameworks",
-			"versionNumber": "1.0.3.NEXT",
+			"versionNumber": "1.0.4.NEXT",
 			"definitionFile": "config/project-scratch-def.json",
 			"default": false
 		},
@@ -18,7 +18,7 @@
 	],
 	"name": "nakama-project-scaffolding",
 	"sfdcLoginUrl": "https://login.salesforce.com",
-	"sourceApiVersion": "54.0",
+	"sourceApiVersion": "55.0",
 	"packageAliases": {
 		"Frameworks": "0Ho7Q0000008OO8SAM",
 		"Frameworks@1.0.3-1": "04t7Q000000cvHUQAY"
