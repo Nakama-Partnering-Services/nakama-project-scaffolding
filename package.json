@@ -14,6 +14,7 @@
 		"prettier:verify": "prettier --list-different \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
 		"postinstall": "husky install",
 		"precommit": "lint-staged",
+		"prepush": "node scripts/node/hooks/pre-push.js",
 		"scratch-org:prepare": "sh scripts/shell/prepare-scratch-org.sh",
 		"scratch-org:build": "sh scripts/shell/build-scratch-org.sh",
 		"scratch-org:pool:create:base": "sfdx sfpowerkit:pool:create -f so_pool_config-base.schema.json",
