@@ -44,9 +44,6 @@
 		],
 		"**/{aura,lwc}/**": [
 			"eslint"
-		],
-		"**/*.{cls,trigger}": [
-			"sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --engine pmd --severity-threshold 3 --format table --target"
 		]
 	}
 }
