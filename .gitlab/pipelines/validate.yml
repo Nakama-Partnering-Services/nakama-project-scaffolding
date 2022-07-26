@@ -16,6 +16,8 @@ stages:
     - local-validations
     - generate-deltas
     - org-validations
+    - identify-non-test-classes
+    - verify-test-coverage
     - delete-scratch-org
 
 include:
@@ -57,6 +59,15 @@ verify-formatting:
                 npx prettier --list-different "$FILE"
             done
         - unset IFS
+        # Following approach, fails when many files have changed and parameter list is too large
+        # - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
+        # - NUMBER_OF_FILES=$(echo "$CHANGED_FILES" | tr ',' ' ' | wc -w)
+        # - |
+        #     if [ "$NUMBER_OF_FILES" -gt 1 ]; then
+        #         npx prettier --list-different "{$CHANGED_FILES}"
+        #     elif [ "$CHANGED_FILES" ]; then
+        #         npx prettier --list-different "$CHANGED_FILES"
+        #     fi
 
 verify-linting:
     stage: local-validations
@@ -126,7 +137,44 @@ validation-deployment:
         - node scripts/node/environment-replacements/main.js || true
         - cp --recursive specific-environments/$TARGET_ENVIRONMENT/. sfdx-source/ || true
         # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-        - sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests
+        - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --json > scripts/node/utilities/results.json
+    artifacts:
+        when: always
+        paths:
+            - scripts/node/utilities/results.json
+
+print-deployment-result:
+    stage: org-validations
+    needs: [validation-deployment]
+    rules:
+        - if: $VALIDATION_DEPLOYMENT_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+          when: always
+    script:
+        - cat scripts/node/utilities/results.json
+
+identify-non-test-classes:
+    stage: identify-non-test-classes
+    rules:
+        - if: $VALIDATION_DEPLOYMENT_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+    script:
+        - NON_TEST_CLASSES=$((egrep -wrliL @IsTest deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+        - echo "NON_TEST_CLASSES=$NON_TEST_CLASSES" >> non_tests.env
+    artifacts:
+        reports:
+            dotenv: non_tests.env
+
+verify-test-coverage:
+    stage: verify-test-coverage
+    rules:
+        - if: $VALIDATION_DEPLOYMENT_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+    script:
+        - scripts/node/utilities/verifyCoverage.ts 90 $NON_TEST_CLASSES
 
 scratch-org-validations:
     stage: org-validations

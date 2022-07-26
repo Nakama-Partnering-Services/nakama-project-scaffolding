@@ -131,7 +131,10 @@ jobs:
                   npm install fast-xml-parser
                   node scripts/node/environment-replacements/main.js || true
                   cp --recursive specific-environments/devint/. sfdx-source/ || true
-                  sfdx force:source:deploy --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests
+                  sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --json > scripts/node/utilities/results.json
+                  cat scripts/node/utilities/results.json
+                  NON_TEST_CLASSES=$((egrep -wrliL @IsTest deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                  scripts/node/utilities/verifyCoverage.ts 90 $NON_TEST_CLASSES
 
     scratch-org-validations:
         name: 'Execute scratch org validations'
