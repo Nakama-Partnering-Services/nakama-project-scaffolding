@@ -12,7 +12,7 @@ public inherited sharing virtual class HttpCallout {
 
 	// CTOR
 
-	// Note: default constructor needs to be explicitly declared for extending classes to use the super() notation.
+	// Note: default constructor needs to be explicitly declared for extending classes to use the super() notation
 	public HttpCallout() {
 	}
 
