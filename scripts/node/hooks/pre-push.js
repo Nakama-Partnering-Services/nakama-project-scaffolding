@@ -13,7 +13,7 @@ const validateBranchName = async () => {
 	});
 
 	if (!isInRemote) {
-		const validBranchPrefix = 'feature|bugfix|hotfix|chore|release';
+		const validBranchPrefix = 'feature|bugfix|hotfix|chore';
 		const userStoryPrefix = 'US-';
 		const validBranchesRegex = new RegExp(`^(${validBranchPrefix})/${userStoryPrefix}[\\w.-]+$`);
 		if (!validBranchesRegex.test(branchName)) {
