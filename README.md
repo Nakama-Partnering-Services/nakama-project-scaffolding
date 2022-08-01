@@ -33,9 +33,7 @@ This project is licensed under the MIT license - see the [LICENSE](/LICENSE) fil
 -   Implement vlocity deployment in Github workflows deploy.yml and manual-deployment.yml.
 -   Consider user friendly reporting of PMD and ESLINT issues in GitLab, similar to GitHub approach.
 -   Add proper badges for pipeline, including RunLocalTests.
--   Consider to automate listing/update Jira tickets for User Stories deployed into testing. Integration GiHub/GitLab - Jira - MS Teams
 -   Consider reorganizing jobs and stages to make pipelines faster.
 -   Code quality report to analyse Apex.
 -   Consider [Codacy](https://docs.codacy.com/coverage-reporter/) and [CodeCov](https://about.codecov.io/tool/gitlab-ci/).
--   (Requires cobertura xml file) Leverage [Test coverage visualization](https://docs.gitlab.com/ee/user/project/merge_requests/test_coverage_visualization.html) for Apex.
 -   Consider ideas from [here](https://github.com/dxatscale/dxatscale-template/blob/main/.gitlab-ci.yml) and [here](https://gitlab.com/sfdx/sfdx-cicd-template/-/blob/master/Salesforce.gitlab-ci.yml).

@@ -16,7 +16,17 @@ run-validation-deployment:
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - sfdx force:source:deploy --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose
+        - sfdx force:source:deploy --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose --junit --resultsdir test-results
+        # - cat test-results/junit/junit.xml
+    artifacts:
+        when: always
+        paths:
+            - test-results/
+        reports:
+            junit: test-results/junit/junit.xml # Unit test reports only appear in the child dispatched pipeline
+    # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
+    # coverage: /name="testRunCoverage" value="([\d]+%)"/ not working since because the --codecoverage flag can not be specified
+    # and hende the testRunCoverage does not appear even if we print the junit.xml file in the job log.
 
 run-local-tests:
     stage: scheduled-tests

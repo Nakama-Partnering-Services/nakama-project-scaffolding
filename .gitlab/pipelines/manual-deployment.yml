@@ -74,6 +74,8 @@ manual-metadata-delta-deployment:
 manual-vlocity-delta-deployment:
     stage: manual-vlocity-deployment
     rules:
+        - if: $VALIDATION_ONLY == "true"
+          when: never
         - if: $VLOCITY_DEPLOYMENT == "true"
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT

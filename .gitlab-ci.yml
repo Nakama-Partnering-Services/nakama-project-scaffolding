@@ -34,18 +34,40 @@ variables:
 
 stages:
     - dispatch-child-pipeline
+    # Moved hre from validate.yml to work with included yml rather than dispatched child pipeline
+    - generate-code_quality-report
+    - install-npm
+    - local-validations
+    - generate-deltas
+    - org-validations
+    - identify-non-test-classes
+    - verify-test-coverage
+    - delete-scratch-org
 
 .any-changes:
     - sfdx-source/**/main/**/*
-    - sfdx-source/**/test/classes/**/*
+    - sfdx-source/**/test/**/*
     - sfdx-source/**/vlocity/**/*
-
 .dest-envs:
     - devint
     # - testing
     # - dev1
     # - dev2
     # - dev3
+
+validate-merge-request:
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
+    script:
+        - echo 'Starting MR validation with includes...'
+
+# Include is used with yml rather than dispatching child pipeline so that Unit test report are visible in parent pipeline
+# until this is solved: https://gitlab.com/gitlab-org/gitlab/-/issues/212894
+include:
+    - local: '.gitlab/pipelines/validate.yml'
+      rules:
+          - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
 
 deploy-to-testing-and-backpromote:
     stage: dispatch-child-pipeline
@@ -103,19 +125,6 @@ create-frameworks-package-version:
             #   ref: 'main'
             #   file: '.gitlab/pipelines/create-frameworks-package-version.yml'
             # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/create-frameworks-package-version.yml'
-        strategy: depend
-
-validate-merge-request:
-    stage: dispatch-child-pipeline
-    rules:
-        - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
-    trigger:
-        include:
-            '.gitlab/pipelines/validate.yml'
-            # - project: 'jdkgabri/nakama-project-scaffolding'
-            #   ref: 'main'
-            #   file: '.gitlab/pipelines/validate.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/validate.yml'
         strategy: depend
 
 manual-deployment:
