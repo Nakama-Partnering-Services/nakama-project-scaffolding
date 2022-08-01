@@ -5,7 +5,7 @@
 		"**/.sfdx": true
 	},
 	"terminal.integrated.defaultProfile.windows": "Git Bash",
-	"salesforcedx-vscode-apex.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.3.7-hotspot",
+	"salesforcedx-vscode-apex.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.4.8-hotspot",
 	"salesforcedx-vscode-core.retrieve-test-code-coverage": true,
 	"trailing-spaces.trimOnSave": true,
 	"files.trimTrailingWhitespace": true,
