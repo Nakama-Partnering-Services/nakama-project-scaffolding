@@ -17,6 +17,12 @@ const apexTestResults = deploymentResult.result.details.runTestResult.codeCovera
 const requiredCoverage = parseInt(process.argv[2], 10);
 const testClassesToCheck = process.argv[3].split(',');
 
+if (!testClassesToCheck) {
+	const msg = 'There are no apex test classes to check coverage.';
+	console.log(msg);
+	process.exit(0);
+}
+
 const classesWithCoverage = testClassesToCheck.map((testClassName) => {
 	const testClassDetails = apexTestResults[testClassName];
 
