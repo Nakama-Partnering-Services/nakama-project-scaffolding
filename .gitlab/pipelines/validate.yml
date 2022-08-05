@@ -138,13 +138,12 @@ validation-deployment:
         - node scripts/node/environment-replacements/main.js || true
         - cp --recursive specific-environments/$TARGET_ENVIRONMENT/. sfdx-source/ || true
         # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-        - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --junit --coverageformatters cobertura --resultsdir test-results --json > scripts/node/utilities/results.json
+        - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --junit --coverageformatters cobertura --resultsdir test-results --json > test-results/results.json
         - node scripts/node/utilities/replaceCoberturaFileNamePaths.ts || true
         # - cat test-results/junit/junit.xml
     artifacts:
         when: always
         paths:
-            - scripts/node/utilities/results.json
             - test-results/
         reports:
             junit: test-results/junit/junit.xml # test report works, but only displayed in child dispatched pipeline, so no sumarry in MR overview appears in parent
@@ -164,7 +163,7 @@ print-deployment-result:
         - changes: !reference [.sfdx-changes]
           when: always
     script:
-        - cat scripts/node/utilities/results.json
+        - cat test-results/results.json
 
 identify-non-test-classes:
     stage: identify-non-test-classes
@@ -186,7 +185,8 @@ verify-test-coverage:
           when: never
         - changes: !reference [.sfdx-changes]
     script:
-        - scripts/node/utilities/verifyCoverage.ts 90 $NON_TEST_CLASSES
+        - sf plugins install nakama-plugin-sfdx
+        - sf nps coverage verify --path test-results/results.json --required-coverage 90 --classes $NON_TEST_CLASSES
 
 scratch-org-validations:
     stage: org-validations
