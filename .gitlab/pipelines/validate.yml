@@ -10,6 +10,9 @@ image: salesforce/salesforcedx:latest-full
     - sfdx-source/**/main/**/*
     - sfdx-source/**/test/classes/**/*
 
+.vlocity-changes:
+    - sfdx-source/**/vlocity/**/*
+
 # Moved to .gitlab-ci.yml to work with included yml rather than dispatched child pipeline
 # stages:
 #     - generate-code_quality-report
@@ -115,7 +118,7 @@ generate-deltas:
         paths:
             - deltas
 
-validation-deployment:
+deltas-validation-deployment:
     stage: org-validations
     rules:
         - if: $VALIDATION_DEPLOYMENT_DISABLED
@@ -157,7 +160,7 @@ validation-deployment:
 
 print-deployment-result:
     stage: org-validations
-    needs: [validation-deployment]
+    needs: [deltas-validation-deployment]
     rules:
         - if: $VALIDATION_DEPLOYMENT_DISABLED
           when: never
@@ -191,6 +194,37 @@ verify-test-coverage:
                 sf plugins install nakama-plugin-sfdx
                 sf nps coverage verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
             fi
+
+# Note: This job may be skipped or allow_failure: true since actual deployment can succeed under certain circumstances even if validation fails
+vlocity-validation-deployment:
+    stage: org-validations-vlocity
+    rules:
+        - if: $VALIDATION_DEPLOYMENT_DISABLED
+          when: never
+        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
+          changes: !reference [.vlocity-changes]
+          variables:
+              TARGET_ENVIRONMENT: 'devint'
+        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/
+          changes: !reference [.vlocity-changes]
+          variables:
+              TARGET_ENVIRONMENT: 'staging'
+    # Note: DESTINATION_ENVIRONMENT is renamed to TARGET_ENVIRONMENT so it does not conflicts with variable declared in .gitlab-ci.yml
+    environment: $TARGET_ENVIRONMENT
+    resource_group: $TARGET_ENVIRONMENT
+    script:
+        - DELTAS_FROM=$(eval echo \${${TARGET_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
+        # Note: upon rebasing release branch onto main, even if the previous commit SHA for the target environment does not exists,
+        # deltas against HEAD are calculated from the previous branch status, and hence, only the changes on the rebased commits appear as deltas
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM HEAD -- **/vlocity/**)
+        - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
+        - |
+            for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
+            do
+                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml validateLocalData --verbose true --simpleLogging true
+            done
 
 scratch-org-validations:
     stage: org-validations

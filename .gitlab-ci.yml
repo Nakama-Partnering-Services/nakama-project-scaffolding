@@ -42,12 +42,14 @@ stages:
     - org-validations
     - identify-non-test-classes
     - verify-test-coverage
+    - org-validations-vlocity
     - delete-scratch-org
 
 .any-changes:
     - sfdx-source/**/main/**/*
     - sfdx-source/**/test/**/*
     - sfdx-source/**/vlocity/**/*
+
 .dest-envs:
     - devint
     # - testing
