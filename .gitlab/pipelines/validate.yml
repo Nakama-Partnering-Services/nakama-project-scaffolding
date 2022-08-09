@@ -193,6 +193,8 @@ verify-test-coverage:
             fi
     artifacts:
         when: always
+        paths:
+            - test-results/coverage/cobertura.xml
         reports:
             coverage_report:
                 coverage_format: cobertura
