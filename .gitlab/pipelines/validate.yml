@@ -142,7 +142,6 @@ deltas-validation-deployment:
         - cp --recursive specific-environments/$TARGET_ENVIRONMENT/. sfdx-source/ || true
         # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
         - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --junit --coverageformatters cobertura --resultsdir test-results --json > results.json
-        - node scripts/node/utilities/replaceCoberturaFileNamePaths.ts || true
         # - cat test-results/junit/junit.xml
     artifacts:
         when: always
@@ -151,9 +150,6 @@ deltas-validation-deployment:
             - test-results/
         reports:
             junit: test-results/junit/junit.xml # test report works, but only displayed in child dispatched pipeline, so no sumarry in MR overview appears in parent
-            coverage_report:
-                coverage_format: cobertura
-                path: test-results/coverage/cobertura.xml
     # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
     # coverage: /name="testRunCoverage" value="([\d]+%)"/ not working since because the --codecoverage flag can not be specified
     # and hence the testRunCoverage does not appear even if we print the junit.xml file in the job log.
@@ -189,11 +185,18 @@ verify-test-coverage:
           when: never
         - changes: !reference [.sfdx-changes]
     script:
+        - sf plugins install nakama-plugin-sfdx
+        - sf nps coverage formatters mappaths -p test-results/cobertura.xml -t cobertura
         - |
             if [ $NON_TEST_CLASSES ]; then
-                sf plugins install nakama-plugin-sfdx
                 sf nps coverage verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
             fi
+    artifacts:
+        when: always
+        reports:
+            coverage_report:
+                coverage_format: cobertura
+                path: test-results/coverage/cobertura.xml
 
 # Note: This job may be skipped or allow_failure: true since actual deployment can succeed under certain circumstances even if validation fails
 vlocity-validation-deployment:
