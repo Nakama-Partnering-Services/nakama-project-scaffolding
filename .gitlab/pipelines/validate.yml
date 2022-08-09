@@ -186,7 +186,7 @@ verify-test-coverage:
         - changes: !reference [.sfdx-changes]
     script:
         - sf plugins install nakama-plugin-sfdx
-        - sf nps coverage formatters mappaths -p test-results/cobertura.xml -t cobertura
+        - sf nps coverage formatters mappaths -p test-results/coverage/cobertura.xml -t cobertura
         - |
             if [ $NON_TEST_CLASSES ]; then
                 sf nps coverage verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
