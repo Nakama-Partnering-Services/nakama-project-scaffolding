@@ -1,8 +1,9 @@
 {
-	"name": "salesforce-app",
+	"name": "nakama-project-scaffolding",
 	"private": true,
-	"version": "1.0.0",
-	"description": "Salesforce App",
+	"version": "1.1.1",
+	"description": "This repository aims to contain the resources and frameworks used for the scaffolding of new sfdx projects.",
+	"repository": "Nakama-Partnering-Services/nakama-project-scaffolding",
 	"scripts": {
 		"lint": "eslint **/{aura,lwc}/**",
 		"test": "npm run test:unit",
@@ -20,9 +21,17 @@
 		"scratch-org:pool:create:base": "sfdx sfpowerkit:pool:create -f so_pool_config-base.schema.json",
 		"scratch-org:pool:create:full": "sfdx sfpowerkit:pool:create -f so_pool_config-full.schema.json",
 		"scratch-org:pool:fetch:base": "sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername",
-		"scratch-org:pool:fetch:full": "sfdx sfpowerkit:pool:fetch --tag full --setdefaultusername"
+		"scratch-org:pool:fetch:full": "sfdx sfpowerkit:pool:fetch --tag full --setdefaultusername",
+		"commit": "commit",
+		"release": "standard-version",
+		"release:minor": "standard-version --release-as minor",
+		"release:patch": "standard-version --release-as patch",
+		"release:major": "standard-version --release-as major"
 	},
 	"devDependencies": {
+		"@commitlint/cli": "^17.0.3",
+		"@commitlint/config-conventional": "^17.0.3",
+		"@commitlint/prompt-cli": "^17.0.3",
 		"@lwc/eslint-plugin-lwc": "^1.0.1",
 		"@prettier/plugin-xml": "^0.13.1",
 		"@salesforce/eslint-config-lwc": "^2.0.0",
@@ -32,11 +41,12 @@
 		"eslint": "^7.29.0",
 		"eslint-plugin-import": "^2.23.4",
 		"eslint-plugin-jest": "^24.3.6",
+		"fast-xml-parser": "^4.0.3",
 		"husky": "^7.0.0",
 		"lint-staged": "^11.0.0",
 		"prettier": "^2.3.2",
 		"prettier-plugin-apex": "^1.10.0",
-		"fast-xml-parser": "^4.0.3"
+		"standard-version": "^9.5.0"
 	},
 	"lint-staged": {
 		"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [
