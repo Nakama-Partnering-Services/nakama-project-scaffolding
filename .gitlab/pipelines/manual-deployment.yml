@@ -61,6 +61,8 @@ manual-metadata-delta-deployment:
         - npm install fast-xml-parser
         - node scripts/node/environment-replacements/main.js || true
         - cp --recursive specific-environments/$DESTINATION_ENVIRONMENT/. sfdx-source/ || true
+        - sf plugins install nakama-plugin-sfdx
+        - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
         - VALIDATION_PARAMETER=$(if [ "$VALIDATION_ONLY" = "true" ]; then echo "--checkonly"; else echo ""; fi)
         - TESTS_TO_RUN=$(if [ ! $TESTS_TO_RUN ]; then echo $TEST_CLASSES; else echo $TESTS_TO_RUN; fi)
         - RUN_TEST_PARAMETER=$(if { [ "$TEST_LEVEL" = "RunSpecifiedTests" ] || [ ! $TEST_LEVEL ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $TEST_LEVEL ]; then echo "--testlevel $TEST_LEVEL"; else echo ""; fi)

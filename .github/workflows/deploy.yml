@@ -48,6 +48,8 @@ jobs:
                   DESTINATION=$(echo ${{ matrix.destination }})
                   DESTINATION=${DESTINATION,,}
                   cp --recursive specific-environments/$DESTINATION/. sfdx-source/ || true
+                  echo 'y' | sfdx plugins:install nakama-plugin-sfdx
+                  sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
                   sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose
 
             - name: 'Update last deployment commit SHA'

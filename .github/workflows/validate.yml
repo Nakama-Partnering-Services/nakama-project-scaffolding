@@ -131,11 +131,12 @@ jobs:
                   npm install fast-xml-parser
                   node scripts/node/environment-replacements/main.js || true
                   cp --recursive specific-environments/devint/. sfdx-source/ || true
+                  echo 'y' | sfdx plugins:install nakama-plugin-sfdx
+                  sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
                   sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --json > results.json
                   cat results.json
                   NON_TEST_CLASSES=$((egrep -wrliL @IsTest deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
                   if [ $NON_TEST_CLASSES ]; then
-                    echo 'y' | sfdx plugins:install nakama-plugin-sfdx
                     sfdx nps:coverage:verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
                   fi
 
