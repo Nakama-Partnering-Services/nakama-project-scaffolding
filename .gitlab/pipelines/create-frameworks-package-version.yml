@@ -20,6 +20,9 @@ create-package-version:
         - npx prettier --write sfdx-project.json
         - git add sfdx-project.json
         - git commit -m "Updated sfdx-project.json with new package version"
+        - git remote show origin
+        - git remote set-url --push origin git@gitlab:$CI_PROJECT_PATH
+        - git remote show origin
         - git push origin HEAD:$CI_DEFAULT_BRANCH
     artifacts:
         reports:
