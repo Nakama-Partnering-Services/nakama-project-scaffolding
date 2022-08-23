@@ -9,5 +9,3 @@ This folder contains frameworks used in the project. Some frameworks not in the 
 - nakama-related-list: a lwc wrapping a lightning-datatable with standard salesforce related list look and feel and providing configuration options for features such as sorting or inline editing, without additional implementation.
 - at4dx or force-di: dependency injection frameworks when extra flexibilty is needed, for example, when working with managed package and extensions.
 - avonni components or lwc-utils for extra functionalities around lwc components.
-
-test
