@@ -5,16 +5,22 @@ stages:
     - install-package-in-devhub
 
 # TODO: apply something similar to github trailheadapps/github-action-sfdx-packaging-updater@1.1.0
-# TODO: persist sfdx-project.json and README.md
+# TODO: persist sfdx-project.json and README.md => Implement
 create-package-version:
     stage: create-package-version
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage --wait 30 --json 3>&1) || true # --skipvalidation
+        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --skipvalidation --wait 30 --json 3>&1) || true # --codecoverage
           # Note: Output is printed so that a possible error is not obscured
         - echo "Output ==> $json"
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
         - echo "versionId=$versionId" >> package.env
+        - git config --local user.email "ci@gitlab.com"
+        - git config --local user.name "GitLab CI Bot"
+        - npx prettier --write sfdx-project.json
+        - git add sfdx-project.json
+        - git commit -m "Updated sfdx-project.json with new package version"
+        - git push
     artifacts:
         reports:
             dotenv: package.env
