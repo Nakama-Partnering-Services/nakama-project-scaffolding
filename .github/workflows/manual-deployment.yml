@@ -48,8 +48,7 @@ jobs:
             - name: 'Create Destination auth file'
               env:
                   SFDX_AUTH_URL: ${{ github.event.inputs.destination }}_SFDX_AUTH_URL
-              run: |
-                  echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
+              run: echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Destination'
               run: sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername

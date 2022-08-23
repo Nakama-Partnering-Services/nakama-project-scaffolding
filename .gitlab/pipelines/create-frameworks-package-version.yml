@@ -5,26 +5,20 @@ stages:
     - install-package-in-devhub
 
 # TODO: apply something similar to github trailheadapps/github-action-sfdx-packaging-updater@1.1.0
-# TODO: persist sfdx-project.json and README.md => Implement
+# TODO: clean and persist sfdx-project.json and README.md
 create-package-version:
     stage: create-package-version
     script:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --skipvalidation --wait 30 --json 3>&1) || true # --codecoverage
+        - json=$(sfdx force:package:version:create --package Frameworks --installationkeybypass --codecoverage--wait 30 --json 3>&1) || true # --skipvalidation
           # Note: Output is printed so that a possible error is not obscured
         - echo "Output ==> $json"
         - versionId=$(echo $json | jq -r '.result.SubscriberPackageVersionId')
-        # - echo "versionId=$versionId" >> package.env
-        # - git config --local user.email "ci@gitlab.com"
-        # - git config --local user.name "GitLab CI Bot"
+        - echo "versionId=$versionId" >> package.env
         - npx prettier --write sfdx-project.json
-        - npx push-to-repo -f sfdx-project.json -n "GitLab CI Bot" -e ci@gitlab.com
-        # - git add sfdx-project.json
-        # - git commit -m "Updated sfdx-project.json with new package version"
-        # - git remote show origin
-        # - git remote set-url --push origin git@gitlab:$CI_PROJECT_PATH
-        # - git remote show origin
-        # - git push origin HEAD:$CI_DEFAULT_BRANCH
+        # Note: using pipe "|" operator due to an issue with colon + space ": "
+        - |
+            npx push-to-repo --file-name sfdx-project.json --author-name "GitLab CI Bot" --author-email ci@gitlab.com --message "chore: update sfdx-project.json [skip ci]"
     artifacts:
         reports:
             dotenv: package.env
