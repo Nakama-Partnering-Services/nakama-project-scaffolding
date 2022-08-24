@@ -29,5 +29,5 @@ jobs:
               run: rm --force ./DESTINATION_SFDX_AUTH_URL.txt
 
             # Note: sfdx force:apex:test:run not used until this known issue is fixed https://trailblazer.salesforce.com/issues_view?id=a1p4V000002JRzNQAW
-            - name: 'Validation deployment executing local test'
+            - name: 'Validation deployment executing local tests'
               run: sfdx force:source:deploy --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose
