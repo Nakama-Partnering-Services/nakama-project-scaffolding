@@ -13,11 +13,19 @@ const validateBranchName = async () => {
 	});
 
 	if (!isInRemote) {
-		const validBranchPrefix = 'feature|bugfix|hotfix|chore';
+		const validReleaseBranchPrefix = 'rc|patch';
+		const validReleaseBranchesRegex = new RegExp(`^(${validReleaseBranchPrefix})/\\d\\.\\d\\.\\d`);
+
+		const validDevelopmentBranchPrefix = 'feature|bugfix|hotfix|chore';
 		const userStoryPrefix = 'US-';
-		const validBranchesRegex = new RegExp(`^(${validBranchPrefix})/${userStoryPrefix}[\\w.-]+$`);
-		if (!validBranchesRegex.test(branchName)) {
-			const msg = `Branch names in this project must adhere to this contract: (${validBranchPrefix})/${userStoryPrefix}*.`;
+		const validDevelopmentBranchesRegex = new RegExp(
+			`^(${validDevelopmentBranchPrefix})/${userStoryPrefix}[\\w.-]+$`
+		);
+
+		if (!validReleaseBranchesRegex.test(branchName) && !validDevelopmentBranchesRegex.test(branchName)) {
+			const msg = `Branch names in this project must adhere to one of these contracts:
+			(${validReleaseBranchPrefix})/major.minor.patch
+			(${validDevelopmentBranchPrefix})/${userStoryPrefix}*`;
 			console.error(msg);
 			process.exit(1);
 		}
