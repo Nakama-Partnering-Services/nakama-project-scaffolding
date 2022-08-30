@@ -105,6 +105,8 @@ jobs:
         name: 'Validation deployment'
         needs: [verify-formatting, verify-linting, verify-pmd]
         runs-on: ubuntu-latest
+        environment: DEVINT
+        concurrency: DEVINT
         steps:
             - uses: actions/checkout@v2
 
