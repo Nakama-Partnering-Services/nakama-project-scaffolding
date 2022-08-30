@@ -3,7 +3,8 @@ on:
     pull_request:
         branches:
             - main
-            - release/**
+            # - rc/**
+            # - patch/**
         paths:
             - sfdx-source/**
 
@@ -99,7 +100,7 @@ jobs:
               with:
                   sarif_file: apexScanResults.sarif
 
-    # TODO: add validation against staging for release branches
+    # TODO: add validation against staging and production for rc and patch branches
     validation-deployment:
         name: 'Validation deployment'
         needs: [verify-formatting, verify-linting, verify-pmd]
