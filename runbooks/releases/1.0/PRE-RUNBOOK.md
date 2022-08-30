@@ -1,4 +1,4 @@
-# runbooks/release/1.0
+# runbooks/releases/1.0
 
 This file should explain the manual steps before the release deployment.
 

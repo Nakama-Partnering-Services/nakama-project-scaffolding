@@ -29,9 +29,10 @@ This project is licensed under the MIT license - see the [LICENSE](/LICENSE) fil
 
 ## Roadmap
 
--   Add staging PR validation for release branches in GitHub workflow validate.yml.
+-   Add staging and production PR validation for rc and patch branches in GitHub workflow validate.yml.
 -   Implement vlocity deployment in Github workflows deploy.yml and manual-deployment.yml.
 -   Consider user friendly reporting of PMD and ESLINT issues in GitLab, similar to GitHub approach.
+-   Consider this for Github actions: mitchspano/sfdx-scan-pull-request
 -   Add proper badges for pipeline, including RunLocalTests.
 -   Consider reorganizing jobs and stages to make pipelines faster.
 -   Code quality report to analyse Apex.

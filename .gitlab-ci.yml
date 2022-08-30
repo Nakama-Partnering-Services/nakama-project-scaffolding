@@ -60,7 +60,7 @@ stages:
 validate-merge-request:
     stage: dispatch-child-pipeline
     rules:
-        - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/)
+        - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/)
     script:
         - echo 'Starting MR validation with includes...'
 
@@ -69,7 +69,7 @@ validate-merge-request:
 include:
     - local: '.gitlab/pipelines/validate.yml'
       rules:
-          - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/)
+          - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/)
 
 deploy-to-testing-and-backpromote:
     stage: dispatch-child-pipeline
