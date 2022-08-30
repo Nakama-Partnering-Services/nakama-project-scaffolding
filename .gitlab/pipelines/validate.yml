@@ -32,8 +32,7 @@ code_quality:
     rules:
         - if: $CODE_QUALITY_DISABLED
           when: never
-        - if: $CI_PIPELINE_SOURCE == "push" || $CI_PIPELINE_SOURCE == "merge_request_event"
-          changes: !reference [.sfdx-changes]
+        - changes: !reference [.sfdx-changes]
 
 install-npm-dependancies:
     stage: install-npm
