@@ -11,6 +11,8 @@
 -   1 maintainer approval is required if the merge request decreases code coverage. (Optional, code coverage is not always calculated)
 -   Approvals from author or users who add commits are prevented.
 -   Approvals are removed when new commits are pushed to the branch.
+-   Auto cancel redundant pipelines: true
+-   Skip outdated deployment jobs: true
 
 ## Repository
 

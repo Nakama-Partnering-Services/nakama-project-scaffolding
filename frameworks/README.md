@@ -2,7 +2,7 @@ This folder contains frameworks used in the project. Some frameworks not in the 
 
 - salesforce-plantuml or apex-umlcanvas: to create uml diagrams of sobjects and classes.
 - apex-xpath: to let you easily query an XML DOM structure using a simple subset of XPath syntax. For example, for metadata_wsdl.xml or third party integration responses.
-- apex-rollup: to perform rollup calculations with lookup fields.
+- Declarative Lookup Rollup Summaries (DLRS): to perform rollup calculations with lookup fields.
 - apex-sobjectdataloader: for exporting and importing records in json format given a list of sobjects record ids.
 - apex-toolingapi: wrapper around the tooling api to be used comfortably in apex.
 - sfdc-ui-lookup-lwc: a lwc for lookups.
