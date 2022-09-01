@@ -1,4 +1,5 @@
 [![Create Frameworks Package Version](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/actions/workflows/create-frameworks-package-version.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/actions/workflows/create-frameworks-package-version.yml) [![Daily run local tests](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/actions/workflows/scheduled-tests.yml/badge.svg)](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/actions/workflows/scheduled-tests.yml) [![pipeline](https://gitlab.com/jdkgabri/nakama-project-scaffolding/badges/main/pipeline.svg)](https://gitlab.com/jdkgabri/nakama-project-scaffolding/-/commits/main)
+[![Build Status](https://dev.azure.com/jdkgabri/nakama-project-scaffolding/_apis/build/status/nakama-project-scaffolding?branchName=main)](https://dev.azure.com/jdkgabri/nakama-project-scaffolding/_build/latest?definitionId=1&branchName=main)
 
 # nakama-project-scaffolding
 
