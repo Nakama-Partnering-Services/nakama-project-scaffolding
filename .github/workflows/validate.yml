@@ -108,7 +108,7 @@ jobs:
         needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ github.base_ref == 'main' }}
         with:
-            DESTINATION: DEVINT
+            DESTINATION_ENVIRONMENT: DEVINT
         secrets: inherit
 
     staging-validation-deployment:
@@ -116,7 +116,7 @@ jobs:
         needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ startsWith( github.base_ref, 'rc/' ) }}
         with:
-            DESTINATION: STAGING
+            DESTINATION_ENVIRONMENT: STAGING
         secrets: inherit
 
     production-validation-deployment:
@@ -124,7 +124,7 @@ jobs:
         needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ startsWith( github.base_ref, 'patch/' ) }}
         with:
-            DESTINATION: PRODUCTION
+            DESTINATION_ENVIRONMENT: PRODUCTION
         secrets: inherit
 
     scratch-org-validations:

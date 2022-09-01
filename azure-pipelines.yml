@@ -48,7 +48,7 @@ stages:
             steps:
                 - template: .azure/templates/deploy.yml
                   parameters:
-                      TARGET_ENVIRONMENT: $ENVIRONMENT
+                      DESTINATION_ENVIRONMENT: $ENVIRONMENT
 
     - stage: staging_deployment
       displayName: 'Deployment to Staging'
@@ -68,7 +68,7 @@ stages:
                             - checkout: self
                             - template: .azure/templates/deploy.yml
                               parameters:
-                                  TARGET_ENVIRONMENT: STAGING
+                                  DESTINATION_ENVIRONMENT: STAGING
 
     - stage: production_deployment
       displayName: 'Deployment to Production'
@@ -90,4 +90,4 @@ stages:
                             - checkout: self
                             - template: .azure/templates/deploy.yml
                               parameters:
-                                  TARGET_ENVIRONMENT: PRODUCTION
+                                  DESTINATION_ENVIRONMENT: PRODUCTION

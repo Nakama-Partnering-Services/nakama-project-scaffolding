@@ -13,15 +13,15 @@ jobs:
             image: docker://salesforce/salesforcedx:latest-full
         strategy:
             matrix:
-                destination: [DEVINT] # , TESTING, STAGING, PRODUCTION, HOTFIX
-        environment: ${{ matrix.destination }}
-        concurrency: ${{ matrix.destination }}
+                DESTINATION_ENVIRONMENT: [DEVINT] # , TESTING, STAGING, PRODUCTION, HOTFIX
+        environment: ${{ matrix.DESTINATION_ENVIRONMENT }}
+        concurrency: ${{ matrix.DESTINATION_ENVIRONMENT }}
         steps:
             - uses: actions/checkout@v2
 
             - name: 'Create Destination auth file'
               env:
-                  SFDX_AUTH_URL: ${{ matrix.destination }}_SFDX_AUTH_URL
+                  SFDX_AUTH_URL: ${{ matrix.DESTINATION_ENVIRONMENT }}_SFDX_AUTH_URL
               run: echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
 
             - name: 'Authorize Destination'

@@ -8,9 +8,9 @@ FOLDER=$(echo $1 | tr '[:upper:]' '[:lower:]') # workaround since ${1,,} does no
 cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
 echo 'y' | sfdx plugins:install nakama-plugin-sfdx
 sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-TARGET_SFDX_AUTH_URL=$(eval echo \${${1}_SFDX_AUTH_URL})
-echo $TARGET_SFDX_AUTH_URL > ./TARGET_SFDX_AUTH_URL.txt
-sfdx auth:sfdxurl:store --sfdxurlfile ./TARGET_SFDX_AUTH_URL.txt --setdefaultusername
+DESTINATION_SFDX_AUTH_URL=$(eval echo \${${1}_SFDX_AUTH_URL})
+echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
 if [ "$3" = "validation" ]; then
 	sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --json > results.json
 else

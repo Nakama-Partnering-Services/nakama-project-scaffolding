@@ -124,21 +124,21 @@ deltas-validation-deployment:
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
           changes: !reference [.sfdx-changes]
           variables:
-              TARGET_ENVIRONMENT: 'devint'
+              TARGET_ENVIRONMENT: 'DEVINT'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/
           changes: !reference [.sfdx-changes]
           variables:
-              TARGET_ENVIRONMENT: 'staging'
+              TARGET_ENVIRONMENT: 'STAGING'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/
           changes: !reference [.sfdx-changes]
           variables:
-              TARGET_ENVIRONMENT: 'production'
+              TARGET_ENVIRONMENT: 'PRODUCTION'
     # Note: DESTINATION_ENVIRONMENT is renamed to TARGET_ENVIRONMENT so it does not conflict with variable declared in .gitlab-ci.yml
     environment: $TARGET_ENVIRONMENT
     resource_group: $TARGET_ENVIRONMENT
     script:
-        - TARGET_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $TARGET_SFDX_AUTH_URL --setdefaultusername
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
         - npm install fast-xml-parser
         - node scripts/node/environment-replacements/main.js || true
         - FOLDER=${TARGET_ENVIRONMENT,,}
@@ -214,26 +214,26 @@ vlocity-validation-deployment:
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
           changes: !reference [.vlocity-changes]
           variables:
-              TARGET_ENVIRONMENT: 'devint'
+              TARGET_ENVIRONMENT: 'DEVINT'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/
           changes: !reference [.vlocity-changes]
           variables:
-              TARGET_ENVIRONMENT: 'staging'
+              TARGET_ENVIRONMENT: 'STAGING'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/
           changes: !reference [.vlocity-changes]
           variables:
-              TARGET_ENVIRONMENT: 'production'
+              TARGET_ENVIRONMENT: 'PRODUCTION'
     # Note: DESTINATION_ENVIRONMENT is renamed to TARGET_ENVIRONMENT so it does not conflicts with variable declared in .gitlab-ci.yml
     environment: $TARGET_ENVIRONMENT
     resource_group: $TARGET_ENVIRONMENT
     script:
         - DELTAS_FROM=$(eval echo \${${TARGET_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
-        # Note: upon rebasing rc branch onto main, even if the previous commit SHA for the target environment does not exists,
+        # Note: upon rebasing rc branch onto main, even if the previous commit SHA for the destination environment does not exists,
         # deltas against HEAD are calculated from the previous branch status, and hence, only the changes on the rebased commits appear as deltas
         - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM HEAD -- **/vlocity/**)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - TARGET_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $TARGET_SFDX_AUTH_URL --setalias Org --setdefaultusername
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
         - |
             for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
             do
