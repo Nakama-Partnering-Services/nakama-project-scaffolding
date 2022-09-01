@@ -1,0 +1,93 @@
+name: '$(Build.SourceBranchName) $(Date:yyyy)-$(Date:MM)-$(Date:dd) ($(Rev:rr))'
+
+schedules:
+    - cron: '0 22 * * *' # UTC Timezone
+      displayName: 'Daily midnight (CET) validation deployment to run local tests'
+      branches:
+          include:
+              - main
+      always: true # since something may have been directly changed in the orgs
+
+trigger:
+    branches:
+        include:
+            - main
+            - rc/*
+            - patch/*
+
+pool:
+    vmImage: 'ubuntu-latest'
+
+variables:
+    TARGET_BRANCH_REF: $(System.PullRequest.TargetBranch)
+    DELETE: refs/heads/
+
+stages:
+    - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+          - template: .azure/templates/scheduled-tests.yml
+
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+          - template: .azure/templates/validate.yml
+
+    - stage: testing_deployment
+      displayName: 'Deployment to Testing and backpromote'
+      condition: and(
+          eq(variables['Build.Reason'], 'IndividualCI'),
+          startsWith( variables['Build.SourceBranch'], 'refs/heads/main' )
+          )
+      jobs:
+          - job: 'Deploy'
+            strategy:
+                matrix:
+                    DEVINT:
+                        ENVIRONMENT: 'DEVINT'
+                    # TESTING:
+                    #   ENVIRONMENT: 'TESTING'
+                    # TODO: add lower environments
+            container: salesforce/salesforcedx:latest-full
+            steps:
+                - template: .azure/templates/deploy.yml
+                  parameters:
+                      TARGET_ENVIRONMENT: $ENVIRONMENT
+
+    - stage: staging_deployment
+      displayName: 'Deployment to Staging'
+      condition: and(
+          eq(variables['Build.Reason'], 'IndividualCI'),
+          startsWith( variables['Build.SourceBranch'], 'refs/heads/rc' )
+          )
+      jobs:
+          - deployment: 'Deploy_STAGING'
+            displayName: 'Deploy STAGING'
+            container: salesforce/salesforcedx:latest-full
+            environment: STAGING
+            strategy:
+                runOnce:
+                    deploy:
+                        steps:
+                            - checkout: self
+                            - template: .azure/templates/deploy.yml
+                              parameters:
+                                  TARGET_ENVIRONMENT: STAGING
+
+    - stage: production_deployment
+      displayName: 'Deployment to Production'
+      condition: and(
+          eq(variables['Build.Reason'], 'Manual'),
+          or(
+          startsWith( variables['Build.SourceBranch'], 'refs/heads/rc' ),
+          startsWith( variables['Build.SourceBranch'], 'refs/heads/patch' )
+          ))
+      jobs:
+          - deployment: 'Deploy_PRODUCTION'
+            displayName: 'Deploy PRODUCTION'
+            container: salesforce/salesforcedx:latest-full
+            environment: PRODUCTION
+            strategy:
+                runOnce:
+                    deploy:
+                        steps:
+                            - checkout: self
+                            - template: .azure/templates/deploy.yml
+                              parameters:
+                                  TARGET_ENVIRONMENT: PRODUCTION
