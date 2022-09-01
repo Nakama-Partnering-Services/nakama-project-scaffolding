@@ -13,14 +13,14 @@ jobs:
             matrix:
                 DESTINATION: [DEVINT] # STAGING, PRODUCTION
         uses: ./.github/workflows/deploy-deltas.yml
-        if: ${{ github.base_ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         with:
             DESTINATION: ${{ matrix.DESTINATION }}
         secrets: inherit
 
     deploy-to-staging:
         uses: ./.github/workflows/deploy-deltas.yml
-        if: ${{ startsWith( github.base_ref, 'refs/heads/rc/' ) }}
+        if: ${{ startsWith( github.ref, 'refs/heads/rc/' ) }}
         with:
             DESTINATION: STAGING
         secrets: inherit
