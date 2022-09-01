@@ -14,7 +14,7 @@ run-validation-deployment:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
         - sfdx force:source:deploy --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose --junit --resultsdir test-results
         # - cat test-results/junit/junit.xml ==> check below note comments in artifacts
@@ -37,7 +37,7 @@ run-local-tests:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
         - TEST_RUN_DETAILS=$(sfdx force:apex:test:run --testlevel RunLocalTests --json)
         - TEST_RUN_ID=$(jq -r '.result.testRunId' <<< $TEST_RUN_DETAILS)
@@ -49,7 +49,7 @@ run-local-tests:
 
 run-local-tests-report:
     stage: scheduled-tests-report
-    needs: [run-local-tests] # Since GitLab 14.2, needs does not needed jobs do not need to be on an earlier stage
+    needs: [run-local-tests] # Since GitLab 14.2, needs does not need jobs to be on an earlier stage
     rules:
         - if: $DAILY_RUN_LOCAL_TESTS_DISABLED
           when: never
@@ -59,7 +59,7 @@ run-local-tests-report:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
         - sfdx force:apex:test:report -i $TEST_RUN_ID --codecoverage --resultformat junit --outputdir ./tests/apex
     artifacts:

@@ -13,7 +13,7 @@ jobs:
     deploy-and-backpromote:
         strategy:
             matrix:
-                DESTINATION: [DEVINT] # STAGING, PRODUCTION
+                DESTINATION: [DEVINT] # TESTING, TODO: add lower environments
         uses: ./.github/workflows/deploy-deltas.yml
         if: ${{ github.ref == 'refs/heads/main' }}
         with:

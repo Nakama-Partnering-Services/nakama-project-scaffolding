@@ -13,7 +13,7 @@ generate-deltas:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
+        - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
         - sf plugins install sfdx-git-delta
         - mkdir deltas
         - sf sgd source delta --source sfdx-source --from $DELTAS_FROM --to HEAD --output deltas --ignore .forceignore --generate-delta
@@ -56,11 +56,12 @@ manual-metadata-delta-deployment:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
         - npm install fast-xml-parser
         - node scripts/node/environment-replacements/main.js || true
-        - cp --recursive specific-environments/$DESTINATION_ENVIRONMENT/. sfdx-source/ || true
+        - FOLDER=${DESTINATION_ENVIRONMENT,,}
+        - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
         - sf plugins install nakama-plugin-sfdx
         - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
         - VALIDATION_PARAMETER=$(if [ "$VALIDATION_ONLY" = "true" ]; then echo "--checkonly"; else echo ""; fi)
@@ -70,7 +71,7 @@ manual-metadata-delta-deployment:
         - |
             if [ ! $VALIDATION_PARAMETER ]; then
                 curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-                  "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+                  "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
             fi
 
 manual-vlocity-delta-deployment:
@@ -82,9 +83,9 @@ manual-vlocity-delta-deployment:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
-        - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
+        - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
         - SCOPE=$( if [ $PACKAGE_TO_DEPLOY ]; then echo "sfdx-source/$PACKAGE_TO_DEPLOY/vlocity/**"; else echo "**/vlocity/**"; fi )
         - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM HEAD -- $SCOPE)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
@@ -96,4 +97,4 @@ manual-vlocity-delta-deployment:
             done
         - |
             curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"

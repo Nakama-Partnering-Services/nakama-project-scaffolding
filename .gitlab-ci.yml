@@ -10,7 +10,7 @@
 variables:
     DESTINATION_ENVIRONMENT:
         value: ''
-        description: 'Destination environment for the manual deployment. Possible values are: devint, testing, staging, production, hotfix.'
+        description: 'Destination environment for the manual deployment. Possible values are: DEVINT, TESTING, STAGING, PRODUCTION, HOTFIX.'
 
     METADATA_DEPLOYMENT:
         value: 'false'
@@ -51,11 +51,9 @@ stages:
     - sfdx-source/**/vlocity/**/*
 
 .dest-envs:
-    - devint
-    # - testing
-    # - dev1
-    # - dev2
-    # - dev3
+    - DEVINT
+    # - TESTING
+    # TODO: add lower environments
 
 validate-merge-request:
     stage: dispatch-child-pipeline
@@ -100,7 +98,7 @@ deploy-to-staging:
         - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^rc/
           changes: !reference [.any-changes]
     variables:
-        DESTINATION_ENVIRONMENT: staging
+        DESTINATION_ENVIRONMENT: STAGING
     trigger:
         include:
             '.gitlab/pipelines/deploy.yml'

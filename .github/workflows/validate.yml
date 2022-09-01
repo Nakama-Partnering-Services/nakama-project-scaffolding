@@ -69,12 +69,12 @@ jobs:
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**)
                   npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
-              # IFS=$'\n'
-              # for FILE in $CHANGED_FILES;
-              #     do
-              #         npx eslint "$FILE"
-              #     done
-              # unset IFS
+                  IFS=$'\n'
+                  for FILE in $CHANGED_FILES;
+                      do
+                          npx eslint "$FILE"
+                      done
+                  unset IFS
 
               # TODO: consider reporting with sarif as well, using sfdx-scanner instead or @microsoft/eslint-formatter-sarif
             - name: Publish Test Report

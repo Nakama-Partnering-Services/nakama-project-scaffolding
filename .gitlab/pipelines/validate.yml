@@ -81,14 +81,13 @@ verify-linting:
               - sfdx-source/**/main/**/*.js
     script:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**)
-        - npx eslint $CHANGED_FILES
-        # - IFS=$'\n'
-        # - |
-        #     for FILE in $CHANGED_FILES;
-        #     do
-        #         npx eslint "$FILE"
-        #     done
-        # - unset IFS
+        - IFS=$'\n'
+        - |
+            for FILE in $CHANGED_FILES;
+            do
+                npx eslint "$FILE"
+            done
+        - unset IFS
 
 verify-pmd:
     stage: local-validations
@@ -138,11 +137,12 @@ deltas-validation-deployment:
     environment: $TARGET_ENVIRONMENT
     resource_group: $TARGET_ENVIRONMENT
     script:
-        - TARGET_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT^^}_SFDX_AUTH_URL})
+        - TARGET_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $TARGET_SFDX_AUTH_URL --setdefaultusername
         - npm install fast-xml-parser
         - node scripts/node/environment-replacements/main.js || true
-        - cp --recursive specific-environments/$TARGET_ENVIRONMENT/. sfdx-source/ || true
+        - FOLDER=${TARGET_ENVIRONMENT,,}
+        - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
         - sf plugins install nakama-plugin-sfdx
         - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
         # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
@@ -227,13 +227,13 @@ vlocity-validation-deployment:
     environment: $TARGET_ENVIRONMENT
     resource_group: $TARGET_ENVIRONMENT
     script:
-        - DELTAS_FROM=$(eval echo \${${TARGET_ENVIRONMENT^^}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
+        - DELTAS_FROM=$(eval echo \${${TARGET_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
         # Note: upon rebasing rc branch onto main, even if the previous commit SHA for the target environment does not exists,
         # deltas against HEAD are calculated from the previous branch status, and hence, only the changes on the rebased commits appear as deltas
         - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM HEAD -- **/vlocity/**)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT^^}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
+        - TARGET_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT}_SFDX_AUTH_URL})
+        - sfdx auth:sfdxurl:store --sfdxurlfile $TARGET_SFDX_AUTH_URL --setalias Org --setdefaultusername
         - |
             for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
             do

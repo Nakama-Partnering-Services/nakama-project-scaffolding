@@ -73,8 +73,8 @@ jobs:
                   npm install fast-xml-parser
                   node scripts/node/environment-replacements/main.js || true
                   DESTINATION=$(echo ${{ github.event.inputs.destination }})
-                  DESTINATION=${DESTINATION,,}
-                  cp --recursive specific-environments/$DESTINATION/. sfdx-source/ || true
+                  FOLDER=${DESTINATION,,}
+                  cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
                   echo 'y' | sfdx plugins:install nakama-plugin-sfdx
                   sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
                   sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
