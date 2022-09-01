@@ -33,6 +33,8 @@ jobs:
             - name: 'Verify formatting'
               run: |
                   echo ${{ github.base_ref }}
+                  echo $GITHUB_BASE_REF
+                  echo ${{ github.event.pull_request.base.ref }}
                   echo ${{ github.base_ref == 'refs/heads/main' }}
                   echo ${{ startsWith( github.base_ref, 'refs/heads/rc/' ) }}
                   git fetch origin $GITHUB_BASE_REF
