@@ -1,4 +1,4 @@
-name: Deploy to Testing and backpromote
+name: Dispatch deployment
 on:
     push:
         branches:

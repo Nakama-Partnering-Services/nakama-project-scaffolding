@@ -1,4 +1,4 @@
-name: 'Validate deployment'
+name: Validate deployment
 
 on:
     workflow_call:

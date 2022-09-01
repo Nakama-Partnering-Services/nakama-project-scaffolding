@@ -1,4 +1,4 @@
-name: 'Deploy deltas'
+name: Deploy deltas
 
 on:
     workflow_call:
