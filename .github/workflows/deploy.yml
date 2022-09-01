@@ -3,6 +3,8 @@ on:
     push:
         branches:
             - main
+            # Note: workflow dost not trigger when just pushing with --set-upstream to create the branch on remote.
+            # It needs at least another commit to be pushed once branch is already created
             - rc/**
         paths:
             - sfdx-source/**
