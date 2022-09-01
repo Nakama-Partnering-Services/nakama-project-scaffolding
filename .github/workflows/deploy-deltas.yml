@@ -35,7 +35,8 @@ jobs:
             # Note: Tests do not run since it is redundant with PR and will take longer.
             # TODO: handle vlocity deployments as well
             - name: 'Get deltas and deploy'
-              env: LAST_DEPLOYMENT_COMMIT_SHA:${{ inputs.DESTINATION }}_LAST_DEPLOYMENT_COMMIT_SHA
+              env:
+                  LAST_DEPLOYMENT_COMMIT_SHA: ${{ inputs.DESTINATION }}_LAST_DEPLOYMENT_COMMIT_SHA
               run: |
                   echo 'y' | sfdx plugins:install sfdx-git-delta
                   mkdir deltas
