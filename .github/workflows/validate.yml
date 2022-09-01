@@ -32,6 +32,9 @@ jobs:
 
             - name: 'Verify formatting'
               run: |
+                  echo ${{ github.base_ref }}
+                  echo ${{ github.base_ref == 'refs/heads/main' }}
+                  echo ${{ startsWith( github.base_ref, 'refs/heads/rc/' ) }}
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
                   IFS=$'\n'
