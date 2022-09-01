@@ -1,0 +1,54 @@
+name: 'Validate deployment'
+
+on:
+    workflow_call:
+        inputs:
+            DESTINATION:
+                required: true
+                type: string
+
+jobs:
+    validation-deployment:
+        name: 'Validation deployment'
+        runs-on: ubuntu-latest
+        environment: ${{ inputs.DESTINATION }}
+        concurrency: ${{ inputs.DESTINATION }}
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: 'Install SFDX CLI'
+              run: npm install sfdx-cli --global
+
+            - name: 'Create Destination auth file'
+              env:
+                  SFDX_AUTH_URL: ${{ inputs.DESTINATION }}_SFDX_AUTH_URL
+              run: echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
+
+            - name: 'Authorize Destination'
+              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION.txt --setdefaultusername
+
+            - name: 'Remove Destination auth file'
+              run: rm --force ./DESTINATION.txt
+
+            # Note: we are temporarily testing sfdx force:source:deploy with RunLocalTests instead of $RUN_TEST_PARAMETER
+            # TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+            # RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+            - name: 'Get deltas and deploy'
+              run: |
+                  git fetch origin $GITHUB_BASE_REF
+                  echo 'y' | sfdx plugins:install sfdx-git-delta
+                  mkdir deltas
+                  sfdx sgd:source:delta --source sfdx-source --from origin/$GITHUB_BASE_REF --to HEAD --output deltas --ignore .forceignore --generate-delta
+                  npm install fast-xml-parser
+                  node scripts/node/environment-replacements/main.js || true
+                  DESTINATION=$(echo ${{ inputs.DESTINATION }})
+                  DESTINATION=${DESTINATION,,}
+                  cp --recursive specific-environments/$DESTINATION/. sfdx-source/ || true
+                  echo 'y' | sfdx plugins:install nakama-plugin-sfdx
+                  sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+                  sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --json > results.json
+                  cat results.json
+                  NON_TEST_CLASSES=$((egrep -wrliL @IsTest deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                  if [ $NON_TEST_CLASSES ]; then
+                    sfdx nps:coverage:verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
+                  fi
