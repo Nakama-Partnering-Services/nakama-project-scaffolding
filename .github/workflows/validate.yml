@@ -108,7 +108,7 @@ jobs:
     devint-validation-deployment:
         uses: ./.github/workflows/validate-deployment.yml
         needs: [verify-formatting, verify-linting, verify-pmd]
-        if: ${{ github.base_ref == 'refs/heads/main' }}
+        if: ${{ github.base_ref == 'main' }}
         with:
             DESTINATION: DEVINT
         secrets: inherit
@@ -116,7 +116,7 @@ jobs:
     staging-validation-deployment:
         uses: ./.github/workflows/validate-deployment.yml
         needs: [verify-formatting, verify-linting, verify-pmd]
-        if: ${{ startsWith( github.base_ref, 'refs/heads/rc/' ) }}
+        if: ${{ startsWith( github.base_ref, 'rc/' ) }}
         with:
             DESTINATION: STAGING
         secrets: inherit
@@ -124,7 +124,7 @@ jobs:
     production-validation-deployment:
         uses: ./.github/workflows/validate-deployment.yml
         needs: [verify-formatting, verify-linting, verify-pmd]
-        if: ${{ startsWith( github.base_ref, 'refs/heads/patch/' ) }}
+        if: ${{ startsWith( github.base_ref, 'patch/' ) }}
         with:
             DESTINATION: PRODUCTION
         secrets: inherit

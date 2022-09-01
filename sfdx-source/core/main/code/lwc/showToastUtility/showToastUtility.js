@@ -11,6 +11,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
  *     - {string} title - Alternative title.
  *     - {string} mode - Determines how persistent the toast is. Possible values are: dismissable | pester | sticky
  */
+//tikotiko
 const showToastSuccess = (self, options) => {
 	options = options ? options : {};
 	const showSuccess = new ShowToastEvent({
