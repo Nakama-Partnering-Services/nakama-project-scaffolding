@@ -8,6 +8,8 @@ on:
         paths:
             - sfdx-source/**
 
+# Note: if the same branch has differente PR open to get itself merged into different targes, each PR triggering a validation,
+# the reference of valid checks will be messed and all of them will just point to the last validation check
 # Note: secrets can not be used to conditionally run jobs: https://github.com/actions/runner/issues/520
 jobs:
     verify-formatting:
