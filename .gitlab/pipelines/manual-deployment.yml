@@ -67,7 +67,7 @@ manual-metadata-delta-deployment:
         - VALIDATION_PARAMETER=$(if [ "$VALIDATION_ONLY" = "true" ]; then echo "--checkonly"; else echo ""; fi)
         - TESTS_TO_RUN=$(if [ ! $TESTS_TO_RUN ]; then echo $TEST_CLASSES; else echo $TESTS_TO_RUN; fi)
         - RUN_TEST_PARAMETER=$(if { [ "$TEST_LEVEL" = "RunSpecifiedTests" ] || [ ! $TEST_LEVEL ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $TEST_LEVEL ]; then echo "--testlevel $TEST_LEVEL"; else echo ""; fi)
-        - sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+        - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
         - |
             if [ ! $VALIDATION_PARAMETER ]; then
                 curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \

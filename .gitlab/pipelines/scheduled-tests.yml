@@ -16,7 +16,7 @@ run-validation-deployment:
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - sfdx force:source:deploy --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose --junit --resultsdir test-results
+        - sfdx force:source:deploy --wait 60 --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose --junit --resultsdir test-results
         # - cat test-results/junit/junit.xml ==> check below note comments in artifacts
     artifacts:
         when: always

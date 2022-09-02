@@ -77,7 +77,7 @@ jobs:
                   cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
                   echo 'y' | sfdx plugins:install nakama-plugin-sfdx
                   sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-                  sfdx force:source:deploy --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+                  sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
 
             - name: 'Update last deployment commit SHA'
               # https://github.com/actions/runner/issues/1483
