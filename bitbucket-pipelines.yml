@@ -1,35 +1,94 @@
-# This is an example Starter pipeline configuration
-# Use a skeleton to build, test and deploy using manual and parallel steps
-# -----
-# You can specify a custom docker image from Docker Hub as your build environment.
+image: salesforce/salesforcedx:latest-full
 
-image: atlassian/default-image:3
+definitions:
+    caches:
+        custom-npm-cache: node_modules
 
 pipelines:
-  default:
-    - parallel:
-      - step:
-          name: 'Build and Test'
-          script:
-            - echo "Your build and test goes here..."
-      - step:
-          name: 'Lint'
-          script:
-            - echo "Your linting goes here..."
-      - step:
-          name: 'Security scan'
-          script:
-            - echo "Your security scan goes here..."
-
-    # The following deployment steps will be executed for each pipeline run. To configure your steps and conditionally deploy see https://support.atlassian.com/bitbucket-cloud/docs/configure-bitbucket-pipelinesyml/
-    - step:
-        name: 'Deployment to Staging'
-        deployment: staging
-        script:
-          - echo "Your deployment to staging script goes here..."
-    - step:
-        name: 'Deployment to Production'
-        deployment: production
-        trigger: 'manual'
-        script:
-          - echo "Your deployment to production script goes here..."
+    pull-requests:
+        main:
+            - parallel:
+                  - step:
+                        script:
+                            - echo "Verify formatting"
+                  - step:
+                        script:
+                            - echo "Verify ESLINT"
+                  - step:
+                        script:
+                            - echo "Verify PMD"
+            - parallel:
+                  - step:
+                        script:
+                            - echo "Generate deltas"
+                        artifacts:
+                            - deltas/**
+                  - step:
+                        deployment: DEVINT
+                        script:
+                            - echo "Deployment to DEVINT"
+        rc/*:
+            - step:
+                  script:
+                      - echo "Generate deltas"
+                  artifacts:
+                      - deltas/**
+            - step:
+                  deployment: STAGING
+                  script:
+                      - echo "Deployment to STAGING"
+        patch/*:
+            - step:
+                  script:
+                      - echo "Generate deltas"
+                  artifacts:
+                      - deltas/**
+            - step:
+                  deployment: PRODUCTION
+                  script:
+                      - echo "Deployment to PRODUCTION"
+    branches:
+        main:
+            - step:
+                  script:
+                      - echo "Generate deltas"
+                  artifacts:
+                      - deltas/**
+            - step:
+                  deployment: DEVINT
+                  script:
+                      - echo "Deployment to DEVINT"
+        rc/*:
+            - step:
+                  script:
+                      - echo "Generate deltas"
+                  artifacts:
+                      - deltas/**
+            - step:
+                  deployment: STAGING
+                  script:
+                      - echo "Deployment to STAGING"
+    custom:
+        schedules-validation-deployment:
+            - variables:
+                  - name: DESTINATION_ENVIRONMENT
+            - step:
+                  script:
+                      - echo "Manual triggers for Sonar are awesome!"
+        deploy-to-production:
+            - variables:
+                  - name: destination
+                    allowed-values:
+                        - 'DEVINT'
+                        - 'TESTING'
+                        - 'STAGING'
+                        - 'PRODUCTION'
+                  - name: checkonly
+                    default: 'true'
+                  - name: testlevel
+                    default: 'RunLocalTests'
+                  - name: runtests
+            - step:
+                  trigger: manual
+                  script:
+                      - echo "Manual triggers for deployments are awesome!"
