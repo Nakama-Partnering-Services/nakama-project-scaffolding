@@ -104,6 +104,7 @@ jobs:
                   sarif_file: apexScanResults.sarif
 
     devint-validation-deployment:
+        name: 'DEVINT validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
         needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ github.base_ref == 'main' }}
@@ -112,6 +113,7 @@ jobs:
         secrets: inherit
 
     staging-validation-deployment:
+        name: 'STAGING validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
         needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ startsWith( github.base_ref, 'rc/' ) }}
@@ -120,6 +122,7 @@ jobs:
         secrets: inherit
 
     production-validation-deployment:
+        name: 'PRODUCTION validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
         needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ startsWith( github.base_ref, 'patch/' ) }}
