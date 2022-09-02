@@ -138,16 +138,7 @@ pipelines:
                             changesets:
                                 includePaths:
                                     - 'sfdx-source/**'
-                  - step:
-                        name: Deploy to TESTING
-                        deployment: TESTING
-                        script:
-                            - sh .bitbucket/deploy.sh TESTING
-                        condition:
-                            changesets:
-                                includePaths:
-                                    - 'sfdx-source/**'
-                  # TODO: add lower environments
+                  # TODO: add TESTING and lower environments
 
         rc/*:
             - step:
