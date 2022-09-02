@@ -6,73 +6,165 @@ definitions:
 
 pipelines:
     pull-requests:
-        main:
+        '**': # Note: only work for source branches, not target branches. Since an expression like (feature|bugfix|hotfix)/* is not working, all branches are included
+            - step:
+                  # caches: Note: this does not work as it is
+                  #     - node
+                  script:
+                      - npm ci
+                  artifacts:
+                      - node_modules/**
             - parallel:
                   - step:
+                        name: Verify formatting
                         script:
-                            - echo "Verify formatting"
+                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
+                            - IFS=$'\n'
+                            - |
+                                for FILE in $CHANGED_FILES;
+                                do
+                                    npx prettier --list-different "$FILE"
+                                done
+                            - unset IFS
                   - step:
+                        name: Verify ESLINT
                         script:
-                            - echo "Verify ESLINT"
+                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- **/{aura,lwc}/**)
+                            - IFS=$'\n'
+                            - |
+                                for FILE in $CHANGED_FILES;
+                                do
+                                    npx eslint "$FILE"
+                                done
+                            - unset IFS
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - '**/aura/**'
+                                    - '**/lwc/**'
                   - step:
+                        name: Verify PMD
                         script:
-                            - echo "Verify PMD"
+                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD)
+                            - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
+                            - sf plugins install @salesforce/sfdx-scanner
+                            - sf scanner run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - 'sfdx-source/**'
             - parallel:
                   - step:
+                        name: Scratch org validation
                         script:
-                            - echo "Generate deltas"
+                            - echo $DEVHUB_SFDX_AUTH_URL > ./DEVHUB_SFDX_AUTH_URL.txt
+                            - sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setdefaultdevhubusername
+                            - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
+                            # Note: replace scratch org creation if scratch org pool is needed
+                            # - echo 'y' | sf plugins install sfpowerkit
+                            # - sf sfpowerkit pool fetch --tag base --setdefaultusername
+                            - npm install fast-xml-parser
+                            - node scripts/node/environment-replacements/main.js || true
+                            - cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
+                            - sfdx force:source:push
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - 'sfdx-source/**'
+                  - step:
+                        name: Generate deltas
+                        script:
+                            - sf plugins install sfdx-git-delta
+                            - mkdir deltas
+                            - sf sgd source delta --source sfdx-source --from origin/$BITBUCKET_PR_DESTINATION_BRANCH --to HEAD --output deltas --ignore .forceignore --generate-delta
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - 'sfdx-source/**'
                         artifacts:
                             - deltas/**
+            - step:
+                  name: Deltas validation deployment
+                  # deployment: # DEVINT # STAGING # PRODUCTION
+                  script:
+                      - DESTINATION_ENVIRONMENT=$(if [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "main" ]; then echo "DEVINT"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^rc/[0-9].[0-9].[0-9]$ ]]; then echo "STAGING"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^patch/[0-9].[0-9].[0-9]$ ]]; then echo "PRODUCTION"; fi)
+                      - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
+                      - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+                      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
+                      - npm install fast-xml-parser
+                      - node scripts/node/environment-replacements/main.js || true
+                      - FOLDER=${DESTINATION_ENVIRONMENT,,}
+                      - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
+                      - sf plugins install nakama-plugin-sfdx
+                      - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+                      # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+                      - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --json > results.json
+                  condition:
+                      changesets:
+                          includePaths:
+                              - 'sfdx-source/**'
+                  artifacts:
+                      - results.json
+            - parallel:
                   - step:
-                        deployment: DEVINT
+                        name: Print deployment results
                         script:
-                            - echo "Deployment to DEVINT"
-        rc/*:
-            - step:
-                  script:
-                      - echo "Generate deltas"
-                  artifacts:
-                      - deltas/**
-            - step:
-                  deployment: STAGING
-                  script:
-                      - echo "Deployment to STAGING"
-        patch/*:
-            - step:
-                  script:
-                      - echo "Generate deltas"
-                  artifacts:
-                      - deltas/**
-            - step:
-                  deployment: PRODUCTION
-                  script:
-                      - echo "Deployment to PRODUCTION"
+                            - cat results.json
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - 'sfdx-source/**'
+                  - step:
+                        name: Verify test coverage
+                        script:
+                            - NON_TEST_CLASSES=$((egrep -wrliL @IsTest deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                            - |
+                                if [ $NON_TEST_CLASSES ]; then
+                                    sfdx nps:coverage:verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
+                                fi
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - 'sfdx-source/**'
     branches:
         main:
-            - step:
-                  script:
-                      - echo "Generate deltas"
-                  artifacts:
-                      - deltas/**
-            - step:
-                  deployment: DEVINT
-                  script:
-                      - echo "Deployment to DEVINT"
+            - parallel:
+                  - step:
+                        name: Deploy to DEVINT
+                        deployment: DEVINT
+                        script:
+                            - sh .bitbucket/deploy.sh DEVINT
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - 'sfdx-source/**'
+                  - step:
+                        name: Deploy to TESTING
+                        deployment: TESTING
+                        script:
+                            - sh .bitbucket/deploy.sh TESTING
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - 'sfdx-source/**'
+                  # TODO: add lower environments
+
         rc/*:
             - step:
-                  script:
-                      - echo "Generate deltas"
-                  artifacts:
-                      - deltas/**
-            - step:
+                  name: Deploy to STAGING
                   deployment: STAGING
                   script:
-                      - echo "Deployment to STAGING"
+                      - sh .bitbucket/deploy.sh STAGING
+                  condition:
+                      changesets:
+                          includePaths:
+                              - 'sfdx-source/**'
     custom:
         schedules-validation-deployment:
             - variables:
                   - name: DESTINATION_ENVIRONMENT
             - step:
+                  name: Scheduled validation deployment with tests
                   script:
                       - echo "Manual triggers for Sonar are awesome!"
         deploy-to-production:
@@ -89,6 +181,6 @@ pipelines:
                     default: 'RunLocalTests'
                   - name: runtests
             - step:
-                  trigger: manual
+                  name: Manual deployment
                   script:
                       - echo "Manual triggers for deployments are awesome!"
