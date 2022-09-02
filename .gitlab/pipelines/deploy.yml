@@ -38,6 +38,7 @@ deploy-deltas:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
+        # Note: not using deploy.sh due to special handling of SFDX_AUTH_UR as a file, and deltas previously generated
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
         - npm install fast-xml-parser

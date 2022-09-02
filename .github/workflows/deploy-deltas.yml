@@ -33,21 +33,22 @@ jobs:
               run: rm --force ./DESTINATION_SFDX_AUTH_URL.txt
 
             # Note: Tests do not run since it is redundant with PR and will take longer.
+            # Note: not using deploy.sh due to special handling of secrets
             # TODO: handle vlocity deployments as well
             - name: 'Get deltas and deploy'
               env:
                   LAST_DEPLOYMENT_COMMIT_SHA: ${{ inputs.DESTINATION_ENVIRONMENT }}_LAST_DEPLOYMENT_COMMIT_SHA
               run: |
-                  echo 'y' | sfdx plugins:install sfdx-git-delta
+                  sf plugins install sfdx-git-delta
                   mkdir deltas
-                  sfdx sgd:source:delta --source sfdx-source --from ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} --to HEAD --output deltas --ignore .forceignore --generate-delta
+                  sf sgd source delta --source sfdx-source --from ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} --to HEAD --output deltas --ignore .forceignore --generate-delta
                   npm install fast-xml-parser
                   node scripts/node/environment-replacements/main.js || true
                   DESTINATION=$(echo ${{ inputs.DESTINATION_ENVIRONMENT }})
                   FOLDER=${DESTINATION,,}
                   cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-                  echo 'y' | sfdx plugins:install nakama-plugin-sfdx
-                  sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+                  sf plugins install nakama-plugin-sfdx
+                  sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
                   sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose
 
             - name: 'Update last deployment commit SHA'

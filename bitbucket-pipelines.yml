@@ -133,7 +133,7 @@ pipelines:
                         name: Deploy to DEVINT
                         deployment: DEVINT
                         script:
-                            - sh .bitbucket/deploy.sh DEVINT
+                            - sh ./scripts/shell/deploy.sh DEVINT
                         condition:
                             changesets:
                                 includePaths:
@@ -145,7 +145,7 @@ pipelines:
                   name: Deploy to STAGING
                   deployment: STAGING
                   script:
-                      - sh .bitbucket/deploy.sh STAGING
+                      - sh ./scripts/shell/deploy.sh STAGING
                   condition:
                       changesets:
                           includePaths:
