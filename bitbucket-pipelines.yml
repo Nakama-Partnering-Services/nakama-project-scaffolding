@@ -151,27 +151,55 @@ pipelines:
                           includePaths:
                               - 'sfdx-source/**'
     custom:
-        schedules-validation-deployment:
+        scheduled-validation-deployments:
+            - parallel:
+                  - step:
+                        name: Daily validation deployment with tests
+                        deployment: DEVINT
+                        script:
+                            - sh ./scripts/shell/validation-with-tests.sh DEVINT
+                  # TODO: add TESTING, STAGING, PRODUCTION and HOTFIX environments
+        manual-deployment:
             - variables:
                   - name: DESTINATION_ENVIRONMENT
-            - step:
-                  name: Scheduled validation deployment with tests
-                  script:
-                      - echo "Manual triggers for Sonar are awesome!"
-        deploy-to-production:
-            - variables:
-                  - name: destination
                     allowed-values:
                         - 'DEVINT'
                         - 'TESTING'
                         - 'STAGING'
                         - 'PRODUCTION'
+                    default: 'DEVINT'
                   - name: checkonly
-                    default: 'true'
                   - name: testlevel
+                    allowed-values:
+                        - 'NoTestRun'
+                        - 'RunSpecifiedTests'
+                        - 'RunLocalTests'
+                        - 'RunAllTests'
                     default: 'RunLocalTests'
                   - name: runtests
             - step:
-                  name: Manual deployment
+                  name: Generate deltas
                   script:
-                      - echo "Manual triggers for deployments are awesome!"
+                      - sf plugins install sfdx-git-delta
+                      - mkdir deltas
+                      - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA})
+                      - sf sgd source delta --source sfdx-source --from $LAST_DEPLOYMENT_COMMIT_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
+                  artifacts:
+                      - deltas/**
+            - step:
+                  name: Deploy
+                  script:
+                      - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
+                      - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+                      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
+                      - npm install fast-xml-parser
+                      - node scripts/node/environment-replacements/main.js || true
+                      - FOLDER=${DESTINATION_ENVIRONMENT,,}
+                      - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
+                      - sf plugins install nakama-plugin-sfdx
+                      - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+                      - VALIDATION_PARAMETER=$(if [ "$checkonly" = "true" ]; then echo "--checkonly"; else echo ""; fi)
+                      - TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                      - TESTS_TO_RUN=$(if [ ! $runtests ]; then echo $TEST_CLASSES; else echo $runtests; fi)
+                      - RUN_TEST_PARAMETER=$(if { [ "$testlevel" = "RunSpecifiedTests" ] || [ ! $testlevel ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $testlevel ]; then echo "--testlevel $testlevel"; else echo ""; fi)
+                      - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
