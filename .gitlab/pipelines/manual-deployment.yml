@@ -26,7 +26,7 @@ generate-deltas:
 #     image: python:latest
 #     stage: identify-test-classes
 #     rules:
-#         - if: $METADATA_DEPLOYMENT == "true" && ($TEST_LEVEL == "" || $TEST_LEVEL == "RunSpecifiedTests") && $TESTS_TO_RUN == ""
+#         - if: $METADATA_DEPLOYMENT == "true" && ($testlevel == "" || $testlevel == "RunSpecifiedTests") && $runtests == ""
 #           changes: !reference [.sfdx-changes]
 #     script:
 #         - apt-get update
@@ -41,7 +41,7 @@ generate-deltas:
 identify-test-classes:
     stage: identify-test-classes
     rules:
-        - if: $METADATA_DEPLOYMENT == "true" && ($TEST_LEVEL == "" || $TEST_LEVEL == "RunSpecifiedTests") && $TESTS_TO_RUN == ""
+        - if: $METADATA_DEPLOYMENT == "true" && ($testlevel == "" || $testlevel == "RunSpecifiedTests") && $runtests == ""
     script:
         - TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
         - echo "TEST_CLASSES=$TEST_CLASSES" >> tests.env
@@ -64,9 +64,9 @@ manual-metadata-delta-deployment:
         - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
         - sf plugins install nakama-plugin-sfdx
         - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-        - VALIDATION_PARAMETER=$(if [ "$VALIDATION_ONLY" = "true" ]; then echo "--checkonly"; else echo ""; fi)
-        - TESTS_TO_RUN=$(if [ ! $TESTS_TO_RUN ]; then echo $TEST_CLASSES; else echo $TESTS_TO_RUN; fi)
-        - RUN_TEST_PARAMETER=$(if { [ "$TEST_LEVEL" = "RunSpecifiedTests" ] || [ ! $TEST_LEVEL ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $TEST_LEVEL ]; then echo "--testlevel $TEST_LEVEL"; else echo ""; fi)
+        - VALIDATION_PARAMETER=$(if [ "$checkonly" = "true" ]; then echo "--checkonly"; else echo ""; fi)
+        - TESTS_TO_RUN=$(if [ ! $runtests ]; then echo $TEST_CLASSES; else echo $runtests; fi)
+        - RUN_TEST_PARAMETER=$(if { [ "$testlevel" = "RunSpecifiedTests" ] || [ ! $testlevel ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $testlevel ]; then echo "--testlevel $testlevel"; else echo ""; fi)
         - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
         - |
             if [ ! $VALIDATION_PARAMETER ]; then
@@ -77,7 +77,7 @@ manual-metadata-delta-deployment:
 manual-vlocity-delta-deployment:
     stage: manual-vlocity-deployment
     rules:
-        - if: $VALIDATION_ONLY == "true"
+        - if: $checkonly == "true"
           when: never
         - if: $VLOCITY_DEPLOYMENT == "true"
     environment: $DESTINATION_ENVIRONMENT

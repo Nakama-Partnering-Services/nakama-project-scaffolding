@@ -20,17 +20,17 @@ variables:
         value: 'false'
         description: 'Set to "true" if Vlocity data should be deployed. If METADATA_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
 
-    VALIDATION_ONLY:
+    checkonly:
         value: 'false'
         description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true". Vlocity deployments can not be only validations.'
 
-    TEST_LEVEL:
+    testlevel:
         value: 'RunLocalTests'
         description: 'Possible values are: NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is RunSpecifiedTests.'
 
-    TESTS_TO_RUN:
+    runtests:
         value: ''
-        description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when TEST_LEVEL is RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is based on autoidentified test classes.'
+        description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when testlevel is RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is based on autoidentified test classes.'
 
 stages:
     - dispatch-child-pipeline
@@ -137,9 +137,9 @@ manual-deployment:
         # AUTOMATIC_DELTAS_FROM: $AUTOMATIC_DELTAS_FROM
         METADATA_DEPLOYMENT: $METADATA_DEPLOYMENT
         VLOCITY_DEPLOYMENT: $VLOCITY_DEPLOYMENT
-        VALIDATION_ONLY: $VALIDATION_ONLY
-        TEST_LEVEL: $TEST_LEVEL
-        TESTS_TO_RUN: $TESTS_TO_RUN
+        checkonly: $checkonly
+        testlevel: $testlevel
+        runtests: $runtests
     trigger:
         include:
             '.gitlab/pipelines/manual-deployment.yml'
