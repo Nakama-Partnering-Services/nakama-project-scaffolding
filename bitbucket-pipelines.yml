@@ -134,6 +134,7 @@ pipelines:
                         deployment: DEVINT
                         script:
                             - sh ./scripts/shell/deploy.sh DEVINT
+                            - curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BDEVINT_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"DEVINT_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                         condition:
                             changesets:
                                 includePaths:
@@ -146,6 +147,7 @@ pipelines:
                   deployment: STAGING
                   script:
                       - sh ./scripts/shell/deploy.sh STAGING
+                      - curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$STAGING_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"STAGING_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                   condition:
                       changesets:
                           includePaths:
@@ -203,3 +205,12 @@ pipelines:
                       - TESTS_TO_RUN=$(if [ ! $runtests ]; then echo $TEST_CLASSES; else echo $runtests; fi)
                       - RUN_TEST_PARAMETER=$(if { [ "$testlevel" = "RunSpecifiedTests" ] || [ ! $testlevel ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $testlevel ]; then echo "--testlevel $testlevel"; else echo ""; fi)
                       - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+            - step:
+                  name: Update LAST_DEPLOYMENT_COMMIT_SHA
+                  script:
+                      - |
+                          if [ ! $VALIDATION_PARAMETER ]; then
+                              TARGET_VARIABLE_ID=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA_UUID})
+                              TARGET_VARIABLE="${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA"
+                              curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$TARGET_VARIABLE_ID%7D -H 'Content-Type:application/json' -d "{\"key\":\"$TARGET_VARIABLE\", \"value\":\"$BITBUCKET_COMMIT\"}"
+                          fi
