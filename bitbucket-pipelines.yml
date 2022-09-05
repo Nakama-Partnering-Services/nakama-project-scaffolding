@@ -18,7 +18,7 @@ pipelines:
                   - step:
                         name: Verify formatting
                         script:
-                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
+                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml')
                             - IFS=$'\n'
                             - |
                                 for FILE in $CHANGED_FILES;

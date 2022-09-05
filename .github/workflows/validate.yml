@@ -36,7 +36,7 @@ jobs:
             - name: 'Verify formatting'
               run: |
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**')
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml')
                   IFS=$'\n'
                   for FILE in $CHANGED_FILES;
                   do
