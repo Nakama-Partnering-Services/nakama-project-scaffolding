@@ -12,6 +12,7 @@ jobs:
             # Warning: when running in container, git commands will not work since it will not be a repository
             image: docker://salesforce/salesforcedx:latest-full
         strategy:
+            fail-fast: false
             matrix:
                 DESTINATION_ENVIRONMENT: [DEVINT] # , TESTING, STAGING, PRODUCTION, HOTFIX
         environment: ${{ matrix.DESTINATION_ENVIRONMENT }}
