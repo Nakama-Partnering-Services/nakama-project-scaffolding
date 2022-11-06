@@ -17,7 +17,7 @@ public inherited sharing virtual class HttpCallout {
 		// test
 	}
 
-	public HttpCallout(String url, HttpMethod method) {
+	public HttpCallout(String url, HttpMethod2 method) {
 		request = new HttpRequest();
 		this.url = url;
 		this.path = '';
