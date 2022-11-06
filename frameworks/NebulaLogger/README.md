@@ -1,4 +1,4 @@
-TODO: consider including pattern matching of Stacktrace messages and utility component with tree grid as apex-unified-logging.
+TODO: consider utility component with tree grid as apex-unified-logging.
 
 This folder only includes the relevant files in the respository that are actually used in this project.
 

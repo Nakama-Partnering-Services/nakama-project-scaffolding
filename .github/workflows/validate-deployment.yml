@@ -33,7 +33,6 @@ jobs:
             # Note: we are temporarily testing sfdx force:source:deploy with RunLocalTests instead of $RUN_TEST_PARAMETER
             # TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
             # RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-            # TODO: review cat results.json since job would likely directly fail without output if deployment fails too
             - name: 'Get deltas and deploy'
               run: |
                   git fetch origin $GITHUB_BASE_REF
@@ -48,7 +47,13 @@ jobs:
                   echo 'y' | sfdx plugins:install nakama-plugin-sfdx
                   sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
                   sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings --testlevel RunLocalTests --json > results.json
-                  cat results.json
+
+            - name: 'Print results'
+              if: always()
+              run: cat results.json
+
+            - name: 'Verify test coverage'
+              run: |
                   NON_TEST_CLASSES=$( (egrep -wrliL @IsTest deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
                   if [ $NON_TEST_CLASSES ]; then
                     sfdx nps:coverage:verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
