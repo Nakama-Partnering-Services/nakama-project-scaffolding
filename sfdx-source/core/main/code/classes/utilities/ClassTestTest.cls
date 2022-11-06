@@ -4,6 +4,6 @@ class ClassTestTest {
 	@Istest
 	static test1() {
 		new ClassTest();
-		System.assert(true);
+		System.assert(!false);
 	}
 }
