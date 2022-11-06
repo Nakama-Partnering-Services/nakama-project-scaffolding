@@ -35,7 +35,7 @@ jobs:
 
             - name: 'Verify formatting'
               run: |
-                  PR_BODY = ${{ github.event.pull_request.body }}
+                  PR_BODY=${{ github.event.pull_request.body }}
                   echo $PR_BODY
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$PR_BODY" | tr -d '"')
                   echo $RUN_TEST_PARAMETER
