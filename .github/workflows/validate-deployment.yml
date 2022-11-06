@@ -35,6 +35,8 @@ jobs:
             # RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
             - name: 'Get deltas and deploy'
               run: |
+                  RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
+                  echo "$RUN_TEST_PARAMETER"
                   git fetch origin $GITHUB_BASE_REF
                   echo 'y' | sfdx plugins:install sfdx-git-delta
                   mkdir deltas
