@@ -133,7 +133,7 @@ pipelines:
                         name: Deploy to DEVINT
                         deployment: DEVINT
                         script:
-                            - sh ./scripts/shell/pipelines/deploy.sh DEVINT $DEVINT_LAST_DEPLOYMENT_COMMIT_SHA
+                            - ./scripts/shell/pipelines/deploy.sh DEVINT $DEVINT_LAST_DEPLOYMENT_COMMIT_SHA
                             - curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BDEVINT_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"DEVINT_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                         condition:
                             changesets:
@@ -146,7 +146,7 @@ pipelines:
                   name: Deploy to STAGING
                   deployment: STAGING
                   script:
-                      - sh ./scripts/shell/pipelines/deploy.sh STAGING $STAGING_LAST_DEPLOYMENT_COMMIT_SHA
+                      - ./scripts/shell/pipelines/deploy.sh STAGING $STAGING_LAST_DEPLOYMENT_COMMIT_SHA
                       - curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$STAGING_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"STAGING_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                   condition:
                       changesets:
@@ -159,7 +159,7 @@ pipelines:
                         name: Daily validation deployment with tests
                         deployment: DEVINT
                         script:
-                            - sh ./scripts/shell/pipelines/validation-with-tests.sh DEVINT
+                            - ./scripts/shell/pipelines/validation-with-tests.sh DEVINT
                   # TODO: add TESTING, STAGING, PRODUCTION and HOTFIX environments
         manual-deployment:
             - variables:
