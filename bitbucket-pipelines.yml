@@ -27,9 +27,9 @@ pipelines:
                                 done
                             - unset IFS
                   - step:
-                        name: Verify ESLINT
+                        name: Verify linting
                         script:
-                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- **/{aura,lwc}/**/.js)
+                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- **/{aura,lwc}/**/*.js)
                             - IFS=$'\n'
                             - |
                                 for FILE in $CHANGED_FILES;

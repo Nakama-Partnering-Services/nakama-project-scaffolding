@@ -69,7 +69,7 @@ verify-linting:
         - changes:
               - sfdx-source/**/main/**/*.js
     script:
-        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**/.js)
+        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**/*.js)
         - IFS=$'\n'
         - |
             for FILE in $CHANGED_FILES;
