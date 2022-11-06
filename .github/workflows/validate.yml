@@ -35,7 +35,9 @@ jobs:
 
             - name: 'Verify formatting'
               run: |
-                  RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "{{ github.event.pull_request.body }}" | tr -d '"')
+                  PR_BODY="${{ github.event.pull_request.body }}"
+                  echo "$PR_BODY"
+                  RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
                   echo "$RUN_TEST_PARAMETER"
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml')
