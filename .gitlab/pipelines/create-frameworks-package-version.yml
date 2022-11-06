@@ -34,8 +34,8 @@ install-package-in-devhub:
         - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
         - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
         # Note: replace scratch org creation if scratch org pool is needed
-        # - echo 'y' | sf plugins install sfpowerkit
-        # - sf sfpowerkit pool fetch --tag base --setdefaultusername
+        # - echo 'y' | sfdx plugins:install sfpowerkit
+        # - sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
         - SCRATCH_ORG_DETAILS=$(sfdx force:org:open --urlonly --json)
         - SCRATCH_ORG_URL=$(jq -r '.result.url' <<< $SCRATCH_ORG_DETAILS)
         - echo "SCRATCH_ORG_URL=$SCRATCH_ORG_URL" >> scratch.env

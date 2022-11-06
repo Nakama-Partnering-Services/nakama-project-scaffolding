@@ -14,9 +14,9 @@ generate-deltas:
     resource_group: $DESTINATION_ENVIRONMENT
     script:
         - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
-        - sf plugins install sfdx-git-delta
+        - echo 'y' | sfdx plugins:install sfdx-git-delta
         - mkdir deltas
-        - sf sgd source delta --source sfdx-source --from $DELTAS_FROM --to HEAD --output deltas --ignore .forceignore --generate-delta
+        - sfdx sgd:source:delta --source sfdx-source --from $DELTAS_FROM --to HEAD --output deltas --ignore .forceignore --generate-delta
     artifacts:
         paths:
             - deltas
@@ -43,7 +43,7 @@ identify-test-classes:
     rules:
         - if: $METADATA_DEPLOYMENT == "true" && ($testlevel == "" || $testlevel == "RunSpecifiedTests") && $runtests == ""
     script:
-        - TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+        - TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
         - echo "TEST_CLASSES=$TEST_CLASSES" >> tests.env
     artifacts:
         reports:
@@ -62,12 +62,12 @@ manual-metadata-delta-deployment:
         - node scripts/node/environment-replacements/main.js || true
         - FOLDER=${DESTINATION_ENVIRONMENT,,}
         - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-        - sf plugins install nakama-plugin-sfdx
-        - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+        - echo 'y' | sfdx plugins:install nakama-plugin-sfdx
+        - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
         - VALIDATION_PARAMETER=$(if [ "$checkonly" = "true" ]; then echo "--checkonly"; else echo ""; fi)
         - TESTS_TO_RUN=$(if [ ! $runtests ]; then echo $TEST_CLASSES; else echo $runtests; fi)
         - RUN_TEST_PARAMETER=$(if { [ "$testlevel" = "RunSpecifiedTests" ] || [ ! $testlevel ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $testlevel ]; then echo "--testlevel $testlevel"; else echo ""; fi)
-        - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+        - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
         - |
             if [ ! $VALIDATION_PARAMETER ]; then
                 curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \

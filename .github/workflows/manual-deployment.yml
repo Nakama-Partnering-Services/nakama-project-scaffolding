@@ -67,7 +67,7 @@ jobs:
                   mkdir deltas
                   sfdx sgd:source:delta --source sfdx-source --from ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} --to HEAD --output deltas --ignore .forceignore --generate-delta
                   VALIDATION_PARAMETER=$(if [ ${{ github.event.inputs.checkonly }} = true ]; then echo "--checkonly"; else echo ""; fi)
-                  TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                  TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
                   TESTS_TO_RUN=$(if [ ${{ github.event.inputs.runtests }} ]; then echo ${{ github.event.inputs.runtests }}; else echo $TEST_CLASSES; fi)
                   RUN_TEST_PARAMETER=$(if { [ ${{ github.event.inputs.testlevel == 'RunSpecifiedTests' }} ] || [ ${{ github.event.inputs.testlevel == '' }} ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ ${{ github.event.inputs.testlevel }} ]; then echo "--testlevel ${{ github.event.inputs.testlevel }}"; else echo ""; fi)
                   npm install fast-xml-parser
@@ -77,7 +77,7 @@ jobs:
                   cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
                   echo 'y' | sfdx plugins:install nakama-plugin-sfdx
                   sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-                  sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+                  sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
 
             - name: 'Update last deployment commit SHA'
               # https://github.com/actions/runner/issues/1483

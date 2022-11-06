@@ -67,7 +67,7 @@ jobs:
             - name: 'Verify linting'
               run: |
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**)
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**/.js)
                   npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
                   IFS=$'\n'
                   for FILE in $CHANGED_FILES;

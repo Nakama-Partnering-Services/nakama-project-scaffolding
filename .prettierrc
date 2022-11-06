@@ -13,7 +13,7 @@
 			"options": { "parser": "lwc" }
 		},
 		{
-			"files": "*.{cmp,page,component}",
+			"files": "*.{app,cmp,page,component}",
 			"options": { "parser": "html" }
 		}
 	]

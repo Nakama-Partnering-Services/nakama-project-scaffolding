@@ -17,15 +17,16 @@ const validateBranchName = async () => {
 		const validReleaseBranchesRegex = new RegExp(`^(${validReleaseBranchPrefix})/\\d\\.\\d\\.\\d`);
 
 		const validDevelopmentBranchPrefix = 'feature|bugfix|hotfix|chore';
-		const userStoryPrefix = 'US-';
+		const userStoryPrefix = '[\\w]+';
+		const userStoryPrefixReadable = '*';
 		const validDevelopmentBranchesRegex = new RegExp(
-			`^(${validDevelopmentBranchPrefix})/${userStoryPrefix}[\\w.-]+$`
+			`^(${validDevelopmentBranchPrefix})/${userStoryPrefix}-[\\w.-]+$`
 		);
 
 		if (!validReleaseBranchesRegex.test(branchName) && !validDevelopmentBranchesRegex.test(branchName)) {
 			const msg = `Branch names in this project must adhere to one of these contracts:
 			(${validReleaseBranchPrefix})/major.minor.patch
-			(${validDevelopmentBranchPrefix})/${userStoryPrefix}*`;
+			(${validDevelopmentBranchPrefix})/${userStoryPrefixReadable}-*`;
 			console.error(msg);
 			process.exit(1);
 		}

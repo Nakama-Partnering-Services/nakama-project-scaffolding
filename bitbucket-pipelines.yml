@@ -6,7 +6,7 @@ definitions:
 
 pipelines:
     pull-requests:
-        '**': # Note: only work for source branches, not target branches. Since an expression like (feature|bugfix|hotfix)/* is not working, all branches are included
+        '{feature,bugfix,hotfix}/*': # Note: only work for source branches, not target branches.
             - step:
                   # caches: Note: this does not work as it is
                   #     - node
@@ -29,7 +29,7 @@ pipelines:
                   - step:
                         name: Verify ESLINT
                         script:
-                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- **/{aura,lwc}/**)
+                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- **/{aura,lwc}/**/.js)
                             - IFS=$'\n'
                             - |
                                 for FILE in $CHANGED_FILES;
@@ -47,8 +47,8 @@ pipelines:
                         script:
                             - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD)
                             - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
-                            - sf plugins install @salesforce/sfdx-scanner
-                            - sf scanner run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
+                            - sfdx plugins:install @salesforce/sfdx-scanner
+                            - sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
                         condition:
                             changesets:
                                 includePaths:
@@ -61,8 +61,8 @@ pipelines:
                             - sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setdefaultdevhubusername
                             - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
                             # Note: replace scratch org creation if scratch org pool is needed
-                            # - echo 'y' | sf plugins install sfpowerkit
-                            # - sf sfpowerkit pool fetch --tag base --setdefaultusername
+                            # - echo 'y' | sfdx plugins:install sfpowerkit
+                            # - sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
                             - npm install fast-xml-parser
                             - node scripts/node/environment-replacements/main.js || true
                             - cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
@@ -74,9 +74,9 @@ pipelines:
                   - step:
                         name: Generate deltas
                         script:
-                            - sf plugins install sfdx-git-delta
+                            - echo 'y' | sfdx plugins:install sfdx-git-delta
                             - mkdir deltas
-                            - sf sgd source delta --source sfdx-source --from origin/$BITBUCKET_PR_DESTINATION_BRANCH --to HEAD --output deltas --ignore .forceignore --generate-delta
+                            - sfdx sgd:source:delta --source sfdx-source --from origin/$BITBUCKET_PR_DESTINATION_BRANCH --to HEAD --output deltas --ignore .forceignore --generate-delta
                         condition:
                             changesets:
                                 includePaths:
@@ -95,10 +95,10 @@ pipelines:
                       - node scripts/node/environment-replacements/main.js || true
                       - FOLDER=${DESTINATION_ENVIRONMENT,,}
                       - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-                      - sf plugins install nakama-plugin-sfdx
-                      - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+                      - echo 'y' | sfdx plugins install nakama-plugin-sfdx
+                      - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
                       # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-                      - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --testlevel RunLocalTests --json > results.json
+                      - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings --testlevel RunLocalTests --json > results.json
                   condition:
                       changesets:
                           includePaths:
@@ -117,7 +117,7 @@ pipelines:
                   - step:
                         name: Verify test coverage
                         script:
-                            - NON_TEST_CLASSES=$((egrep -wrliL @IsTest deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                            - NON_TEST_CLASSES=$( (egrep -wrliL @IsTest deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
                             - |
                                 if [ $NON_TEST_CLASSES ]; then
                                     sfdx nps:coverage:verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
@@ -133,7 +133,7 @@ pipelines:
                         name: Deploy to DEVINT
                         deployment: DEVINT
                         script:
-                            - sh ./scripts/shell/deploy.sh DEVINT
+                            - sh ./scripts/shell/pipelines/deploy.sh DEVINT $DEVINT_LAST_DEPLOYMENT_COMMIT_SHA
                             - curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BDEVINT_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"DEVINT_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                         condition:
                             changesets:
@@ -146,7 +146,7 @@ pipelines:
                   name: Deploy to STAGING
                   deployment: STAGING
                   script:
-                      - sh ./scripts/shell/deploy.sh STAGING
+                      - sh ./scripts/shell/pipelines/deploy.sh STAGING $STAGING_LAST_DEPLOYMENT_COMMIT_SHA
                       - curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$STAGING_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"STAGING_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                   condition:
                       changesets:
@@ -159,7 +159,7 @@ pipelines:
                         name: Daily validation deployment with tests
                         deployment: DEVINT
                         script:
-                            - sh ./scripts/shell/validation-with-tests.sh DEVINT
+                            - sh ./scripts/shell/pipelines/validation-with-tests.sh DEVINT
                   # TODO: add TESTING, STAGING, PRODUCTION and HOTFIX environments
         manual-deployment:
             - variables:
@@ -182,10 +182,10 @@ pipelines:
             - step:
                   name: Generate deltas
                   script:
-                      - sf plugins install sfdx-git-delta
+                      - echo 'y' | sfdx plugins:install sfdx-git-delta
                       - mkdir deltas
                       - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA})
-                      - sf sgd source delta --source sfdx-source --from $LAST_DEPLOYMENT_COMMIT_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
+                      - sfdx sgd:source:delta --source sfdx-source --from $LAST_DEPLOYMENT_COMMIT_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
                   artifacts:
                       - deltas/**
             - step:
@@ -198,13 +198,13 @@ pipelines:
                       - node scripts/node/environment-replacements/main.js || true
                       - FOLDER=${DESTINATION_ENVIRONMENT,,}
                       - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-                      - sf plugins install nakama-plugin-sfdx
-                      - sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+                      - echo 'y' | sfdx plugins:install nakama-plugin-sfdx
+                      - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
                       - VALIDATION_PARAMETER=$(if [ "$checkonly" = "true" ]; then echo "--checkonly"; else echo ""; fi)
-                      - TEST_CLASSES=$((egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                      - TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
                       - TESTS_TO_RUN=$(if [ ! $runtests ]; then echo $TEST_CLASSES; else echo $runtests; fi)
                       - RUN_TEST_PARAMETER=$(if { [ "$testlevel" = "RunSpecifiedTests" ] || [ ! $testlevel ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $testlevel ]; then echo "--testlevel $testlevel"; else echo ""; fi)
-                      - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+                      - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --ignorewarnings --verbose $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
             - step:
                   name: Update LAST_DEPLOYMENT_COMMIT_SHA
                   script:

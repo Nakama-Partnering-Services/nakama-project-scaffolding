@@ -39,17 +39,17 @@ jobs:
               env:
                   LAST_DEPLOYMENT_COMMIT_SHA: ${{ inputs.DESTINATION_ENVIRONMENT }}_LAST_DEPLOYMENT_COMMIT_SHA
               run: |
-                  sf plugins install sfdx-git-delta
+                  echo 'y' | sfdx plugins:install sfdx-git-delta
                   mkdir deltas
-                  sf sgd source delta --source sfdx-source --from ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} --to HEAD --output deltas --ignore .forceignore --generate-delta
+                  sfdx sgd:source:delta --source sfdx-source --from ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} --to HEAD --output deltas --ignore .forceignore --generate-delta
                   npm install fast-xml-parser
                   node scripts/node/environment-replacements/main.js || true
                   DESTINATION=$(echo ${{ inputs.DESTINATION_ENVIRONMENT }})
                   FOLDER=${DESTINATION,,}
                   cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-                  sf plugins install nakama-plugin-sfdx
-                  sf nps package destructive versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-                  sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose
+                  echo 'y' | sfdx plugins:install nakama-plugin-sfdx
+                  sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+                  sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings
 
             - name: 'Update last deployment commit SHA'
               env:

@@ -12,6 +12,7 @@ on:
 jobs:
     deploy-and-backpromote:
         strategy:
+            fail-fast: false
             matrix:
                 DESTINATION_ENVIRONMENT: [DEVINT] # TESTING, TODO: add lower environments
         uses: ./.github/workflows/deploy-deltas.yml
