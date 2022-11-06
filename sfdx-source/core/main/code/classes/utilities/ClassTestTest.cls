@@ -1,3 +1,4 @@
+@SuppressWarnings('PMD')
 @IsTest
 class ClassTestTest {
 	@Istest
