@@ -14,7 +14,7 @@ public inherited sharing virtual class HttpCallout {
 
 	// Note: default constructor needs to be explicitly declared for extending classes to use the super() notation.
 	public HttpCallout() {
-		System.debug('Test');
+		// test
 	}
 
 	public HttpCallout(String url, HttpMethod method) {
