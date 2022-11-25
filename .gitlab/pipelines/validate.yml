@@ -134,7 +134,23 @@ deltas-validation-deployment:
         - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
         - echo 'y' | sfdx plugins:install nakama-plugin-sfdx
         - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-        # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
+        - merge_request_response=$(curl --request GET --header "PRIVATE-TOKEN:$PIPELINE_ACCESS_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID")
+        - echo $merge_request_response > merge_request.json
+        - description=$(jq '.description' merge_request.json)
+        - TESTS_SPECIFICATION=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
+        - TESTS_SPECIFICATION_ARRAY=($TESTS_SPECIFICATION)
+        - |
+            TEST_LEVEL=${TESTS_SPECIFICATION_ARRAY[0]}
+            TEST_CLASSES=${TESTS_SPECIFICATION_ARRAY[1]}
+            if [ ! $TEST_LEVEL ]; then
+                TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo "--testlevel RunLocalTests"; fi)
+            elif [ ! $TEST_CLASSES ]; then
+                RUN_TEST_PARAMETER=$(echo "--testlevel $TEST_LEVEL")
+            else
+                # TEST_LEVEL has to be RunSpecifiedTests
+                RUN_TEST_PARAMETER=$(echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES")
+            fi
         - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings --testlevel RunLocalTests --junit --coverageformatters cobertura --resultsdir test-results --json > results.json
         # - cat test-results/junit/junit.xml ==> check below note comments in artifacts
     artifacts:
