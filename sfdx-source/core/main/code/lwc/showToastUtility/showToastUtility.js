@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 /**
- * A handler toast for notification
+ * Handler toast for notification
  */
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 /**

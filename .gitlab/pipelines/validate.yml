@@ -151,7 +151,7 @@ deltas-validation-deployment:
                 # TEST_LEVEL has to be RunSpecifiedTests
                 RUN_TEST_PARAMETER=$(echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES")
             fi
-        - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings --testlevel RunLocalTests --junit --coverageformatters cobertura --resultsdir test-results --json > results.json
+        - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings --junit --coverageformatters cobertura --resultsdir test-results --json > results.json
         # - cat test-results/junit/junit.xml ==> check below note comments in artifacts
     artifacts:
         when: always

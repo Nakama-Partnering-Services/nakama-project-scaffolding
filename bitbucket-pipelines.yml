@@ -53,7 +53,59 @@ pipelines:
                             changesets:
                                 includePaths:
                                     - 'sfdx-source/**'
+            - step:
+                  name: Generate deltas
+                  script:
+                      - echo 'y' | sfdx plugins:install sfdx-git-delta
+                      - mkdir deltas
+                      - sfdx sgd:source:delta --source sfdx-source --from origin/$BITBUCKET_PR_DESTINATION_BRANCH --to HEAD --output deltas --ignore .forceignore --generate-delta
+                  condition:
+                      changesets:
+                          includePaths:
+                              - 'sfdx-source/**'
+                  artifacts:
+                      - deltas/**
             - parallel:
+                  - step:
+                        name: Deltas validation deployment
+                        # deployment: # DEVINT # STAGING # PRODUCTION
+                        script:
+                            - DESTINATION_ENVIRONMENT=$(if [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "main" ]; then echo "DEVINT"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^rc/[0-9].[0-9].[0-9]$ ]]; then echo "STAGING"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^patch/[0-9].[0-9].[0-9]$ ]]; then echo "PRODUCTION"; fi)
+                            - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
+                            - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+                            - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
+                            - npm install fast-xml-parser
+                            - node scripts/node/environment-replacements/main.js || true
+                            - FOLDER=${DESTINATION_ENVIRONMENT,,}
+                            - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
+                            - echo 'y' | sfdx plugins:install nakama-plugin-sfdx
+                            - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
+                            - pull_request_response=$(curl -X GET -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pullrequests/$BITBUCKET_PR_ID)
+                            - echo $pull_request_response > pull_request.json
+                            - description=$(jq '.description' pull_request.json)
+                            - TESTS_SPECIFICATION=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
+                            - TESTS_SPECIFICATION_ARRAY=($TESTS_SPECIFICATION)
+                            - |
+                                TEST_LEVEL=${TESTS_SPECIFICATION_ARRAY[0]}
+                                TEST_CLASSES=${TESTS_SPECIFICATION_ARRAY[1]}
+                                if [ ! $TEST_LEVEL ]; then
+                                    TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+                                    RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo "--testlevel RunLocalTests"; fi)
+                                elif [ ! $TEST_CLASSES ]; then
+                                    RUN_TEST_PARAMETER=$(echo "--testlevel $TEST_LEVEL")
+                                else
+                                    # TEST_LEVEL has to be RunSpecifiedTests
+                                    RUN_TEST_PARAMETER=$(echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES")
+                                fi
+                            - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings --json > results.json
+                        condition:
+                            changesets:
+                                includePaths:
+                                    - 'sfdx-source/**'
+                        artifacts:
+                            - results.json
+                        after-script:
+                            - cat results.json
                   - step:
                         name: Scratch org validation
                         script:
@@ -71,42 +123,6 @@ pipelines:
                             changesets:
                                 includePaths:
                                     - 'sfdx-source/**'
-                  - step:
-                        name: Generate deltas
-                        script:
-                            - echo 'y' | sfdx plugins:install sfdx-git-delta
-                            - mkdir deltas
-                            - sfdx sgd:source:delta --source sfdx-source --from origin/$BITBUCKET_PR_DESTINATION_BRANCH --to HEAD --output deltas --ignore .forceignore --generate-delta
-                        condition:
-                            changesets:
-                                includePaths:
-                                    - 'sfdx-source/**'
-                        artifacts:
-                            - deltas/**
-            - step:
-                  name: Deltas validation deployment
-                  # deployment: # DEVINT # STAGING # PRODUCTION
-                  script:
-                      - DESTINATION_ENVIRONMENT=$(if [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "main" ]; then echo "DEVINT"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^rc/[0-9].[0-9].[0-9]$ ]]; then echo "STAGING"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^patch/[0-9].[0-9].[0-9]$ ]]; then echo "PRODUCTION"; fi)
-                      - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-                      - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
-                      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
-                      - npm install fast-xml-parser
-                      - node scripts/node/environment-replacements/main.js || true
-                      - FOLDER=${DESTINATION_ENVIRONMENT,,}
-                      - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-                      - echo 'y' | sfdx plugins install nakama-plugin-sfdx
-                      - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-                      # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-                      - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings --testlevel RunLocalTests --json > results.json
-                  condition:
-                      changesets:
-                          includePaths:
-                              - 'sfdx-source/**'
-                  artifacts:
-                      - results.json
-                  after-script:
-                      - cat results.json
             - step:
                   name: Verify test coverage
                   script:
@@ -127,7 +143,7 @@ pipelines:
                         deployment: DEVINT
                         script:
                             - ./scripts/shell/pipelines/deploy.sh DEVINT $DEVINT_LAST_DEPLOYMENT_COMMIT_SHA
-                            - curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BDEVINT_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"DEVINT_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
+                            - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BDEVINT_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"DEVINT_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                         condition:
                             changesets:
                                 includePaths:
@@ -140,7 +156,7 @@ pipelines:
                   deployment: STAGING
                   script:
                       - ./scripts/shell/pipelines/deploy.sh STAGING $STAGING_LAST_DEPLOYMENT_COMMIT_SHA
-                      - curl -X PUT --user $API_CREDENTIALS --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$STAGING_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"STAGING_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
+                      - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$STAGING_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"STAGING_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                   condition:
                       changesets:
                           includePaths:
