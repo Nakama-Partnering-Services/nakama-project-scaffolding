@@ -2,6 +2,10 @@
 echo 'y' | sfdx plugins:install sfdx-git-delta
 mkdir deltas
 sfdx sgd:source:delta --source sfdx-source --from $2 --to HEAD --output deltas --ignore .forceignore --generate-delta
+echo "cat deltas/package/package.xml"
+cat deltas/package/package.xml
+echo "cat deltas/destructiveChanges/destructiveChanges.xml"
+cat deltas/destructiveChanges/destructiveChanges.xml
 TEST_LEVEL=$4
 TEST_CLASSES=$5
 if [ ! $TEST_LEVEL ]; then
