@@ -89,4 +89,4 @@ jobs:
                   name: ${{ env.LAST_DEPLOYMENT_COMMIT_SHA }}
                   value: ${{ github.sha }}
                   repository: ${{ github.repository }}
-                  token: ${{ secrets.ACTIONS_ACCESS_TOKEN }}
+                  token: ${{ secrets.PIPELINE_ACCESS_TOKEN }}
