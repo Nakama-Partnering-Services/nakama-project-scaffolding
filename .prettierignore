@@ -17,3 +17,4 @@ config/pmd-ruleset.xml
 **/*-meta.xml
 
 **/*.email
+**/experiences/**/*.json
