@@ -27,8 +27,10 @@ if [ "$number_of_orgs" = 0 ]; then
 fi
 echo 'y' | sfdx plugins:install nakama-plugin-sfdx
 sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-if [ "$3" = "validation" ]; then
+# parameters.VALIDATION comes as True if checked
+if [ "$3" = "True" ]; then
 	sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings --json > results.json
 else
+	# RUN_TEST_PARAMETER is ignored if it is not a validation only deployment
 	sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings
 fi

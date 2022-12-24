@@ -21,6 +21,14 @@ trigger:
 pool:
     vmImage: 'ubuntu-latest'
 
+parameters:
+    - name: VALIDATION
+      type: boolean
+      default: true
+    - name: RUN_TEST_PARAMETER
+      type: string
+      default: RunLocalTests
+
 variables:
     TARGET_BRANCH_REF: $(System.PullRequest.TargetBranch)
     DELETE: refs/heads/
@@ -51,6 +59,8 @@ stages:
             steps:
                 - template: .azure/templates/deploy.yml
                   parameters:
+                      VALIDATION: false
+                      RUN_TEST_PARAMETER: 'NoTestRun'
                       DESTINATION_ENVIRONMENT: $ENVIRONMENT
 
     - stage: staging_deployment
@@ -93,4 +103,6 @@ stages:
                             - checkout: self
                             - template: .azure/templates/deploy.yml
                               parameters:
+                                  VALIDATION: ${{ parameters.VALIDATION }}
+                                  RUN_TEST_PARAMETER: ${{ parameters.RUN_TEST_PARAMETER }}
                                   DESTINATION_ENVIRONMENT: PRODUCTION
