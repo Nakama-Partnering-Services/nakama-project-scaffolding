@@ -81,6 +81,8 @@ stages:
                             - checkout: self
                             - template: .azure/templates/deploy.yml
                               parameters:
+                                  VALIDATION: ${{ parameters.VALIDATION }}
+                                  RUN_TEST_PARAMETER: ${{ parameters.RUN_TEST_PARAMETER }}
                                   DESTINATION_ENVIRONMENT: STAGING
 
     - stage: production_deployment
