@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.1](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.2.0...v1.2.1) (2023-02-09)
+
+### Features
+
+-   add PR description specified tests in bitbucket-pipelines.yml ([4f8b55d](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/4f8b55ddf368225718a2b8ec97788223a08dc3be))
+-   alignments and improvements with all providers, use sfdx instead of sf ([0511e76](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/0511e76262463c554fb8c6c188fbcd57b031fdd7))
+-   changes to include lintstaged with some additional validations ([6be7050](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/6be7050280ff0670376eae5bb01787f3afc5dbfc))
+-   testlevel can be specified on PR description for GitLab ([24ae313](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/24ae313accb525cfc2c004c7aab306bf291ba5fe))
+-   update apex-trigger-actions framework ([52b9a4a](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/52b9a4a9744a47b3cd0347f18c08899716fd1c2a))
+
+### Bug Fixes
+
+-   ignore experiences .json prettier ([fdad13c](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/fdad13cb38bf112df72362459f32a4cf853a5ecd))
+-   include missing silent jests script ([4ff079c](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/4ff079c171c9eac54664944759fb56f313680569))
+-   nps:package:destructive:versionobsoleteflows not working in deploy.sh ([ab3d178](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/ab3d17813d18089bb98b6dfe99010188628a3c68))
+-   update printing validation results on bitbucket ([b0b8f15](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/b0b8f158d5ecb59f05ee05aa22444c85521873f0))
+-   verify linting changes files ([2b0e5a8](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/2b0e5a84f5f6bf08c2f19d03d5d10a0293b561dc))
+
 ## [1.2.0](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.1.1...v1.2.0) (2022-09-02)
 
 ### Features
