@@ -7,7 +7,7 @@ This repository aims to contain the resources and frameworks used for the scaffo
 
 ## Latest package version installation links
 
--   [Frameworks](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000cwT4QAI)
+-   [Frameworks](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t7Q000000dFi1QAE)
 
 ## Table of contents
 
