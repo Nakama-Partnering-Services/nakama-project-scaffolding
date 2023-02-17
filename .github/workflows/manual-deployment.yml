@@ -69,7 +69,7 @@ jobs:
                   VALIDATION_PARAMETER=$(if [ ${{ github.event.inputs.checkonly }} = true ]; then echo "--checkonly"; else echo ""; fi)
                   TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
                   TESTS_TO_RUN=$(if [ ${{ github.event.inputs.runtests }} ]; then echo ${{ github.event.inputs.runtests }}; else echo $TEST_CLASSES; fi)
-                  RUN_TEST_PARAMETER=$(if { [ ${{ github.event.inputs.testlevel == 'RunSpecifiedTests' }} ] || [ ${{ github.event.inputs.testlevel == '' }} ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ ${{ github.event.inputs.testlevel }} ]; then echo "--testlevel ${{ github.event.inputs.testlevel }}"; else echo ""; fi)
+                  RUN_TEST_PARAMETER=$(if [ ${{ github.event.inputs.testlevel }} = 'RunSpecifiedTests' ] || [ ${{ github.event.inputs.testlevel }} = '' ] && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ ${{ github.event.inputs.testlevel }} ]; then echo "--testlevel ${{ github.event.inputs.testlevel }}"; else echo ""; fi)
                   npm install fast-xml-parser
                   node scripts/node/environment-replacements/main.js || true
                   DESTINATION=$(echo ${{ github.event.inputs.destination }})
