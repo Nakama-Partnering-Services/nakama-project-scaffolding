@@ -11,12 +11,15 @@ elif [ ! $TEST_CLASSES ]; then
 	RUN_TEST_PARAMETER=$(echo "--testlevel $TEST_LEVEL")
 else
 	# TEST_LEVEL has to be RunSpecifiedTests
-	RUN_TEST_PARAMETER=$(echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES")
+	# merge test classes from pull request with specified
+	TEST_CLASSES_PR=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
+	RUN_TEST_PARAMETER=$(echo "--testlevel RunSpecifiedTests --runtests ${TEST_CLASSES}${TEST_CLASSES_PR:+,$TEST_CLASSES_PR}")
 fi
 npm install fast-xml-parser
 node scripts/node/environment-replacements/main.js || true
 FOLDER=$(echo $1 | tr '[:upper:]' '[:lower:]') # workaround since ${1,,} does not work
 cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
+# sfdx shane:source:replace as well may be helpful
 # checking if org is already authenticated, like in github
 auth_orgs=$(sfdx auth:list --json)
 number_of_orgs=$(jq '.result | length' <<< $auth_orgs)
@@ -27,10 +30,13 @@ if [ "$number_of_orgs" = 0 ]; then
 fi
 echo 'y' | sfdx plugins:install nakama-plugin-sfdx
 sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-# parameters.VALIDATION comes as True if checked
+# if problems with any experience .json file, try using this -> sfdx shane:communities:json:modify
+# parameters.VALIDATION comes as True if checked in Azure manual deployment
 if [ "$3" = "True" ]; then
 	sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings --json > results.json
 else
 	# RUN_TEST_PARAMETER is ignored if it is not a validation only deployment
 	sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings
+	# if there is a new experience bundle, then run -> sfdx shane:communities:activate
+	# if anything changes within experience/folders, then run -> sfdx shane:communities:publish
 fi

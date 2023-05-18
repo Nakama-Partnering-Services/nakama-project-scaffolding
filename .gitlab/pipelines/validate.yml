@@ -1,10 +1,12 @@
-# cache:
+# default:
+#    cache:
 #     key: ${CI_COMMIT_REF_NAME}
 #     paths:
 #         - node_modules/
 #         - .sfdx/
 
-image: salesforce/salesforcedx:latest-full
+default:
+    image: salesforce/salesforcedx:latest-full
 
 .sfdx-changes:
     - sfdx-source/**/main/**/*
@@ -151,6 +153,8 @@ deltas-validation-deployment:
                 # TEST_LEVEL has to be RunSpecifiedTests
                 RUN_TEST_PARAMETER=$(echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES")
             fi
+        - source .env.replacements # This does not work in  GitHub actions
+        - echo 'Starting deployment... Check results in the "print-deployment-result" job.'
         - sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings --junit --coverageformatters cobertura --resultsdir test-results --json > results.json
         # - cat test-results/junit/junit.xml ==> check below note comments in artifacts
     artifacts:
@@ -159,14 +163,13 @@ deltas-validation-deployment:
             - results.json
             - test-results/
         reports:
-            junit: test-results/junit/junit.xml # test report works, but only displayed in child dispatched pipeline, so no sumarry in MR overview appears in parent
+            junit: test-results/junit/junit.xml # test report works, but only displayed in child dispatched pipeline, so no sumarry in MR overview appears. This is why MR validation is the only yml directly included instead of triggered and dispatched as a child
     # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
     # coverage: /name="testRunCoverage" value="([\d]+%)"/ not working since because the --codecoverage flag can not be specified
     # and hence the testRunCoverage does not appear even if we print the junit.xml file in the job log.
 
 print-deployment-result:
-    stage: org-validations
-    needs: [deltas-validation-deployment]
+    stage: show-results
     rules:
         - if: $VALIDATION_DEPLOYMENT_DISABLED
           when: never
@@ -174,6 +177,16 @@ print-deployment-result:
           when: always
     script:
         - cat results.json
+
+suggest-deployment-fixes:
+    stage: show-results
+    rules:
+        - if: $VALIDATION_DEPLOYMENT_DISABLED || $SUGGEST_FIXES_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+          when: on_failure
+    script:
+        - node scripts/node/utilities/getDeploymentErrorsFeedback.js $OPENAI_API_KEY
 
 identify-non-test-classes:
     stage: identify-non-test-classes

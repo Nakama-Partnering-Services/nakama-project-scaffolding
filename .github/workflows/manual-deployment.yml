@@ -37,7 +37,9 @@ jobs:
         name: 'Deploy deltas'
         runs-on: ubuntu-latest
         environment: ${{ github.event.inputs.destination }}
-        concurrency: ${{ github.event.inputs.destination }}
+        concurrency:
+            group: ${{ github.event.inputs.destination }}-${{ github.ref }}
+            cancel-in-progress: true
         steps:
             - name: 'Checkout source code'
               uses: actions/checkout@v2
@@ -58,26 +60,20 @@ jobs:
             - name: 'Remove Destination auth file'
               run: rm --force ./DESTINATION_SFDX_AUTH_URL.txt
 
+            - name: 'Load .env.replacements'
+              uses: xom9ikk/dotenv@v2
+              with:
+                  path: ./
+                  mode: replacements
+
             # Note: Tests do not run since it is redundant with PR and will take longer.
             - name: 'Get deltas and deploy'
               env:
                   LAST_DEPLOYMENT_COMMIT_SHA: ${{ github.event.inputs.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
               run: |
-                  echo 'y' | sfdx plugins:install sfdx-git-delta
-                  mkdir deltas
-                  sfdx sgd:source:delta --source sfdx-source --from ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} --to HEAD --output deltas --ignore .forceignore --generate-delta
-                  VALIDATION_PARAMETER=$(if [ ${{ github.event.inputs.checkonly }} = true ]; then echo "--checkonly"; else echo ""; fi)
-                  TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
-                  TESTS_TO_RUN=$(if [ ${{ github.event.inputs.runtests }} ]; then echo ${{ github.event.inputs.runtests }}; else echo $TEST_CLASSES; fi)
-                  RUN_TEST_PARAMETER=$(if [ ${{ github.event.inputs.testlevel }} = 'RunSpecifiedTests' ] || [ ${{ github.event.inputs.testlevel }} = '' ] && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ ${{ github.event.inputs.testlevel }} ]; then echo "--testlevel ${{ github.event.inputs.testlevel }}"; else echo ""; fi)
-                  npm install fast-xml-parser
-                  node scripts/node/environment-replacements/main.js || true
-                  DESTINATION=$(echo ${{ github.event.inputs.destination }})
-                  FOLDER=${DESTINATION,,}
-                  cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-                  echo 'y' | sfdx plugins:install nakama-plugin-sfdx
-                  sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-                  sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+                  # Note: mapping true to "True" for compatibility with Azure
+                  VALIDATION_PARAMETER=$(if [ ${{ github.event.inputs.checkonly }} = true ]; then echo "True"; else echo "False"; fi)
+                  ./scripts/shell/pipelines/deploy.sh ${{ github.event.inputs.destination }} ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} $VALIDATION_PARAMETER ${{ github.event.inputs.testlevel }} ${{ github.event.inputs.runtests }}
 
             - name: 'Update last deployment commit SHA'
               # https://github.com/actions/runner/issues/1483

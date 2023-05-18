@@ -1,4 +1,5 @@
-image: salesforce/salesforcedx:latest-full
+default:
+    image: salesforce/salesforcedx:latest-full
 
 stages:
     - generate-deltas
@@ -67,6 +68,7 @@ manual-metadata-delta-deployment:
         - VALIDATION_PARAMETER=$(if [ "$checkonly" = "true" ]; then echo "--checkonly"; else echo ""; fi)
         - TESTS_TO_RUN=$(if [ ! $runtests ]; then echo $TEST_CLASSES; else echo $runtests; fi)
         - RUN_TEST_PARAMETER=$(if { [ "$testlevel" = "RunSpecifiedTests" ] || [ ! $testlevel ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $testlevel ]; then echo "--testlevel $testlevel"; else echo ""; fi)
+        - source .env.replacements # This does not work in  GitHub actions
         - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
         - |
             if [ ! $VALIDATION_PARAMETER ]; then

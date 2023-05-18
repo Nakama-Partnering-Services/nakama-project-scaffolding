@@ -22,5 +22,18 @@
 	"packageAliases": {
 		"Frameworks": "0Ho7Q0000008OO8SAM",
 		"Frameworks@1.0.5-1": "04t7Q000000dFi1QAE"
-	}
+	},
+	"replacements": [
+		{
+			"filename": "sfdx-source/core/main/others/remoteSiteSettings/Test_Example.remoteSite-meta.xml",
+			"stringToReplace": "https://replace.com",
+			"replaceWithEnv": "TEST_ENDPOINT",
+			"replaceWhenEnv": [
+				{
+					"env": "DESTINATION_ENVIRONMENT",
+					"value": "PRODUCTION"
+				}
+			]
+		}
+	]
 }

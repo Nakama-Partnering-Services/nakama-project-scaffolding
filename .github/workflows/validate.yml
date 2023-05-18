@@ -94,19 +94,21 @@ jobs:
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
                   npm install sfdx-cli --global
                   sfdx plugins:install @salesforce/sfdx-scanner
-                  sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format sarif --outfile apexScanResults.sarif
+                  sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
 
+            # Note: commented since we do not have github enterprise
+            # format sarif --outfile apexScanResults.sarif
             # TODO: consider reporting with junit as well
-            - name: Upload SARIF file
-              if: always()
-              uses: github/codeql-action/upload-sarif@v2
-              with:
-                  sarif_file: apexScanResults.sarif
+            # - name: Upload SARIF file
+            #   if: always()
+            #   uses: github/codeql-action/upload-sarif@v2
+            #   with:
+            #       sarif_file: apexScanResults.sarif
 
     devint-validation-deployment:
         name: 'DEVINT validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
-        needs: [verify-formatting, verify-linting, verify-pmd]
+        # needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ github.base_ref == 'main' }}
         with:
             DESTINATION_ENVIRONMENT: DEVINT
@@ -115,19 +117,19 @@ jobs:
     staging-validation-deployment:
         name: 'STAGING validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
-        needs: [verify-formatting, verify-linting, verify-pmd]
+        # needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ startsWith( github.base_ref, 'rc/' ) }}
         with:
             DESTINATION_ENVIRONMENT: STAGING
         secrets: inherit
 
-    production-validation-deployment:
-        name: 'PRODUCTION validation deployment'
+    hotfix-validation-deployment:
+        name: 'HOTFIX validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
-        needs: [verify-formatting, verify-linting, verify-pmd]
+        # needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ startsWith( github.base_ref, 'patch/' ) }}
         with:
-            DESTINATION_ENVIRONMENT: PRODUCTION
+            DESTINATION_ENVIRONMENT: HOTFIX
         secrets: inherit
 
     scratch-org-validations:

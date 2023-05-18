@@ -16,7 +16,7 @@ jobs:
             matrix:
                 DESTINATION_ENVIRONMENT: [DEVINT] # , TESTING, STAGING, PRODUCTION, HOTFIX
         environment: ${{ matrix.DESTINATION_ENVIRONMENT }}
-        concurrency: ${{ matrix.DESTINATION_ENVIRONMENT }}
+        concurrency: ${{ matrix.DESTINATION_ENVIRONMENT }}-${{ github.ref }}
         steps:
             - uses: actions/checkout@v2
 

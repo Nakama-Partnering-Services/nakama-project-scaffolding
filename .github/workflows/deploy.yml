@@ -6,11 +6,12 @@ on:
             # Note: workflow dost not trigger when just pushing with --set-upstream to create the branch on remote.
             # It needs at least another commit to be pushed once branch is already created
             - rc/**
+            - patch/**
         paths:
             - sfdx-source/**
 
 jobs:
-    deploy-and-backpromote:
+    deploy:
         strategy:
             fail-fast: false
             matrix:
@@ -26,4 +27,11 @@ jobs:
         if: ${{ startsWith( github.ref, 'refs/heads/rc/' ) }}
         with:
             DESTINATION_ENVIRONMENT: STAGING
+        secrets: inherit
+
+    deploy-to-hotfix:
+        uses: ./.github/workflows/deploy-deltas.yml
+        if: ${{ startsWith( github.ref, 'refs/heads/patch/' ) }}
+        with:
+            DESTINATION_ENVIRONMENT: HOTFIX
         secrets: inherit

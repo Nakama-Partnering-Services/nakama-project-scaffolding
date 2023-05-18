@@ -1,4 +1,5 @@
-image: salesforce/salesforcedx:latest-full
+default:
+    image: salesforce/salesforcedx:latest-full
 
 stages:
     - scheduled-tests

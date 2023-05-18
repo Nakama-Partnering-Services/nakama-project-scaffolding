@@ -40,6 +40,7 @@ stages:
     - local-validations
     - generate-deltas
     - org-validations
+    - show-results
     - identify-non-test-classes
     - verify-test-coverage
     - org-validations-vlocity
@@ -47,7 +48,7 @@ stages:
 
 .any-changes:
     - sfdx-source/**/main/**/*
-    - sfdx-source/**/test/**/*
+    - sfdx-source/**/test/classes/**/*
     - sfdx-source/**/vlocity/**/*
 
 .dest-envs:
