@@ -71,9 +71,7 @@ jobs:
               env:
                   LAST_DEPLOYMENT_COMMIT_SHA: ${{ github.event.inputs.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
               run: |
-                  # Note: mapping true to "True" for compatibility with Azure
-                  VALIDATION_PARAMETER=$(if [ ${{ github.event.inputs.checkonly }} = true ]; then echo "True"; else echo "False"; fi)
-                  ./scripts/shell/pipelines/deploy.sh ${{ github.event.inputs.destination }} ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} $VALIDATION_PARAMETER ${{ github.event.inputs.testlevel }} ${{ github.event.inputs.runtests }}
+                  ./scripts/shell/pipelines/deploy.sh ${{ github.event.inputs.destination }} ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} ${{ github.event.inputs.checkonly }} ${{ github.event.inputs.testlevel }} ${{ github.event.inputs.runtests }}
 
             - name: 'Update last deployment commit SHA'
               # https://github.com/actions/runner/issues/1483

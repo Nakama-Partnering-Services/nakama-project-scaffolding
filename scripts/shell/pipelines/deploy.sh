@@ -31,8 +31,11 @@ fi
 echo 'y' | sfdx plugins:install nakama-plugin-sfdx
 sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
 # if problems with any experience .json file, try using this -> sfdx shane:communities:json:modify
-# parameters.VALIDATION comes as True if checked in Azure manual deployment
-if [ "$3" = "True" ]; then
+# parameters.VALIDATION comes as "True" if checked in Azure manual deployment
+# ${{ github.event.inputs.checkonly } comes as "true" if checked in Github manual deployment
+# $checkonly comes as "true" if checked in Bitbucket manual deployment
+VALIDATION_ONLY=$(echo $checkonly | tr '[:upper:]' '[:lower:]') # workaround since ${3,,} does not work
+if [ "$3" = "true" ]; then
 	sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings --json > results.json
 else
 	sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings
