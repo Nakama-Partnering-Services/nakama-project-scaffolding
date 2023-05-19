@@ -117,12 +117,9 @@ deltas-validation-deployment:
         - merge_request_response=$(curl --request GET --header "PRIVATE-TOKEN:$PIPELINE_ACCESS_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID")
         - echo $merge_request_response > merge_request.json
         - description=$(jq '.description' merge_request.json)
-        - TESTS_SPECIFICATION=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
-        - TESTS_SPECIFICATION_ARRAY=($TESTS_SPECIFICATION)
-        - TEST_LEVEL=${TESTS_SPECIFICATION_ARRAY[0]}
-        - TEST_CLASSES=${TESTS_SPECIFICATION_ARRAY[1]}
-        - source .env.replacements
-        - ./scripts/shell/pipelines/deploy.sh $DESTINATION_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $TEST_LEVEL $TEST_CLASSES
+        - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
+        # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
+        - ./scripts/shell/pipelines/deploy.sh $DESTINATION_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
     artifacts:
         when: always
         paths:
