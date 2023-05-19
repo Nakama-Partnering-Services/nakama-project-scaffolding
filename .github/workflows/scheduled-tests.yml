@@ -14,7 +14,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                DESTINATION_ENVIRONMENT: [DEVINT] # , TESTING, STAGING, PRODUCTION, HOTFIX
+                DESTINATION_ENVIRONMENT: [CICD] # , QA, UAT, PRODUCTION, HOTFIX
         environment: ${{ matrix.DESTINATION_ENVIRONMENT }}
         concurrency: ${{ matrix.DESTINATION_ENVIRONMENT }}-${{ github.ref }}
         steps:

@@ -10,7 +10,7 @@
 variables:
     DESTINATION_ENVIRONMENT:
         value: ''
-        description: 'Destination environment for the manual deployment. Possible values are: DEVINT, TESTING, STAGING, PRODUCTION, HOTFIX.'
+        description: 'Destination environment for the manual deployment. Possible values are: CICD, QA, UAT, PRODUCTION, HOTFIX.'
 
     METADATA_DEPLOYMENT:
         value: 'false'
@@ -52,8 +52,8 @@ stages:
     - sfdx-source/**/vlocity/**/*
 
 .dest-envs:
-    - DEVINT
-    # - TESTING
+    - CICD
+    # - QA
     # TODO: add lower environments
 
 validate-merge-request:
@@ -70,7 +70,7 @@ include:
       rules:
           - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/)
 
-deploy-to-testing-and-backpromote:
+deploy-QA-and-lower-environments:
     stage: dispatch-child-pipeline
     rules:
         - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
@@ -91,7 +91,7 @@ deploy-to-testing-and-backpromote:
         matrix:
             - DESTINATION_ENVIRONMENT: !reference [.dest-envs]
 
-deploy-to-staging:
+deploy-UAT:
     stage: dispatch-child-pipeline
     rules:
         - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
@@ -99,7 +99,7 @@ deploy-to-staging:
         - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^rc/
           changes: !reference [.any-changes]
     variables:
-        DESTINATION_ENVIRONMENT: STAGING
+        DESTINATION_ENVIRONMENT: UAT
     trigger:
         include:
             '.gitlab/pipelines/deploy.yml'

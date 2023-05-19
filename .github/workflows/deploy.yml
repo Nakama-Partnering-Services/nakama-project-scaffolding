@@ -15,21 +15,21 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                DESTINATION_ENVIRONMENT: [DEVINT] # TESTING, TODO: add lower environments
+                DESTINATION_ENVIRONMENT: [CICD] # QA, TODO: add lower environments
         uses: ./.github/workflows/deploy-deltas.yml
         if: ${{ github.ref == 'refs/heads/main' }}
         with:
             DESTINATION_ENVIRONMENT: ${{ matrix.DESTINATION_ENVIRONMENT }}
         secrets: inherit
 
-    deploy-to-staging:
+    deploy-UAT:
         uses: ./.github/workflows/deploy-deltas.yml
         if: ${{ startsWith( github.ref, 'refs/heads/rc/' ) }}
         with:
-            DESTINATION_ENVIRONMENT: STAGING
+            DESTINATION_ENVIRONMENT: UAT
         secrets: inherit
 
-    deploy-to-hotfix:
+    deploy-HOTFIX:
         uses: ./.github/workflows/deploy-deltas.yml
         if: ${{ startsWith( github.ref, 'refs/heads/patch/' ) }}
         with:

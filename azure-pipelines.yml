@@ -40,8 +40,8 @@ stages:
     - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
           - template: .azure/templates/validate.yml
 
-    - stage: testing_deployment
-      displayName: 'Deployment to Testing and backpromote'
+    - stage: QA_deployment
+      displayName: 'Deployment to QA and lower environments'
       condition: and(
           eq(variables['Build.Reason'], 'IndividualCI'),
           startsWith( variables['Build.SourceBranch'], 'refs/heads/main' )
@@ -50,10 +50,10 @@ stages:
           - job: 'Deploy'
             strategy:
                 matrix:
-                    DEVINT:
-                        ENVIRONMENT: 'DEVINT'
-                    # TESTING:
-                    #   ENVIRONMENT: 'TESTING'
+                    CICD:
+                        ENVIRONMENT: 'CICD'
+                    # QA:
+                    #   ENVIRONMENT: 'QA'
                     # TODO: add lower environments
             container: salesforce/salesforcedx:latest-full
             steps:
@@ -63,17 +63,17 @@ stages:
                       RUN_TEST_PARAMETER: 'NoTestRun'
                       DESTINATION_ENVIRONMENT: $ENVIRONMENT
 
-    - stage: staging_deployment
-      displayName: 'Deployment to Staging'
+    - stage: UAT_deployment
+      displayName: 'Deployment to UAT'
       condition: and(
           eq(variables['Build.Reason'], 'IndividualCI'),
           startsWith( variables['Build.SourceBranch'], 'refs/heads/rc' )
           )
       jobs:
-          - deployment: 'Deploy_STAGING'
-            displayName: 'Deploy STAGING'
+          - deployment: 'Deploy_UAT'
+            displayName: 'Deploy UAT'
             container: salesforce/salesforcedx:latest-full
-            environment: STAGING
+            environment: UAT
             strategy:
                 runOnce:
                     deploy:
@@ -83,10 +83,10 @@ stages:
                               parameters:
                                   VALIDATION: ${{ parameters.VALIDATION }}
                                   RUN_TEST_PARAMETER: ${{ parameters.RUN_TEST_PARAMETER }}
-                                  DESTINATION_ENVIRONMENT: STAGING
+                                  DESTINATION_ENVIRONMENT: UAT
 
-    - stage: production_deployment
-      displayName: 'Deployment to Production'
+    - stage: PRODUCTION_deployment
+      displayName: 'Deployment to PRODUCTION'
       condition: and(
           eq(variables['Build.Reason'], 'Manual'),
           or(

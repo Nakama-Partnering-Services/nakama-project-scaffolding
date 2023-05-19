@@ -3,13 +3,13 @@ on:
     workflow_dispatch:
         inputs:
             destination:
-                description: 'Destination environment for the manual deployment. Mainly used for deployments to STAGING and PRODUCTION.'
+                description: 'Destination environment for the manual deployment. Mainly used for deployments to UAT and PRODUCTION.'
                 required: true
                 type: choice
                 options:
-                    - DEVINT
-                    # - TESTING
-                    # - STAGING
+                    - CICD
+                    # - QA
+                    # - UAT
                     # - PRODUCTION
                     # - HOTFIX
             checkonly:

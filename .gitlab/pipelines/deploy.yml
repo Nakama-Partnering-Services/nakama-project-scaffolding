@@ -48,7 +48,7 @@ deploy-deltas:
         - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
         - echo 'y' | sfdx plugins:install nakama-plugin-sfdx
         - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-        # RUN_TEST_PARAMETER can be uncommented to double also run tests on deployments to DEVINT, however it is redundant with MR and will take longer.
+        # RUN_TEST_PARAMETER can be uncommented to double also run tests on deployments to CICD, however it is redundant with MR and will take longer.
         # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
         - source .env.replacements # This does not work in  GitHub actions
         - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --ignorewarnings
