@@ -119,7 +119,7 @@ deltas-validation-deployment:
         - description=$(jq '.description' merge_request.json)
         - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
         # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
-        - ./scripts/shell/pipelines/deploy.sh $TARGET_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $TEST_LEVEL $TEST_CLASSES
+        - ./scripts/shell/pipelines/deploy.sh $TARGET_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
     artifacts:
         when: always
         paths:
@@ -164,6 +164,7 @@ identify-non-test-classes:
         reports:
             dotenv: non_tests.env
 
+# Note: this job will always fail if no test classes were executed but will always work if RunLocalTest is hardcoded in validation deployment
 verify-test-coverage:
     stage: verify-test-coverage
     rules:
