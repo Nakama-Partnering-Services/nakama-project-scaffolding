@@ -16,9 +16,9 @@ run-validation-deployment:
     resource_group: $DESTINATION_ENVIRONMENT
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
         - sfdx force:source:deploy --wait 60 --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose --junit --resultsdir test-results
-        # - cat test-results/junit/junit.xml ==> check below note comments in artifacts
     artifacts:
         when: always
         paths:
@@ -26,7 +26,7 @@ run-validation-deployment:
         reports:
             junit: test-results/junit/junit.xml # Unit test reports only appear in the child dispatched pipeline
     # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
-    # coverage: /name="testRunCoverage" value="([\d]+%)"/ not working since because the --codecoverage flag can not be specified
+    # coverage: /name="testRunCoverage" value="([\d]+%)"/ not working since the --codecoverage flag can not be specified
     # and hence the testRunCoverage does not appear even if we print the junit.xml file in the job log.
 
 run-local-tests:
@@ -39,7 +39,8 @@ run-local-tests:
     resource_group: $DESTINATION_ENVIRONMENT
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
         - TEST_RUN_DETAILS=$(sfdx force:apex:test:run --testlevel RunLocalTests --json)
         - TEST_RUN_ID=$(jq -r '.result.testRunId' <<< $TEST_RUN_DETAILS)
         - echo "TEST_RUN_ID ==> $TEST_RUN_ID"
@@ -61,7 +62,8 @@ run-local-tests-report:
     resource_group: $DESTINATION_ENVIRONMENT
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
+        - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
         - sfdx force:apex:test:report -i $TEST_RUN_ID --codecoverage --resultformat junit --outputdir ./tests/apex
     artifacts:
         reports:

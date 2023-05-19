@@ -2,25 +2,8 @@ default:
     image: salesforce/salesforcedx:latest-full
 
 stages:
-    - generate-deltas
-    - identify-test-classes
     - manual-metadata-deployment
     - manual-vlocity-deployment
-
-generate-deltas:
-    stage: generate-deltas
-    rules:
-        - if: $METADATA_DEPLOYMENT == "true"
-    environment: $DESTINATION_ENVIRONMENT
-    resource_group: $DESTINATION_ENVIRONMENT
-    script:
-        - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
-        - echo 'y' | sfdx plugins:install sfdx-git-delta
-        - mkdir deltas
-        - sfdx sgd:source:delta --source sfdx-source --from $DELTAS_FROM --to HEAD --output deltas --ignore .forceignore --generate-delta
-    artifacts:
-        paths:
-            - deltas
 
 # If this job is used instead of identify-test-classes, --generate-delta parameter can be removed from sgd commands
 # identify-test-classes-by-name:
@@ -39,17 +22,6 @@ generate-deltas:
 #         reports:
 #             dotenv: tests.env
 
-identify-test-classes:
-    stage: identify-test-classes
-    rules:
-        - if: $METADATA_DEPLOYMENT == "true" && ($testlevel == "" || $testlevel == "RunSpecifiedTests") && $runtests == ""
-    script:
-        - TEST_CLASSES=$( (egrep -wrli @IsTest deltas || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
-        - echo "TEST_CLASSES=$TEST_CLASSES" >> tests.env
-    artifacts:
-        reports:
-            dotenv: tests.env
-
 manual-metadata-delta-deployment:
     stage: manual-metadata-deployment
     rules:
@@ -57,23 +29,13 @@ manual-metadata-delta-deployment:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - npm install fast-xml-parser
-        - node scripts/node/environment-replacements/main.js || true
-        - FOLDER=${DESTINATION_ENVIRONMENT,,}
-        - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-        - echo 'y' | sfdx plugins:install nakama-plugin-sfdx
-        - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-        - VALIDATION_PARAMETER=$(if [ "$checkonly" = "true" ]; then echo "--checkonly"; else echo ""; fi)
-        - TESTS_TO_RUN=$(if [ ! $runtests ]; then echo $TEST_CLASSES; else echo $runtests; fi)
-        - RUN_TEST_PARAMETER=$(if { [ "$testlevel" = "RunSpecifiedTests" ] || [ ! $testlevel ]; } && [ $TESTS_TO_RUN ]; then echo "--testlevel RunSpecifiedTests --runtests $TESTS_TO_RUN"; elif [ $testlevel ]; then echo "--testlevel $testlevel"; else echo ""; fi)
-        - source .env.replacements # This does not work in  GitHub actions
-        - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings $VALIDATION_PARAMETER $RUN_TEST_PARAMETER
+        - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA}
+        - source .env.replacements
+        - ./scripts/shell/pipelines/deploy.sh $DESTINATION_ENVIRONMENT $LAST_DEPLOYMENT_COMMIT_SHA $checkonly $testlevel $runtests
         - |
-            if [ ! $VALIDATION_PARAMETER ]; then
+            if [ "$checkonly" != "true" ]; then
                 curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-                  "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+                  "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
             fi
 
 manual-vlocity-delta-deployment:
@@ -85,12 +47,13 @@ manual-vlocity-delta-deployment:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
-        - DELTAS_FROM=$(if [ ! $DELTAS_FROM ]; then eval echo \${${DESTINATION_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA}; else echo $DELTAS_FROM; fi)
+        - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
         - SCOPE=$( if [ $PACKAGE_TO_DEPLOY ]; then echo "sfdx-source/$PACKAGE_TO_DEPLOY/vlocity/**"; else echo "**/vlocity/**"; fi )
-        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM HEAD -- $SCOPE)
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $LAST_DEPLOYMENT_COMMIT_SHA HEAD -- $SCOPE)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
+        - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias Org --setdefaultusername
         - |
             for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
             do

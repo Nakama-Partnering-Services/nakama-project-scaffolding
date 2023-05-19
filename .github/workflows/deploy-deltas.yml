@@ -46,7 +46,7 @@ jobs:
               env:
                   LAST_DEPLOYMENT_COMMIT_SHA: ${{ inputs.DESTINATION_ENVIRONMENT }}_LAST_DEPLOYMENT_COMMIT_SHA
               run: |
-                  ./scripts/shell/pipelines/deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} False NoTestRun
+                  ./scripts/shell/pipelines/deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} false NoTestRun
 
             - name: 'Update last deployment commit SHA'
               env:

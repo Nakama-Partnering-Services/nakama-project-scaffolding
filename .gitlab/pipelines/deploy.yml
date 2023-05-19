@@ -9,27 +9,8 @@ default:
     - sfdx-source/**/vlocity/**/*
 
 stages:
-    - generate-deltas
     - deploy-deltas
     - deploy-vlocity
-
-generate-deltas:
-    stage: generate-deltas
-    rules:
-        - if: $DESTINATION_ENVIRONMENT
-          changes: !reference [.sfdx-changes]
-    environment: $DESTINATION_ENVIRONMENT
-    resource_group: $DESTINATION_ENVIRONMENT
-    script:
-        - echo 'y' | sfdx plugins:install sfdx-git-delta
-        - mkdir deltas
-        # Note: upon rebasing rc branch onto main, previous commit SHA for the destination environment would work if it still exists as part of any other branch in the repository,
-        # even if that commit does not exist anymore in the rebased branch
-        - SFDX_LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA})
-        - sfdx sgd:source:delta --source sfdx-source --from $SFDX_LAST_DEPLOYMENT_COMMIT_SHA --to HEAD --output deltas --ignore .forceignore --generate-delta
-    artifacts:
-        paths:
-            - deltas
 
 deploy-deltas:
     stage: deploy-deltas
@@ -39,22 +20,12 @@ deploy-deltas:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        # Note: not using deploy.sh due to special handling of SFDX_AUTH_URL as a file, and deltas previously generated
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setdefaultusername
-        - npm install fast-xml-parser
-        - node scripts/node/environment-replacements/main.js || true
-        - FOLDER=${DESTINATION_ENVIRONMENT,,}
-        - cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
-        - echo 'y' | sfdx plugins:install nakama-plugin-sfdx
-        - sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml
-        # RUN_TEST_PARAMETER can be uncommented to double also run tests on deployments to CICD, however it is redundant with MR and will take longer.
-        # - RUN_TEST_PARAMETER=$(if [ $TEST_CLASSES ]; then echo "--testlevel RunSpecifiedTests --runtests $TEST_CLASSES"; else echo ""; fi)
-        - source .env.replacements # This does not work in  GitHub actions
-        - sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --ignorewarnings
+        - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA})
+        - source .env.replacements
+        - ./scripts/shell/pipelines/deploy.sh $DESTINATION_ENVIRONMENT $LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
         - |
             curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_SFDX_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
 
 deploy-vlocity:
     stage: deploy-vlocity
@@ -64,13 +35,15 @@ deploy-vlocity:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DELTAS_FROM=$(eval echo \${${DESTINATION_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
+        - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
         # Note: upon rebasing rc branch onto main, previous commit SHA for the destination environment would work if it still exists as part of any other branch in the repository,
         # even if that commit does not exist anymore in the rebased branch
-        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $DELTAS_FROM HEAD -- **/vlocity/**)
+        - SCOPE=$( if [ $PACKAGE_TO_DEPLOY ]; then echo "sfdx-source/$PACKAGE_TO_DEPLOY/vlocity/**"; else echo "**/vlocity/**"; fi )
+        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $LAST_DEPLOYMENT_COMMIT_SHA HEAD -- $SCOPE)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DESTINATION_SFDX_AUTH_URL --setalias Org --setdefaultusername
+        - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias Org --setdefaultusername
         - |
             for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
             do

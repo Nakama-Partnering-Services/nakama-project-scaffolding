@@ -111,7 +111,7 @@ pipelines:
                         name: Deploy CICD
                         deployment: CICD
                         script:
-                            - ./scripts/shell/pipelines/deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA False NoTestRun
+                            - ./scripts/shell/pipelines/deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
                             - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BCICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"CICD_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                         condition:
                             changesets:
@@ -124,7 +124,7 @@ pipelines:
                   name: Deploy UAT
                   deployment: UAT
                   script:
-                      - ./scripts/shell/pipelines/deploy.sh UAT $UAT_LAST_DEPLOYMENT_COMMIT_SHA False NoTestRun
+                      - ./scripts/shell/pipelines/deploy.sh UAT $UAT_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
                       - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$UAT_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"UAT_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                   condition:
                       changesets:
