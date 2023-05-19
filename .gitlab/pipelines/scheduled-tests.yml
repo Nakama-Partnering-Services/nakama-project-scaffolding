@@ -17,7 +17,7 @@ run-validation-deployment:
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
-	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
+        - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
         - sfdx force:source:deploy --wait 60 --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose --junit --resultsdir test-results
     artifacts:
         when: always
@@ -40,7 +40,7 @@ run-local-tests:
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
-	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
+        - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
         - TEST_RUN_DETAILS=$(sfdx force:apex:test:run --testlevel RunLocalTests --json)
         - TEST_RUN_ID=$(jq -r '.result.testRunId' <<< $TEST_RUN_DETAILS)
         - echo "TEST_RUN_ID ==> $TEST_RUN_ID"
@@ -63,7 +63,7 @@ run-local-tests-report:
     script:
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
-	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
+        - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
         - sfdx force:apex:test:report -i $TEST_RUN_ID --codecoverage --resultformat junit --outputdir ./tests/apex
     artifacts:
         reports:

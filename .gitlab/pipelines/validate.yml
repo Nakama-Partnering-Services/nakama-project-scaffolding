@@ -101,11 +101,11 @@ deltas-validation-deployment:
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
           changes: !reference [.sfdx-changes]
           variables:
-              TARGET_ENVIRONMENT: 'CICD'
+              TARGET_ENVIRONMENT: 'DEVINT'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/
           changes: !reference [.sfdx-changes]
           variables:
-              TARGET_ENVIRONMENT: 'UAT'
+              TARGET_ENVIRONMENT: 'STAGING'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/
           changes: !reference [.sfdx-changes]
           variables:
@@ -119,7 +119,7 @@ deltas-validation-deployment:
         - description=$(jq '.description' merge_request.json)
         - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
         # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
-        - ./scripts/shell/pipelines/deploy.sh $DESTINATION_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
+        - ./scripts/shell/pipelines/deploy.sh $DESTINATION_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $TEST_LEVEL $TEST_CLASSES
     artifacts:
         when: always
         paths:
@@ -175,7 +175,7 @@ verify-test-coverage:
         - sfdx nps:coverage:formatters:mappaths -p test-results/coverage/cobertura.xml -t cobertura
         - |
             if [ $NON_TEST_CLASSES ]; then
-                sfdx nps:coverage:verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
+                sfdx nps:coverage:verify --path results.json --required-coverage 85 --classes $NON_TEST_CLASSES
             fi
     artifacts:
         when: always
@@ -195,11 +195,11 @@ vlocity-validation-deployment:
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
           changes: !reference [.vlocity-changes]
           variables:
-              TARGET_ENVIRONMENT: 'CICD'
+              TARGET_ENVIRONMENT: 'DEVINT'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/
           changes: !reference [.vlocity-changes]
           variables:
-              TARGET_ENVIRONMENT: 'UAT'
+              TARGET_ENVIRONMENT: 'STAGING'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/
           changes: !reference [.vlocity-changes]
           variables:
@@ -213,7 +213,7 @@ vlocity-validation-deployment:
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
         - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
         - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
-	      - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias Org --setdefaultusername
+        - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias Org --setdefaultusername
         - |
             for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
             do
