@@ -35,8 +35,7 @@ sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChang
 if [ "$3" = "True" ]; then
 	sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings --json > results.json
 else
-	# RUN_TEST_PARAMETER is ignored if it is not a validation only deployment
-	sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose --ignorewarnings
+	sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings
 	# if there is a new experience bundle, then run -> sfdx shane:communities:activate
 	# if anything changes within experience/folders, then run -> sfdx shane:communities:publish
 fi

@@ -38,13 +38,12 @@ jobs:
                   path: ./
                   mode: replacements
 
-            # TODO:
-            # RunLocalTests hardcoded for safety: do not execute tests if PR only contains flexipages/layouts/VF/Aura/LWC/experience builder
+            # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
             - name: 'Get deltas and deploy'
               run: |
                   git fetch origin $GITHUB_BASE_REF
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
-                  ./scripts/shell/pipelines/deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF True RunLocalTests # $RUN_TEST_PARAMETER commented to enforce all local tests are passing.
+                  ./scripts/shell/pipelines/deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF True $RUN_TEST_PARAMETER
 
             - name: 'Print results'
               if: always()
