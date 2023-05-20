@@ -4,7 +4,7 @@
 
 # TODO: Try to run pipelines for external pull requests in GitHub: https://docs.gitlab.com/ee/ci/ci_cd_for_external_repos/index.html#pipelines-for-external-pull-requests
 
-# Variables for manual-deploment. Some variable referenced in job rules, although empty,
+# Variables for manual-deployment: some variables referenced in job rules, although empty,
 # they exist since they are declared here, so we need to check emptyness specifically
 
 variables:

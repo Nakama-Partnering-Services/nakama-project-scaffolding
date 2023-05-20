@@ -32,7 +32,6 @@ on:
                 required: false
 
 jobs:
-    # TODO: handle vlocity deployments as well
     deploy-deltas:
         name: 'Deploy deltas'
         runs-on: ubuntu-latest

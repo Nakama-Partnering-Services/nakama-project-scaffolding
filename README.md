@@ -30,7 +30,7 @@ This project is licensed under the MIT license - see the [LICENSE](/LICENSE) fil
 
 ## Roadmap
 
--   Implement vlocity deployment in Github workflows deploy.yml and manual-deployment.yml.
+-   Implement vlocity deployment in all platforms.
 -   Consider user friendly reporting of PMD and ESLINT issues in GitLab, similar to GitHub approach.
 -   Consider this for Github actions: mitchspano/sfdx-scan-pull-request
 -   Add proper badges for pipeline, including RunLocalTests.
