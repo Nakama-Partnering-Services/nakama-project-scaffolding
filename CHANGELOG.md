@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.2.1...v1.3.0) (2023-05-20)
+
+
+### Bug Fixes
+
+* missing character ([484c122](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/484c1226f233ef316b6885a346d574621bf9d620))
+* specific environments uppercase and fixe validation check in deploy.sh ([08961e5](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/08961e51b4ef8435fe71d57782f1da445aa9b8a0))
+* typos ([617170b](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/617170ba05177d1c2af27b2816d17d4532590039))
+
 ### [1.2.1](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.2.0...v1.2.1) (2023-02-09)
 
 ### Features
