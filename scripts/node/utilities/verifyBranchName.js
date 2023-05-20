@@ -16,7 +16,7 @@ const validateBranchName = async () => {
 		const validReleaseBranchPrefix = 'rc|patch';
 		const validReleaseBranchesRegex = new RegExp(`^(${validReleaseBranchPrefix})/\\d\\.\\d\\.\\d`);
 
-		const validDevelopmentBranchPrefix = 'feature|bugfix|hotfix|chore';
+		const validDevelopmentBranchPrefix = 'feature|bugfix|hotfix|chore|backup';
 		const userStoryPrefix = '[\\w]+';
 		const userStoryPrefixReadable = '*';
 		const validDevelopmentBranchesRegex = new RegExp(

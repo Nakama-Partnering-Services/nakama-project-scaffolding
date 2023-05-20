@@ -17,5 +17,5 @@
 ## Repository
 
 -   Protected default (main) and release branches.
--   Branch names should match this regular expression: `(feature|bugfix|hotfix|release|chore)\/*`
+-   Branch names should match this regular expression: `(feature|bugfix|hotfix|rc|patch|chore|backup)\/*`
 -   Only mantainers are allowed to merge and (force) push to protected branches.
