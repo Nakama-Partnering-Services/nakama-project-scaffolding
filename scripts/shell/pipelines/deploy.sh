@@ -17,8 +17,7 @@ else
 fi
 npm install fast-xml-parser
 node scripts/node/environment-replacements/main.js || true
-FOLDER=$(echo $1 | tr '[:upper:]' '[:lower:]') # workaround since ${1,,} does not work
-cp --recursive specific-environments/$FOLDER/. sfdx-source/ || true
+cp --recursive specific-environments/$1/. sfdx-source/ || true
 # sfdx shane:source:replace as well may be helpful
 # checking if org is already authenticated, like in github
 auth_orgs=$(sfdx auth:list --json)
@@ -34,8 +33,8 @@ sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChang
 # parameters.VALIDATION comes as "True" if checked in Azure manual deployment
 # ${{ github.event.inputs.checkonly } comes as "true" if checked in Github manual deployment
 # $checkonly comes as "true" if checked in Bitbucket manual deployment
-VALIDATION_ONLY=$(echo $checkonly | tr '[:upper:]' '[:lower:]') # workaround since ${3,,} does not work
-if [ "$3" = "true" ]; then
+VALIDATION_ONLY=$(echo $3 | tr '[:upper:]' '[:lower:]') # workaround since ${3,,} does not work
+if [ "$VALIDATION_ONLY" = "true" ]; then
 	sfdx force:source:deploy --wait 60 --checkonly --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings --junit --coverageformatters cobertura --resultsdir test-results --json > results.json
 else
 	sfdx force:source:deploy --wait 60 --manifest deltas/package/package.xml --postdestructivechanges deltas/destructiveChanges/destructiveChanges.xml --verbose $RUN_TEST_PARAMETER --ignorewarnings

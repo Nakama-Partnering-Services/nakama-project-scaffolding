@@ -70,7 +70,7 @@ jobs:
             #       sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
             #       npm install fast-xml-parser
             #       node scripts/node/environment-replacements/main.js || true
-            #       cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
+            #       cp --recursive specific-environments/SCRATCH-ORG/. sfdx-source/ || true
 
             - name: 'Install Frameworks in scratch org'
               run: |

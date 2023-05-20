@@ -15,13 +15,9 @@
         <priority>1</priority> <!-- Only Security should show red, everything else default 2 -->
     </rule>
     <rule ref="category/apex/design.xml" />
-    <rule ref="category/apex/performance.xml">
-        <exclude name="AvoidDebugStatements" /> <!-- We have smarter rule below -->
-    </rule>
+    <rule ref="category/apex/performance.xml" />
     <rule ref="category/apex/codestyle.xml" />
-    <rule ref="category/apex/bestpractices.xml">
-        <exclude name="ApexAssertionsShouldIncludeMessage" /> <!-- Not enforce, sometimes it is controversial and redundant -->
-    </rule>
+    <rule ref="category/apex/bestpractices.xml" />
     <rule ref="category/apex/documentation.xml">
         <exclude name="ApexDoc"/> <!-- Nonsense rule even against Clean Code -->
     </rule>

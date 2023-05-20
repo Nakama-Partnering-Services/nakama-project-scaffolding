@@ -157,7 +157,7 @@ jobs:
                   sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
                   npm install fast-xml-parser
                   node scripts/node/environment-replacements/main.js || true
-                  cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
+                  cp --recursive specific-environments/SCRATCH-ORG/. sfdx-source/ || true
 
             # Note: replace previous step with this one if scratch org pool is needed
             # - name: 'Fetch scratch org'
@@ -166,7 +166,7 @@ jobs:
             #       sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
             #       npm install fast-xml-parser
             #       node scripts/node/environment-replacements/main.js || true
-            #       cp --recursive specific-environments/scratch-org/. sfdx-source/ || true
+            #       cp --recursive specific-environments/SCRATCH-ORG/. sfdx-source/ || true
 
             # Note: This also pushes metadata in frameworks folder, useful to check and prevent circular dependancies between packages
             - name: 'Push source to scratch org'

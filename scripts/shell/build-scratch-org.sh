@@ -2,7 +2,7 @@ echo "Preparing scratch org..."
 sh scripts/shell/prepare-scratch-org.sh
 
 echo "Replacing environment specific metadata..."
-cp --recursive specific-environments/scratch-org/. sfdx-source/
+cp --recursive specific-environments/SCRATCH-ORG/. sfdx-source/
 
 # echo "Deploying packages..."
 # sh scripts/shell/deploy-packages.sh
