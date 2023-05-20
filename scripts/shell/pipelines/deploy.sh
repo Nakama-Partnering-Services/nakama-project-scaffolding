@@ -1,7 +1,7 @@
 #!/bin/bash
 echo 'y' | sfdx plugins:install sfdx-git-delta
 mkdir deltas
-sfdx sgd:source:delta --source sfdx-source --from $2 --to HEAD --output deltas --ignore .forceignore --generate-delta
+sfdx sgd:source:delta --source force-app --from $2 --to HEAD --output deltas --ignore .forceignore --generate-delta
 TEST_LEVEL=$4
 TEST_CLASSES=$5
 if [ ! $TEST_LEVEL ]; then
@@ -17,7 +17,7 @@ else
 fi
 npm install fast-xml-parser
 node scripts/node/environment-replacements/main.js || true
-cp --recursive specific-environments/$1/. sfdx-source/ || true
+cp --recursive specific-environments/$1/. force-app/ || true
 # sfdx shane:source:replace as well may be helpful
 # checking if org is already authenticated, like in github
 auth_orgs=$(sfdx auth:list --json)

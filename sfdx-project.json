@@ -1,19 +1,8 @@
 {
-	"packageDirectories": [
+	"packageDirectories":[
 		{
-			"path": "frameworks",
-			"package": "Frameworks",
-			"versionNumber": "1.0.5.NEXT",
-			"definitionFile": "config/project-scratch-def.json",
-			"default": false
-		},
-		{
-			"path": "sfdx-source/core",
+			"path": "force-app",
 			"default": true
-		},
-		{
-			"path": "sfdx-source/unpackaged",
-			"default": false
 		}
 	],
 	"name": "nakama-project-scaffolding",
@@ -22,18 +11,5 @@
 	"packageAliases": {
 		"Frameworks": "0Ho7Q0000008OO8SAM",
 		"Frameworks@1.0.5-1": "04t7Q000000dFi1QAE"
-	},
-	"replacements": [
-		{
-			"filename": "sfdx-source/core/main/others/remoteSiteSettings/Test_Example.remoteSite-meta.xml",
-			"stringToReplace": "https://replace.com",
-			"replaceWithEnv": "TEST_ENDPOINT",
-			"replaceWhenEnv": [
-				{
-					"env": "DESTINATION_ENVIRONMENT",
-					"value": "PRODUCTION"
-				}
-			]
-		}
-	]
+	}
 }

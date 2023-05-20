@@ -16,7 +16,7 @@ trigger:
             - patch/*
     paths:
         include:
-            - sfdx-source/*
+            - force-app/*
 
 pool:
     vmImage: 'ubuntu-latest'

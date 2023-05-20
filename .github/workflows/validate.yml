@@ -6,7 +6,7 @@ on:
             - rc/**
             - patch/**
         paths:
-            - sfdx-source/**
+            - force-app/**
 
 # Note: if the same branch has differente PR open to get itself merged into different targes, each PR triggering a validation,
 # the reference of valid checks will be messed and all of them will just point to the last validation check
@@ -131,49 +131,3 @@ jobs:
         with:
             DESTINATION_ENVIRONMENT: HOTFIX
         secrets: inherit
-
-    scratch-org-validations:
-        name: 'Execute scratch org validations'
-        needs: [verify-formatting, verify-linting, verify-pmd]
-        runs-on: ubuntu-latest
-        container:
-            # Warning: when running in container, git commands will not work since it will not be a repository
-            image: docker://salesforce/salesforcedx:latest-full
-        steps:
-            - uses: actions/checkout@v2
-
-            - name: 'Create Dev Hub auth file'
-              run: echo ${{ secrets.DEVHUB_SFDX_AUTH_URL }} > ./DEVHUB_SFDX_AUTH_URL.txt
-
-            - name: 'Authorize Dev Hub'
-              run: sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setdefaultdevhubusername
-
-            - name: 'Remove Dev Hub auth file'
-              run: rm --force ./DEVHUB_SFDX_AUTH_URL.txt
-
-            - name: 'Create scratch org'
-              continue-on-error: true
-              run: |
-                  sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
-                  npm install fast-xml-parser
-                  node scripts/node/environment-replacements/main.js || true
-                  cp --recursive specific-environments/SCRATCH-ORG/. sfdx-source/ || true
-
-            # Note: replace previous step with this one if scratch org pool is needed
-            # - name: 'Fetch scratch org'
-            #   run: |
-            #       echo 'y' | sfdx plugins:install sfpowerkit
-            #       sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
-            #       npm install fast-xml-parser
-            #       node scripts/node/environment-replacements/main.js || true
-            #       cp --recursive specific-environments/SCRATCH-ORG/. sfdx-source/ || true
-
-            # Note: This also pushes metadata in frameworks folder, useful to check and prevent circular dependancies between packages
-            - name: 'Push source to scratch org'
-              continue-on-error: true
-              run: sfdx force:source:push # if this fails due to limitations, change to run scripts/shell/deploy-packages.sh instead
-
-
-            # Note: redundant and error prone due to running frameworks and project tests together, until this issue is fixed: https://trailblazer.salesforce.com/issues_view?id=a1p4V000002JRzNQAW
-            # - name: 'Run local tests'
-            #   run: sfdx force:apex:test:run --testlevel RunLocalTests --synchronous --resultformat human --loglevel error

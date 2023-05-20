@@ -2,9 +2,7 @@
 # .gitlab-ci.yml@jdkgabri/project-scaffolding-pipelines (separate repo with just gitlab-ci.yml and pipeline .yml files)
 # https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab-ci.yml
 
-# TODO: Try to run pipelines for external pull requests in GitHub: https://docs.gitlab.com/ee/ci/ci_cd_for_external_repos/index.html#pipelines-for-external-pull-requests
-
-# Variables for manual-deploment. Some variable referenced in job rules, although empty,
+# Variables for manual-deployment: some variables referenced in job rules, although empty,
 # they exist since they are declared here, so we need to check emptyness specifically
 
 variables:
@@ -14,15 +12,11 @@ variables:
 
     METADATA_DEPLOYMENT:
         value: 'false'
-        description: 'Set to "true" if Salesforce metadata should be deployed. If VLOCITY_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
-
-    VLOCITY_DEPLOYMENT:
-        value: 'false'
-        description: 'Set to "true" if Vlocity data should be deployed. If METADATA_DEPLOYMENT is also set to "true", Salesforce metadata deployment occurs first.'
+        description: 'Set to "true" if Salesforce metadata should be deployed.'
 
     checkonly:
         value: 'false'
-        description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true". Vlocity deployments can not be only validations.'
+        description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true".'
 
     testlevel:
         value: 'RunLocalTests'
@@ -42,13 +36,10 @@ stages:
     - show-results
     - identify-non-test-classes
     - verify-test-coverage
-    - org-validations-vlocity
-    - delete-scratch-org
 
 .any-changes:
-    - sfdx-source/**/main/**/*
-    - sfdx-source/**/test/classes/**/*
-    - sfdx-source/**/vlocity/**/*
+    - force-app/**/main/**/*
+    - force-app/**/test/classes/**/*
 
 .dest-envs:
     - CICD
@@ -130,13 +121,12 @@ create-frameworks-package-version:
 manual-deployment:
     stage: dispatch-child-pipeline
     rules:
-        - if: $DESTINATION_ENVIRONMENT && $DESTINATION_ENVIRONMENT != "" && ($METADATA_DEPLOYMENT == "true" || $VLOCITY_DEPLOYMENT == "true")
+        - if: $DESTINATION_ENVIRONMENT && $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true"
     # Note: ths is not supposed to be needed since as per documentation it should be the default behaviour, however it is a non working issue: https://gitlab.com/gitlab-org/gitlab/-/issues/322772
     variables:
         DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
         # AUTOMATIC_DELTAS_FROM: $AUTOMATIC_DELTAS_FROM
         METADATA_DEPLOYMENT: $METADATA_DEPLOYMENT
-        VLOCITY_DEPLOYMENT: $VLOCITY_DEPLOYMENT
         checkonly: $checkonly
         testlevel: $testlevel
         runtests: $runtests
@@ -165,19 +155,4 @@ scheduled-tests:
             #   ref: 'main'
             #   file: '.gitlab/pipelines/scheduled-tests.yml'
             # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/scheduled-tests.yml'
-        strategy: depend
-
-scheduled-scratch-orgs-creation:
-    stage: dispatch-child-pipeline
-    rules:
-        - if: $DAILY_SCRATCH_ORGS_CREATION_DISABLED
-          when: never
-        - if: $CI_PIPELINE_SOURCE == "schedule"
-    trigger:
-        include:
-            '.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
-            # - project: 'jdkgabri/nakama-project-scaffolding'
-            #   ref: 'main'
-            #   file: '.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/scheduled-scratch-orgs-creation.yml'
         strategy: depend

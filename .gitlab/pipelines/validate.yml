@@ -9,11 +9,8 @@ default:
     image: salesforce/salesforcedx:latest-full
 
 .sfdx-changes:
-    - sfdx-source/**/main/**/*
-    - sfdx-source/**/test/classes/**/*
-
-.vlocity-changes:
-    - sfdx-source/**/vlocity/**/*
+    - force-app/**/main/**/*
+    - force-app/**/test/classes/**/*
 
 include:
     - template: Code-Quality.gitlab-ci.yml
@@ -69,7 +66,7 @@ verify-linting:
         - if: $VERIFY_LINTING_DISABLED
           when: never
         - changes:
-              - sfdx-source/**/main/**/*.js
+              - force-app/**/main/**/*.js
     script:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- **/{aura,lwc}/**/*.js)
         - IFS=$'\n'
@@ -186,89 +183,3 @@ verify-test-coverage:
             coverage_report:
                 coverage_format: cobertura
                 path: test-results/coverage/cobertura.xml
-
-# Note: This job may be skipped or allow_failure: true since actual deployment can succeed under certain circumstances even if validation fails
-vlocity-validation-deployment:
-    stage: org-validations-vlocity
-    rules:
-        - if: $VALIDATION_DEPLOYMENT_DISABLED
-          when: never
-        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
-          changes: !reference [.vlocity-changes]
-          variables:
-              TARGET_ENVIRONMENT: 'DEVINT'
-        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/
-          changes: !reference [.vlocity-changes]
-          variables:
-              TARGET_ENVIRONMENT: 'STAGING'
-        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/
-          changes: !reference [.vlocity-changes]
-          variables:
-              TARGET_ENVIRONMENT: 'PRODUCTION'
-    # Note: DESTINATION_ENVIRONMENT is renamed to TARGET_ENVIRONMENT so it does not conflicts with variable declared in .gitlab-ci.yml
-    environment: $TARGET_ENVIRONMENT
-    resource_group: $TARGET_ENVIRONMENT
-    script:
-        - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${TARGET_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
-        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $LAST_DEPLOYMENT_COMMIT_SHA HEAD -- **/vlocity/**)
-        - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
-        - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias Org --setdefaultusername
-        - |
-            for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
-            do
-                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml validateLocalData --verbose true --simpleLogging true
-            done
-
-scratch-org-validations:
-    stage: org-validations
-    rules:
-        - if: $VALIDATE_SCRATCH_ORG_DISABLED
-          when: never
-        - changes: !reference [.sfdx-changes]
-    allow_failure: true
-    environment:
-        name: scratch/$CI_COMMIT_REF_SLUG
-        url: $SCRATCH_ORG_URL
-        # Dynamic environments stop automatically when their associated branch is deleted
-        on_stop: delete-scratch-org
-    resource_group: scratch/$CI_COMMIT_REF_SLUG
-    script:
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultdevhubusername
-        - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
-        # Note: replace scratch org creation if scratch org pool is needed
-        # - echo 'y' | sfdx plugins:install sfpowerkit
-        # - sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
-        - SCRATCH_ORG_DETAILS=$(sfdx force:org:open --urlonly --json)
-        - SCRATCH_ORG_URL=$(jq -r '.result.url' <<< $SCRATCH_ORG_DETAILS)
-        - echo "SCRATCH_ORG_URL=$SCRATCH_ORG_URL" >> scratch.env
-        - SCRATCH_ORG_USERNAME=$(jq -r '.result.username' <<< $SCRATCH_ORG_DETAILS)
-        - echo "SCRATCH_ORG_USERNAME=$SCRATCH_ORG_USERNAME" >> scratch.env
-        - npm install fast-xml-parser
-        - node scripts/node/environment-replacements/main.js || true
-        - cp --recursive specific-environments/SCRATCH-ORG/. sfdx-source/ || true
-        - sfdx force:source:push
-        # Note: redundant and error prone due to running frameworks and project tests together, until this issue is fixed: https://trailblazer.salesforce.com/issues_view?id=a1p4V000002JRzNQAW
-        # - sfdx force:apex:test:run --testlevel RunLocalTests --synchronous --resultformat human --loglevel error
-    artifacts:
-        reports:
-            dotenv: scratch.env
-
-delete-scratch-org:
-    stage: delete-scratch-org
-    rules:
-        - if: $VALIDATE_SCRATCH_ORG_DISABLED
-          when: never
-        - changes: !reference [.sfdx-changes]
-          when: manual
-    allow_failure: true
-    environment:
-        name: scratch/$CI_COMMIT_REF_SLUG
-        action: stop
-    resource_group: scratch/$CI_COMMIT_REF_SLUG
-    script:
-        # Command below does not work because of missing auth information due to different running instance
-        # - sfdx force:org:delete --noprompt --targetusername $SCRATCH_ORG_USERNAME
-        - sfdx auth:sfdxurl:store --sfdxurlfile $DEVHUB_SFDX_AUTH_URL --setdefaultusername
-        - sfdx force:data:record:delete --sobjecttype ScratchOrgInfo --where SignupUsername=$SCRATCH_ORG_USERNAME

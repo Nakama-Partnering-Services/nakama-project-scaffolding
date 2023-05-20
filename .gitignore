@@ -36,21 +36,13 @@ $RECYCLE.BIN/
 # Local environment variables
 .env
 
-# Default folders
-sfdx-source/**/default/**
-
 # Visual Studio Code ignore
 
 .vscode/*
 !.vscode/settings.json
-!.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 *.code-workspace
 
 # Local History for Visual Studio Code
 .history/
-
-# Untracked source
-sfdx-source/untracked/*
-!sfdx-source/untracked/README.md

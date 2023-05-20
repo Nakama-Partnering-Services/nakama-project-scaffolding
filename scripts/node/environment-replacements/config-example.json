@@ -1,11 +1,11 @@
 [
 	{
-		"path": "sfdx-source/core/main/auth-management/namedCredentials",
+		"path": "force-app/main/default/namedCredentials",
 		"replacementTagPath": "NamedCredential.endpoint",
 		"replacementValue": "https://www.example.com"
 	},
 	{
-		"path": "sfdx-source/core/main/auth-management/connectedApps",
+		"path": "force-app/main/default/connectedApps",
 		"replacementTagPath": "ConnectedApp.oauthConfig.callbackUrl",
 		"replacementValue": "https://www.example.com"
 	}
