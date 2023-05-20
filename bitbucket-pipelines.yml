@@ -52,7 +52,7 @@ pipelines:
                         condition:
                             changesets:
                                 includePaths:
-                                    - 'sfdx-source/**'
+                                    - 'force-app/**'
             - parallel:
                   - step:
                         name: Deltas validation deployment
@@ -70,28 +70,11 @@ pipelines:
                         condition:
                             changesets:
                                 includePaths:
-                                    - 'sfdx-source/**'
+                                    - 'force-app/**'
                         artifacts:
                             - results.json
                         after-script:
                             - cat results.json
-                  - step:
-                        name: Scratch org validation
-                        script:
-                            - echo $DEVHUB_SFDX_AUTH_URL > ./DEVHUB_SFDX_AUTH_URL.txt
-                            - sfdx auth:sfdxurl:store --sfdxurlfile ./DEVHUB_SFDX_AUTH_URL.txt --setdefaultdevhubusername
-                            - sfdx force:org:create --definitionfile config/project-scratch-def.json --setdefaultusername --durationdays 1
-                            # Note: replace scratch org creation if scratch org pool is needed
-                            # - echo 'y' | sfdx plugins:install sfpowerkit
-                            # - sfdx sfpowerkit:pool:fetch --tag base --setdefaultusername
-                            - npm install fast-xml-parser
-                            - node scripts/node/environment-replacements/main.js || true
-                            - cp --recursive specific-environments/SCRATCH-ORG/. sfdx-source/ || true
-                            - sfdx force:source:push
-                        condition:
-                            changesets:
-                                includePaths:
-                                    - 'sfdx-source/**'
             - step:
                   name: Verify test coverage
                   script:
@@ -103,7 +86,7 @@ pipelines:
                   condition:
                       changesets:
                           includePaths:
-                              - 'sfdx-source/**'
+                              - 'force-app/**'
     branches:
         main:
             - parallel:
@@ -119,7 +102,7 @@ pipelines:
                         condition:
                             changesets:
                                 includePaths:
-                                    - 'sfdx-source/**'
+                                    - 'force-app/**'
                   # TODO: add QA and lower environments
 
         rc/*:
@@ -135,7 +118,7 @@ pipelines:
                   condition:
                       changesets:
                           includePaths:
-                              - 'sfdx-source/**'
+                              - 'force-app/**'
     custom:
         scheduled-validation-deployments:
             - parallel:

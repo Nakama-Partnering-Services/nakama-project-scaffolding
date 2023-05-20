@@ -8,7 +8,7 @@ on:
             - rc/**
             - patch/**
         paths:
-            - sfdx-source/**
+            - force-app/**
 
 jobs:
     deploy:

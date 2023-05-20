@@ -3,24 +3,6 @@ default:
 
 stages:
     - manual-metadata-deployment
-    - manual-vlocity-deployment
-
-# If this job is used instead of identify-test-classes, --generate-delta parameter can be removed from sgd commands
-# identify-test-classes-by-name:
-#     image: python:latest
-#     stage: identify-test-classes
-#     rules:
-#         - if: $METADATA_DEPLOYMENT == "true" && ($testlevel == "" || $testlevel == "RunSpecifiedTests") && $runtests == ""
-#           changes: !reference [.sfdx-changes]
-#     script:
-#         - apt-get update
-#         - apt-get install -y jq
-#         - pip3 install yq
-#         - TEST_CLASSES=$(xq . < deltas/package/package.xml | jq '.Package.types | if type == "array" then .[] else . end | select(.name == "ApexClass") | .members | if type == "array" then map(select(endswith("Test"))) | join(",") else select(endswith("Test")) end' | tr -d '"')
-#         - echo "TEST_CLASSES=$TEST_CLASSES" >> tests.env
-#     artifacts:
-#         reports:
-#             dotenv: tests.env
 
 manual-metadata-delta-deployment:
     stage: manual-metadata-deployment
@@ -39,29 +21,3 @@ manual-metadata-delta-deployment:
                 curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
                   "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
             fi
-
-manual-vlocity-delta-deployment:
-    stage: manual-vlocity-deployment
-    rules:
-        - if: $checkonly == "true"
-          when: never
-        - if: $VLOCITY_DEPLOYMENT == "true"
-    environment: $DESTINATION_ENVIRONMENT
-    resource_group: $DESTINATION_ENVIRONMENT
-    script:
-        - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
-        - SCOPE=$( if [ $PACKAGE_TO_DEPLOY ]; then echo "sfdx-source/$PACKAGE_TO_DEPLOY/vlocity/**"; else echo "**/vlocity/**"; fi )
-        - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $LAST_DEPLOYMENT_COMMIT_SHA HEAD -- $SCOPE)
-        - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
-        - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias Org --setdefaultusername
-        - |
-            for PACKAGE in $VLOCITY_PACKAGES_TO_DEPLOY;
-            do
-                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packDeploy --verbose true --simpleLogging true
-                npx vlocity -sfdx.username Org -job $PACKAGE/vlocity.yaml packRetry --verbose true --simpleLogging true
-            done
-        - |
-            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"

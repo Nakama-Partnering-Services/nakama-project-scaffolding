@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<Package xmlns="http://soap.sforce.com/2006/04/metadata">
-    <!-- Deletion of components listed here is done before the actual deployment of the package.xml (same behaviour as destructiveChangesPre.xml) -->
-    <!-- You must also have a package.xml in the same directory as this file, either empty or with components to be added or created -->
-    <!-- The API version is the one that is specified in package.xml -->
-</Package>

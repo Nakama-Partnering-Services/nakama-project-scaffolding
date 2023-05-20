@@ -12,18 +12,8 @@
 # Specific environments
 specific-environments/**
 
-# Untracked
-sfdx-source/untracked/**
-
 # README.md files
 README.md
-
-# Default folders
-sfdx-source/**/default/**
-
-# Vlocity
-**/vlocity/**
-vlocity.yaml
 
 # DomainBuilder extra-tests
 frameworks/apex-domainbuilder/sfdx-source/extra-tests/**
