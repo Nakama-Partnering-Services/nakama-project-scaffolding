@@ -27,3 +27,6 @@ vlocity.yaml
 
 # DomainBuilder extra-tests
 frameworks/apex-domainbuilder/sfdx-source/extra-tests/**
+
+# Frameworks: remove if it is really meant to create a new frameworks package version
+frameworks/**

@@ -1,7 +1,7 @@
 #!/bin/bash
 echo 'y' | sfdx plugins:install sfdx-git-delta
 mkdir deltas
-sfdx sgd:source:delta --source sfdx-source --from $2 --to HEAD --output deltas --ignore .forceignore --generate-delta
+sfdx sgd:source:delta --from $2 --to HEAD --output deltas --ignore .forceignore --generate-delta
 TEST_LEVEL=$4
 TEST_CLASSES=$5
 if [ ! $TEST_LEVEL ]; then
