@@ -212,7 +212,7 @@ vlocity-validation-deployment:
         - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${TARGET_ENVIRONMENT}_VLOCITY_LAST_DEPLOYMENT_COMMIT_SHA})
         - VLOCITY_CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $LAST_DEPLOYMENT_COMMIT_SHA HEAD -- **/vlocity/**)
         - VLOCITY_PACKAGES_TO_DEPLOY=$(for file in $VLOCITY_CHANGED_FILES; do echo ${file%/vlocity/*}; done | tr ' ' '\n' | sort -u)
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
+        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${TARGET_ENVIRONMENT}_SFDX_AUTH_URL})
         - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
         - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setalias Org --setdefaultusername
         - |
