@@ -18,6 +18,7 @@ fi
 npm install fast-xml-parser
 node scripts/node/environment-replacements/main.js || true
 cp --recursive specific-environments/$1/. sfdx-source/ || true
+cp --recursive specific-environments/$1/. force-app/ || true
 # sfdx shane:source:replace as well may be helpful
 # checking if org is already authenticated, like in github
 auth_orgs=$(sfdx auth:list --json)
