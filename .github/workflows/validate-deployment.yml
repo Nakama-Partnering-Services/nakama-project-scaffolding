@@ -43,7 +43,7 @@ jobs:
               run: |
                   git fetch origin $GITHUB_BASE_REF
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
-                  curl -s https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
+                  curl -H "Authorization:token ${{ secrets.NAKAMA_ACCESS_TOKEN }}" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
                   chmod +x ./deploy.sh
                   ./deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF true $RUN_TEST_PARAMETER
 
