@@ -15,7 +15,7 @@ run-validation-deployment:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - curl -s https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/validation-with-tests.sh > ./validation-with-tests.sh
+        - curl -H "Authorization:token $NAKAMA_ACCESS_TOKEN" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/validation-with-tests.sh > ./validation-with-tests.sh
         - chmod +x ./validation-with-tests.sh
         - ./validation-with-tests.sh $DESTINATION_ENVIRONMENT
     artifacts:
