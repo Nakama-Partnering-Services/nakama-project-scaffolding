@@ -70,7 +70,7 @@ jobs:
               env:
                   LAST_DEPLOYMENT_COMMIT_SHA: ${{ github.event.inputs.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
               run: |
-                  curl -s https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
+                  curl -H "Authorization:token ${{ secrets.NAKAMA_ACCESS_TOKEN }}" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
                   chmod +x ./deploy.sh
                   ./deploy.sh ${{ github.event.inputs.destination }} ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} ${{ github.event.inputs.checkonly }} ${{ github.event.inputs.testlevel }} ${{ github.event.inputs.runtests }}
 
