@@ -126,7 +126,9 @@ pipelines:
                         name: Daily validation deployment with tests
                         deployment: CICD
                         script:
-                            - ./scripts/shell/pipelines/validation-with-tests.sh CICD
+                            - curl -s https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/validation-with-tests.sh > ./validation-with-tests.sh
+                            - chmod +x ./validation-with-tests.sh
+                            - ./validation-with-tests.sh CICD
                   # TODO: add QA, UAT, PRODUCTION and HOTFIX environments
         manual-deployment:
             - variables:
