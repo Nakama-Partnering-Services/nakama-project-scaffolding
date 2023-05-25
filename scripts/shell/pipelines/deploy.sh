@@ -20,13 +20,13 @@ node scripts/node/environment-replacements/main.js || true
 cp --recursive specific-environments/$1/. sfdx-source/ || true
 cp --recursive specific-environments/$1/. force-app/ || true
 # sfdx shane:source:replace as well may be helpful
-# checking if org is already authenticated, like in github
+# Checking if org is already authenticated, like in github
 auth_orgs=$(sfdx auth:list --json)
 number_of_orgs=$(jq '.result | length' <<< $auth_orgs)
 if [ "$number_of_orgs" = 0 ]; then
-	TARGET_SFDX_AUTH_URL=$(eval echo \${${1}_SFDX_AUTH_URL})
-	echo $TARGET_SFDX_AUTH_URL > ./TARGET_SFDX_AUTH_URL.txt
-	sfdx auth:sfdxurl:store --sfdxurlfile ./TARGET_SFDX_AUTH_URL.txt --setdefaultusername
+	DESTINATION_SFDX_AUTH_URL=$(eval echo \${${1}_SFDX_AUTH_URL})
+	echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
+	sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
 fi
 echo 'y' | sfdx plugins:install nakama-plugin-sfdx
 sfdx nps:package:destructive:versionobsoleteflows --path deltas/destructiveChanges/destructiveChanges.xml

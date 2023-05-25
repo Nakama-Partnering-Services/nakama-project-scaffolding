@@ -15,10 +15,9 @@ run-validation-deployment:
     environment: $DESTINATION_ENVIRONMENT
     resource_group: $DESTINATION_ENVIRONMENT
     script:
-        - DESTINATION_SFDX_AUTH_URL=$(eval echo \${${DESTINATION_ENVIRONMENT}_SFDX_AUTH_URL})
-        - echo $DESTINATION_SFDX_AUTH_URL > ./DESTINATION_SFDX_AUTH_URL.txt
-        - sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
-        - sfdx force:source:deploy --wait 60 --checkonly -m LightningComponentBundle:showToastUtility --testlevel RunLocalTests --verbose --junit --resultsdir test-results
+        - curl -s https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/validation-with-tests.sh > ./validation-with-tests.sh
+        - chmod +x ./validation-with-tests.sh
+        - ./validation-with-tests.sh $DESTINATION_ENVIRONMENT
     artifacts:
         when: always
         paths:
