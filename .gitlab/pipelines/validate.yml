@@ -6,7 +6,7 @@
 #         - .sfdx/
 
 default:
-    image: salesforce/salesforcedx:latest-full
+    image: jdkgabri/nakama-pipelines-sh
 
 .sfdx-changes:
     - force-app/**/main/**/*
@@ -21,19 +21,6 @@ code_quality:
         - if: $CODE_QUALITY_DISABLED
           when: never
         - changes: !reference [.sfdx-changes]
-
-install-npm-dependancies:
-    stage: install-npm
-    rules:
-        - if: $VERIFY_FORMATTING_DISABLED && $VERIFY_LINTING_DISABLED
-          when: never
-        # Note: always need to be specified since, default "success" is not reached due to previous parent triggering job being not completed as it follows a depend strategy
-        - when: always
-    script:
-        - npm ci
-    artifacts:
-        paths:
-            - node_modules
 
 verify-formatting:
     stage: local-validations
@@ -87,7 +74,6 @@ verify-pmd:
     script:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD)
         - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
-        - sfdx plugins:install @salesforce/sfdx-scanner
         - sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
 
 deltas-validation-deployment:
@@ -116,9 +102,9 @@ deltas-validation-deployment:
         - description=$(jq '.description' merge_request.json)
         - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
         # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
-        - curl -H "Authorization:token $NAKAMA_ACCESS_TOKEN" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
-        - chmod +x ./deploy.sh
-        - ./deploy.sh $TARGET_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
+        - cat /nakama-pipelines/deploy.sh
+        - chmod +x /nakama-pipelines/deploy.sh
+        - sh /nakama-pipelines/deploy.sh $TARGET_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
     artifacts:
         when: always
         paths:

@@ -30,7 +30,6 @@ stages:
     - dispatch-child-pipeline
     # Moved here from validate.yml to work with included yml rather than dispatched child pipeline
     - generate-code_quality-report
-    - install-npm
     - local-validations
     - org-validations
     - show-results
