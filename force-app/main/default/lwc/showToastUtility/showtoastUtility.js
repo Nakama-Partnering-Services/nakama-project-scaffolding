@@ -13,8 +13,7 @@ import fallbackErrorMessage from '@salesforce/label/c.OSFB2B_fallbackErrorMessag
  *     - {string} title - Alternative title.
  *     - {string} mode - Determines how persistent the toast is. Possible values are: dismissable | pester | sticky
  */
-const showToastSuccess = (self, options, nothing) =>
-{
+const showToastSuccess = (self, options) => {
 	options = options ? options : {};
 	const showSuccess = new ShowToastEvent({
 		variant: 'success',
