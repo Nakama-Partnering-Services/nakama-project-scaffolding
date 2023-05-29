@@ -86,7 +86,7 @@ deltas-validation-deployment:
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
           changes: !reference [.sfdx-changes]
           variables:
-              TARGET_ENVIRONMENT: 'DEVINT'
+              TARGET_ENVIRONMENT: 'CICD'
         - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/
           changes: !reference [.sfdx-changes]
           variables:
