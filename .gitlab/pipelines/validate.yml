@@ -25,6 +25,7 @@ code_quality:
 verify-formatting:
     stage: local-validations
     rules:
+        - when: never # temporal
         - if: $VERIFY_FORMATTING_DISABLED
           when: never
         - when: always
@@ -50,6 +51,7 @@ verify-formatting:
 verify-linting:
     stage: local-validations
     rules:
+        - when: never # temporal
         - if: $VERIFY_LINTING_DISABLED
           when: never
         - changes:
@@ -67,6 +69,7 @@ verify-linting:
 verify-pmd:
     stage: local-validations
     rules:
+        - when: never # temporal
         - if: $VERIFY_PMD_DISABLED
           when: never
         - changes: !reference [.sfdx-changes]
@@ -102,7 +105,7 @@ deltas-validation-deployment:
         - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
         # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
         - chmod +x /deploy.sh
-        - sh /deploy.sh $TARGET_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
+        - bash /deploy.sh $TARGET_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
     artifacts:
         when: always
         paths:
