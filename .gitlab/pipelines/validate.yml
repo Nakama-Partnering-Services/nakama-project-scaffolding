@@ -6,7 +6,7 @@
 #         - .sfdx/
 
 default:
-    image: jdkgabri/nakama-pipelines-sh
+    image: nakamapartneringservices/nakama-pipelines
 
 .sfdx-changes:
     - force-app/**/main/**/*
