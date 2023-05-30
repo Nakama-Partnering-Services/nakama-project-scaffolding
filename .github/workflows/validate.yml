@@ -98,7 +98,9 @@ jobs:
                   ls -la
                   id -u
 
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.base_ref }}
 
             - name: investigate_2
               run: |
@@ -109,7 +111,6 @@ jobs:
 
             - name: 'Verify PMD'
               run: |
-                  git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD)
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
                   npm install sfdx-cli --global
