@@ -22,9 +22,22 @@ jobs:
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
-            options: --user root
         steps:
+            - name: investigate_1
+              run: |
+                  pwd
+                  whoami
+                  ls -la
+                  id -u
+
             - uses: actions/checkout@v2
+
+            - name: investigate_2
+              run: |
+                  pwd
+                  whoami
+                  ls -la
+                  id -u
 
             - name: 'Verify formatting'
               run: |
