@@ -91,7 +91,21 @@ jobs:
         name: 'Verify PMD'
         runs-on: ubuntu-latest
         steps:
+            - name: investigate_1
+              run: |
+                  pwd
+                  whoami
+                  ls -la
+                  id -u
+
             - uses: actions/checkout@v2
+
+            - name: investigate_2
+              run: |
+                  pwd
+                  whoami
+                  ls -la
+                  id -u
 
             - name: 'Verify PMD'
               run: |
