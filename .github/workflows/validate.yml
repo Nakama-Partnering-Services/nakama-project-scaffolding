@@ -17,36 +17,38 @@ jobs:
     verify-formatting:
         name: 'Verify formatting'
         runs-on: ubuntu-latest
-        # container:
-        #     image: nakamapartneringservices/nakama-pipelines
-        #     credentials:
-        #         username: ${{ secrets.DOCKERHUB_USERNAME }}
-        #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
         steps:
             - uses: actions/checkout@v3
               with:
                   ref: ${{ github.head_ref }}
-            # - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
+            - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
-            - name: 'Restore node_modules cache'
-              id: cache-npm
-              uses: actions/cache@v2
-              with:
-                  path: node_modules
-                  key: npm-${{ hashFiles('**/package-lock.json') }}
-                  restore-keys: |
-                      npm-${{ env.cache-name }}-
-                      npm-
+            # - name: 'Restore node_modules cache'
+            #   id: cache-npm
+            #   uses: actions/cache@v2
+            #   with:
+            #       path: node_modules
+            #       key: npm-${{ hashFiles('**/package-lock.json') }}
+            #       restore-keys: |
+            #           npm-${{ env.cache-name }}-
+            #           npm-
 
-            - name: 'Install npm dependencies'
-              if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
-              run: npm ci
+            # - name: 'Install npm dependencies'
+            #   if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+            #   run: npm ci
 
             - name: 'Verify formatting'
               run: |
+                  set -x
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
                   IFS=$'\n'
+                  echo "CHANGED_FILES: $CHANGED_FILES"
                   for FILE in $CHANGED_FILES;
                   do
                       npx prettier --list-different "$FILE"
