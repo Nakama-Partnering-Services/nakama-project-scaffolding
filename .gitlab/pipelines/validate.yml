@@ -25,7 +25,6 @@ code_quality:
 verify-formatting:
     stage: local-validations
     rules:
-        - when: never # temporal
         - if: $VERIFY_FORMATTING_DISABLED
           when: never
         - when: always
@@ -51,7 +50,6 @@ verify-formatting:
 verify-linting:
     stage: local-validations
     rules:
-        - when: never # temporal
         - if: $VERIFY_LINTING_DISABLED
           when: never
         - changes:
@@ -69,7 +67,6 @@ verify-linting:
 verify-pmd:
     stage: local-validations
     rules:
-        - when: never # temporal
         - if: $VERIFY_PMD_DISABLED
           when: never
         - changes: !reference [.sfdx-changes]
@@ -159,8 +156,8 @@ verify-test-coverage:
     script:
         - |
             if [ $NON_TEST_CLASSES ]; then
-                sfdx nps:coverage:formatters:mappaths -p test-results/coverage/cobertura.xml -t cobertura
                 sfdx nps:coverage:verify --path results.json --required-coverage 85 --classes $NON_TEST_CLASSES
+                sfdx nps:coverage:formatters:mappaths -p test-results/coverage/cobertura.xml -t cobertura
             fi
     artifacts:
         when: always
