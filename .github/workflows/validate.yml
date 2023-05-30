@@ -5,6 +5,7 @@ on:
             - main
             - rc/**
             - patch/**
+            - simple # temporal
         paths:
             - force-app/**
 
@@ -16,22 +17,14 @@ jobs:
     verify-formatting:
         name: 'Verify formatting'
         runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+            options: --user root
         steps:
             - uses: actions/checkout@v2
-
-            - name: 'Restore node_modules cache'
-              id: cache-npm
-              uses: actions/cache@v2
-              with:
-                  path: node_modules
-                  key: npm-${{ hashFiles('**/package-lock.json') }}
-                  restore-keys: |
-                      npm-${{ env.cache-name }}-
-                      npm-
-
-            - name: 'Install npm dependencies'
-              if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
-              run: npm ci
 
             - name: 'Verify formatting'
               run: |
