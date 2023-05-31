@@ -18,7 +18,3 @@ config/pmd-ruleset.xml
 
 **/*.email
 **/experiences/**/*.json
-
-.github/workflows/deploy-deltas.yml
-.github/workflows/validate.yml
-.gitlab-ci.yml
