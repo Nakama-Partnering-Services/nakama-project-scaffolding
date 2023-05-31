@@ -25,7 +25,7 @@ jobs:
 
             - name: 'Set HOME and safe directory'
               run: |
-                  export HOME=/root
+                  # export HOME=/root
                   git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
             - name: 'Create Destination auth file'
