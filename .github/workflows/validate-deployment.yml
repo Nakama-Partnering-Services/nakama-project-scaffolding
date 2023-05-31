@@ -10,16 +10,19 @@ on:
 jobs:
     validation-deployment:
         name: 'Validation deployment'
-        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
         environment: ${{ inputs.DESTINATION_ENVIRONMENT }}
         concurrency:
             group: ${{ inputs.DESTINATION_ENVIRONMENT }}-${{ github.ref }}
             cancel-in-progress: true
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
 
-            - name: 'Install SFDX CLI'
-              run: npm install sfdx-cli --global
+            - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
             - name: 'Create Destination auth file'
               env:
@@ -43,9 +46,7 @@ jobs:
               run: |
                   git fetch origin $GITHUB_BASE_REF
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
-                  curl -H "Authorization:token ${{ secrets.NAKAMA_ACCESS_TOKEN }}" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
-                  chmod +x ./deploy.sh
-                  ./deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF true $RUN_TEST_PARAMETER
+                  bash /deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF true $RUN_TEST_PARAMETER
 
             - name: 'Print results'
               if: always()
