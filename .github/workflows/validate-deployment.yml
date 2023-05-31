@@ -11,78 +11,17 @@ jobs:
     validation-deployment:
         name: 'Validation deployment'
         runs-on: ubuntu-latest
-        # container:
-        #     image: nakamapartneringservices/nakama-pipelines
-        #     credentials:
-        #         username: ${{ secrets.DOCKERHUB_USERNAME }}
-        #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
         environment: ${{ inputs.DESTINATION_ENVIRONMENT }}
         concurrency:
             group: ${{ inputs.DESTINATION_ENVIRONMENT }}-${{ github.ref }}
             cancel-in-progress: true
         steps:
-            - name: Plugins Wont be available (image)
-              run: |
-                  echo $HOME
-                  sfdx plugins
-
-            - name: Plugins are available (manual)
-              run: |
-                  export HOME=/root
-                  echo $HOME
-                  sfdx plugins
-
-            - name: Plugins are available (check)
-              run: |
-                  echo $HOME
-                  sfdx plugins
-
-            - name: Checkout
-              uses: actions/checkout@v3
-              with:
-                  fetch-depth: 0
-
-            - name: Plugins are not available (checkout)
-              run: |
-                  echo $HOME
-                  sfdx plugins
-
-            - name: Plugins are available (manual 2)
-              run: |
-                  export HOME=/root
-                  echo $HOME
-                  sfdx plugins
-
-            - name: Plugins are available (check 2)
-              run: |
-                  echo $HOME
-                  sfdx plugins
-
-            - name: Checkout 2
-              uses: actions/checkout@v3
-
-            - name: Plugins are not available (checkout 2)
-              run: |
-                  echo $HOME
-                  sfdx plugins
-
-            - name: Plugins are available (manual 3)
-              run: |
-                  export HOME=/root
-                  echo $HOME
-                  sfdx plugins
-
-            - name: Plugins are available (check 3)
-              run: |
-                  echo $HOME
-                  sfdx plugins
-
-            # - uses: actions/checkout@v3
-
-            - name: 'Set HOME and safe directory'
-              run: |
-                  # export HOME=/root
-                  git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
+            - uses: actions/checkout@v3
 
             - name: 'Create Destination auth file'
               env:
@@ -105,6 +44,8 @@ jobs:
             - name: 'Get deltas and deploy'
               shell: bash
               run: |
+                  export HOME=/root
+                  git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
                   git fetch origin $GITHUB_BASE_REF
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
                   bash /deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF true $RUN_TEST_PARAMETER
