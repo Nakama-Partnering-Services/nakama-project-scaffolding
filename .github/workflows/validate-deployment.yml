@@ -10,6 +10,7 @@ on:
 jobs:
     validation-deployment:
         name: 'Validation deployment'
+        runs-on: ubuntu-latest
         container:
             image: nakamapartneringservices/nakama-pipelines
             credentials:

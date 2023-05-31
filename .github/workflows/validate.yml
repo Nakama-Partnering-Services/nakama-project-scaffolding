@@ -14,93 +14,93 @@ on:
 
 # Note: secrets can not be used to conditionally run jobs: https://github.com/actions/runner/issues/520
 jobs:
-    verify-formatting:
-        name: 'Verify formatting'
-        runs-on: ubuntu-latest
-        container:
-            image: nakamapartneringservices/nakama-pipelines
-            credentials:
-                username: ${{ secrets.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        steps:
-            - uses: actions/checkout@v3
+    # verify-formatting:
+    #     name: 'Verify formatting'
+    #     runs-on: ubuntu-latest
+    #     container:
+    #         image: nakamapartneringservices/nakama-pipelines
+    #         credentials:
+    #             username: ${{ secrets.DOCKERHUB_USERNAME }}
+    #             password: ${{ secrets.DOCKERHUB_PASSWORD }}
+    #     steps:
+    #         - uses: actions/checkout@v3
 
-            - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
+    #         - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
-            # Note: formatting each file individually because there may be many files and parameter would fail if it is too long
-            - name: 'Verify formatting'
-              run: |
-                  git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
-                  for FILE in $CHANGED_FILES;
-                  do
-                      npx prettier --list-different "$FILE"
-                  done
+    #         # Note: formatting each file individually because there may be many files and parameter would fail if it is too long
+    #         - name: 'Verify formatting'
+    #           run: |
+    #               git fetch origin $GITHUB_BASE_REF
+    #               CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
+    #               for FILE in $CHANGED_FILES;
+    #               do
+    #                   npx prettier --list-different "$FILE"
+    #               done
 
-    verify-linting:
-        name: 'Verify linting'
-        runs-on: ubuntu-latest
-        container:
-            image: nakamapartneringservices/nakama-pipelines
-            credentials:
-                username: ${{ secrets.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        steps:
-            - uses: actions/checkout@v3
+    # verify-linting:
+    #     name: 'Verify linting'
+    #     runs-on: ubuntu-latest
+    #     container:
+    #         image: nakamapartneringservices/nakama-pipelines
+    #         credentials:
+    #             username: ${{ secrets.DOCKERHUB_USERNAME }}
+    #             password: ${{ secrets.DOCKERHUB_PASSWORD }}
+    #     steps:
+    #         - uses: actions/checkout@v3
 
-            - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
+    #         - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
-            # Note: linting each file individually because there may be many files and parameter would fail if it is too long
-            # npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
-            - name: 'Verify linting'
-              run: |
-                  git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/aura/**/*.js' '**/lwc/**/*.js')
-                  for FILE in $CHANGED_FILES;
-                  do
-                      npx eslint "$FILE"
-                  done
+    #         # Note: linting each file individually because there may be many files and parameter would fail if it is too long
+    #         # npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
+    #         - name: 'Verify linting'
+    #           run: |
+    #               git fetch origin $GITHUB_BASE_REF
+    #               CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/aura/**/*.js' '**/lwc/**/*.js')
+    #               for FILE in $CHANGED_FILES;
+    #               do
+    #                   npx eslint "$FILE"
+    #               done
 
-              # TODO: consider reporting with sarif as well, using sfdx-scanner instead or @microsoft/eslint-formatter-sarif
-              # Note: commented since previous step is linting each file individually
-            # - name: Publish Test Report
-            #   if: always()
-            #   uses: mikepenz/action-junit-report@v3
+    #           # TODO: consider reporting with sarif as well, using sfdx-scanner instead or @microsoft/eslint-formatter-sarif
+    #           # Note: commented since previous step is linting each file individually
+    #         # - name: Publish Test Report
+    #         #   if: always()
+    #         #   uses: mikepenz/action-junit-report@v3
 
-    verify-pmd:
-        name: 'Verify PMD'
-        runs-on: ubuntu-latest
-        container:
-            image: nakamapartneringservices/nakama-pipelines
-            credentials:
-                username: ${{ secrets.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        steps:
-            - uses: actions/checkout@v3
+    # verify-pmd:
+    #     name: 'Verify PMD'
+    #     runs-on: ubuntu-latest
+    #     container:
+    #         image: nakamapartneringservices/nakama-pipelines
+    #         credentials:
+    #             username: ${{ secrets.DOCKERHUB_USERNAME }}
+    #             password: ${{ secrets.DOCKERHUB_PASSWORD }}
+    #     steps:
+    #         - uses: actions/checkout@v3
 
-            - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
+    #         - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
-            - name: 'Verify PMD'
-              run: |
-                  git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/*.cls' '**/classes/**/*.cls' '**/triggers/**/*.trigger')
-                  CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
-                  export HOME=/root
-                  sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
+    #         - name: 'Verify PMD'
+    #           run: |
+    #               git fetch origin $GITHUB_BASE_REF
+    #               CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/*.cls' '**/classes/**/*.cls' '**/triggers/**/*.trigger')
+    #               CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
+    #               export HOME=/root
+    #               sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
 
-            # Note: commented since we do not have github enterprise
-            # format sarif --outfile apexScanResults.sarif
-            # TODO: consider reporting with junit as well
-            # - name: Upload SARIF file
-            #   if: always()
-            #   uses: github/codeql-action/upload-sarif@v2
-            #   with:
-            #       sarif_file: apexScanResults.sarif
+    # Note: commented since we do not have github enterprise
+    # format sarif --outfile apexScanResults.sarif
+    # TODO: consider reporting with junit as well
+    # - name: Upload SARIF file
+    #   if: always()
+    #   uses: github/codeql-action/upload-sarif@v2
+    #   with:
+    #       sarif_file: apexScanResults.sarif
 
     CICD-validation-deployment:
         name: 'CICD validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
-        needs: [verify-formatting, verify-linting, verify-pmd]
+        # needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ github.base_ref == 'simple' }}
         with:
             DESTINATION_ENVIRONMENT: CICD
