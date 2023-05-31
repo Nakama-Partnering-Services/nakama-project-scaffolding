@@ -48,7 +48,6 @@ jobs:
                   git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
                   git fetch origin $GITHUB_BASE_REF
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
-                  set -x
                   bash /deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF true $RUN_TEST_PARAMETER
 
             - name: 'Print results'
