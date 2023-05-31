@@ -51,4 +51,5 @@ jobs:
                   name: ${{ env.LAST_DEPLOYMENT_COMMIT_SHA }}
                   value: ${{ github.sha }}
                   repository: ${{ github.repository }}
-                  token: ${{ github.token }}
+                  # Note: ${{ github.token }} does not work
+                  token: ${{ secrets.PIPELINE_ACCESS_TOKEN }}
