@@ -27,7 +27,7 @@ jobs:
             # Note: formatting each file individually because there may be many files and parameter would fail if it is too long
             - name: 'Verify formatting'
               run: |
-                  git config --global --add safe.directory ${{ secrets.GIT_SAFE_DIRECTORY }}
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
                   for FILE in $CHANGED_FILES;
@@ -50,7 +50,7 @@ jobs:
             # npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
             - name: 'Verify linting'
               run: |
-                  git config --global --add safe.directory ${{ secrets.GIT_SAFE_DIRECTORY }}
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/aura/**/*.js' '**/lwc/**/*.js')
                   for FILE in $CHANGED_FILES;
@@ -78,7 +78,7 @@ jobs:
             - name: 'Verify PMD'
               run: |
                   export HOME=/root
-                  git config --global --add safe.directory ${{ secrets.GIT_SAFE_DIRECTORY }}
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/*.cls' '**/classes/**/*.cls' '**/triggers/**/*.trigger')
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')

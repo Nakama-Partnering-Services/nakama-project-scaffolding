@@ -37,7 +37,7 @@ jobs:
               shell: bash
               run: |
                   export HOME=/root
-                  git config --global --add safe.directory ${{ secrets.GIT_SAFE_DIRECTORY }}
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
                   git fetch origin $GITHUB_BASE_REF
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
                   echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
