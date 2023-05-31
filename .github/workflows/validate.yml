@@ -54,6 +54,7 @@ jobs:
             # npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
             - name: 'Verify linting'
               run: |
+                  set -x
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**/*.js)
                   for FILE in $CHANGED_FILES;
@@ -86,6 +87,8 @@ jobs:
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD)
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
+                  sfdx -v
+                  sfdx plugins
                   sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
 
             # Note: commented since we do not have github enterprise
