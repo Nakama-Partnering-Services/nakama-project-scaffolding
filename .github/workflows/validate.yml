@@ -50,17 +50,22 @@ jobs:
 
             - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
-            # Note: not linting each file individually because only .js files are inclueded and it is unlikely that it would fail because of being too long
+            # Note: linting each file individually because there may be many files and parameter would fail if it is too long
+            # npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
             - name: 'Verify linting'
               run: |
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**/*.js)
-                  npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
+                  for FILE in $CHANGED_FILES;
+                  do
+                      npx eslint "$FILE"
+                  done
 
               # TODO: consider reporting with sarif as well, using sfdx-scanner instead or @microsoft/eslint-formatter-sarif
-            - name: Publish Test Report
-              if: always()
-              uses: mikepenz/action-junit-report@v3
+              # Note: commented since previous step is linting each file individually
+            # - name: Publish Test Report
+            #   if: always()
+            #   uses: mikepenz/action-junit-report@v3
 
     verify-pmd:
         name: 'Verify PMD'
