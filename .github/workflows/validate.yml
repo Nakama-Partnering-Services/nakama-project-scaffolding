@@ -46,15 +46,12 @@ jobs:
               run: |
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
-                  echo "CHANGED_FILES 1: $CHANGED_FILES"
-                  IFS=$'\n'
-                  echo "CHANGED_FILES 2: $CHANGED_FILES"
+                  echo "CHANGED_FILES: $CHANGED_FILES"
                   for FILE in $CHANGED_FILES;
                   do
                       echo "FILE: $FILE"
                       npx prettier --list-different "$FILE"
                   done
-                  unset IFS
 
     verify-linting:
         name: 'Verify linting'
