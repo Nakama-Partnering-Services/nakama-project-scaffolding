@@ -21,7 +21,63 @@ jobs:
             group: ${{ inputs.DESTINATION_ENVIRONMENT }}-${{ github.ref }}
             cancel-in-progress: true
         steps:
-            - uses: actions/checkout@v3
+            - name: Plugins Wont be available (image)
+              run: |
+                  echo $HOME
+                  sfdx plugins
+
+            - name: Plugins are available (manual)
+              run: |
+                  export HOME=/root
+                  echo $HOME
+                  sfdx plugins
+
+            - name: Plugins are available (check)
+              run: |
+                  echo $HOME
+                  sfdx plugins
+
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Plugins are not available (checkout)
+              run: |
+                  echo $HOME
+                  sfdx plugins
+
+            - name: Plugins are available (manual 2)
+              run: |
+                  export HOME=/root
+                  echo $HOME
+                  sfdx plugins
+
+            - name: Plugins are available (check 2)
+              run: |
+                  echo $HOME
+                  sfdx plugins
+
+            - name: Checkout 2
+              uses: actions/checkout@v3
+
+            - name: Plugins are not available (checkout 2)
+              run: |
+                  echo $HOME
+                  sfdx plugins
+
+            - name: Plugins are available (manual 3)
+              run: |
+                  export HOME=/root
+                  echo $HOME
+                  sfdx plugins
+
+            - name: Plugins are available (check 3)
+              run: |
+                  echo $HOME
+                  sfdx plugins
+
+            # - uses: actions/checkout@v3
 
             - name: 'Set HOME and safe directory'
               run: |
