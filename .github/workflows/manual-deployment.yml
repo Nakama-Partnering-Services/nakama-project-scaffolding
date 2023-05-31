@@ -61,7 +61,7 @@ jobs:
                   LAST_DEPLOYMENT_COMMIT_SHA: ${{ github.event.inputs.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
               run: |
                   export HOME=/root
-                  git config --global --add safe.directory ${{ secrets.GIT_SAFE_DIRECTORY }}
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
                   echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
                   sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
                   bash /deploy.sh ${{ github.event.inputs.destination }} ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} ${{ github.event.inputs.checkonly }} ${{ github.event.inputs.testlevel }} ${{ github.event.inputs.runtests }}
