@@ -47,6 +47,8 @@ jobs:
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
         steps:
             - uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.head_ref }}
 
             - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
@@ -76,10 +78,19 @@ jobs:
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
+            options: --user root
         steps:
             - uses: actions/checkout@v3
 
             - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
+
+            - name: investigate
+              run: |
+                  pwd
+                  whoami
+                  ls -la
+                  id -u
+
 
             - name: 'Verify PMD'
               run: |
