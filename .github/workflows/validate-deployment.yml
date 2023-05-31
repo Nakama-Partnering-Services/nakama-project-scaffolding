@@ -33,10 +33,11 @@ jobs:
             - name: 'Get deltas and deploy'
               env:
                   SFDX_AUTH_URL: ${{ inputs.DESTINATION_ENVIRONMENT }}_SFDX_AUTH_URL
+              # Note: shell: bash is needed especifically due to usage of redirection <<< not allowed in basic shell
               shell: bash
               run: |
                   export HOME=/root
-                  git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
+                  git config --global --add safe.directory ${{ secrets.GIT_SAFE_DIRECTORY }}
                   git fetch origin $GITHUB_BASE_REF
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
                   echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
