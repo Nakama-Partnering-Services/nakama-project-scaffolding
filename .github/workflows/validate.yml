@@ -5,7 +5,6 @@ on:
             - main
             - rc/**
             - patch/**
-            - simple # temporal
         paths:
             - force-app/**
 
@@ -98,8 +97,7 @@ jobs:
         name: 'CICD validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
         needs: [verify-formatting, verify-linting, verify-pmd]
-        # temporal
-        if: ${{ github.base_ref == 'simple' }}
+        if: ${{ github.base_ref == 'main' }}
         with:
             DESTINATION_ENVIRONMENT: CICD
         secrets: inherit

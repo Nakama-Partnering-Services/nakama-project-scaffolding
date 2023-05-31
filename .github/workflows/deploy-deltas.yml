@@ -31,6 +31,7 @@ jobs:
                   path: ./
                   mode: replacements
 
+            # Note: Tests do not run since it is redundant with PR and will take longer
             - name: 'Get deltas and deploy'
               env:
                   SFDX_AUTH_URL: ${{ inputs.DESTINATION_ENVIRONMENT }}_SFDX_AUTH_URL
