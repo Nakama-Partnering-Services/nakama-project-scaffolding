@@ -82,7 +82,6 @@ jobs:
 
             - name: 'Verify PMD'
               run: |
-                  set -x
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/*.cls' '**/classes/**/*.cls' '**/triggers/**/*.trigger')
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
