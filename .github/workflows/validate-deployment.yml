@@ -11,11 +11,11 @@ jobs:
     validation-deployment:
         name: 'Validation deployment'
         runs-on: ubuntu-latest
-        container:
-            image: nakamapartneringservices/nakama-pipelines
-            credentials:
-                username: ${{ secrets.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        # container:
+        #     image: nakamapartneringservices/nakama-pipelines
+        #     credentials:
+        #         username: ${{ secrets.DOCKERHUB_USERNAME }}
+        #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
         environment: ${{ inputs.DESTINATION_ENVIRONMENT }}
         concurrency:
             group: ${{ inputs.DESTINATION_ENVIRONMENT }}-${{ github.ref }}
