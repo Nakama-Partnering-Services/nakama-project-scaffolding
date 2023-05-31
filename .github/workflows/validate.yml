@@ -82,8 +82,9 @@ jobs:
 
             - name: 'Verify PMD'
               run: |
+                  set -x
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/**/*.cls' '**/triggers/**/*.trigger')
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/*.cls' '**/classes/**/*.cls' '**/triggers/**/*.trigger')
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
                   export HOME=/root
                   sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
