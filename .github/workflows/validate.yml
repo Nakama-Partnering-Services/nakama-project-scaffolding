@@ -58,7 +58,7 @@ jobs:
               run: |
                   set -x
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- **/{aura,lwc}/**/*.js)
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF origin/$GITHUB_HEAD_REF -- **/{aura,lwc}/**/*.js)
                   for FILE in $CHANGED_FILES;
                   do
                       npx eslint "$FILE"
@@ -78,7 +78,6 @@ jobs:
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
-            options: --user root
         steps:
             - uses: actions/checkout@v3
 
