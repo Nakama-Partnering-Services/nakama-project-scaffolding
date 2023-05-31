@@ -109,7 +109,7 @@ jobs:
     UAT-validation-deployment:
         name: 'UAT validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
-        needs: [verify-formatting, verify-linting, verify-pmd]
+        # needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ startsWith( github.base_ref, 'rc/' ) }}
         with:
             DESTINATION_ENVIRONMENT: UAT
@@ -118,7 +118,7 @@ jobs:
     HOTFIX-validation-deployment:
         name: 'HOTFIX validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
-        needs: [verify-formatting, verify-linting, verify-pmd]
+        # needs: [verify-formatting, verify-linting, verify-pmd]
         if: ${{ startsWith( github.base_ref, 'patch/' ) }}
         with:
             DESTINATION_ENVIRONMENT: HOTFIX
