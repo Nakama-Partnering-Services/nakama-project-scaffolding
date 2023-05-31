@@ -54,9 +54,8 @@ jobs:
             # npx eslint $CHANGED_FILES --format junit --output-file=junit-reports/TEST-eslint.xml
             - name: 'Verify linting'
               run: |
-                  set -x
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/aura/**/.js' '**/lwc/**/*.js')
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/aura/**/*.js' '**/lwc/**/*.js')
                   for FILE in $CHANGED_FILES;
                   do
                       npx eslint "$FILE"
@@ -84,7 +83,7 @@ jobs:
             - name: 'Verify PMD'
               run: |
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/**/.cls' '**/triggers/**/*.trigger')
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/**/*.cls' '**/triggers/**/*.trigger')
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
                   export HOME=/root
                   sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
