@@ -23,7 +23,10 @@ jobs:
         steps:
             - uses: actions/checkout@v3
 
-            - run: git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
+            - name: 'Set HOME and safe directory'
+              run: |
+                  export HOME=/root
+                  git config --global --add safe.directory /__w/nakama-project-scaffolding/nakama-project-scaffolding
 
             - name: 'Create Destination auth file'
               env:
@@ -48,7 +51,6 @@ jobs:
               run: |
                   git fetch origin $GITHUB_BASE_REF
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
-                  export HOME=/root
                   bash /deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF true $RUN_TEST_PARAMETER
 
             - name: 'Print results'
