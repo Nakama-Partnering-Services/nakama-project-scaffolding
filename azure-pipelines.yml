@@ -36,6 +36,7 @@ variables:
     TARGET_BRANCH_REF: $(System.PullRequest.TargetBranch)
     DELETE: refs/heads/
 
+# Note: in order to use a private docker image, follow these instructions and add Service Connection name to container.endpoint property: https://stackoverflow.com/questions/66429863/how-to-push-an-image-to-docker-hub-in-azure-pipelines
 stages:
     - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
           - template: .azure/templates/scheduled-tests.yml
