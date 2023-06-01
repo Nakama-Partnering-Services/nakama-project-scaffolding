@@ -61,7 +61,7 @@ stages:
                     # TODO: add lower environments
             container:
                 image: nakamapartneringservices/nakama-pipelines
-                endpoint: NakamaBaseApp
+                endpoint: DockerHubNakama
             steps:
                 - template: .azure/templates/deploy.yml
                   parameters:
