@@ -14,6 +14,8 @@ trigger:
             - main
             - rc/*
             - patch/*
+            # temporal
+            - simple
     paths:
         include:
             - force-app/*
@@ -42,9 +44,10 @@ stages:
 
     - stage: QA_deployment
       displayName: 'Deployment to QA and lower environments'
+      # temporal
       condition: and(
           eq(variables['Build.Reason'], 'IndividualCI'),
-          startsWith( variables['Build.SourceBranch'], 'refs/heads/main' )
+          startsWith( variables['Build.SourceBranch'], 'refs/heads/simple' )
           )
       jobs:
           - job: 'Deploy'
@@ -55,7 +58,7 @@ stages:
                     # QA:
                     #   ENVIRONMENT: 'QA'
                     # TODO: add lower environments
-            container: salesforce/salesforcedx:latest-full
+            container: nakamapartneringservices/nakama-pipelines
             steps:
                 - template: .azure/templates/deploy.yml
                   parameters:
@@ -72,7 +75,7 @@ stages:
       jobs:
           - deployment: 'Deploy_UAT'
             displayName: 'Deploy UAT'
-            container: salesforce/salesforcedx:latest-full
+            container: nakamapartneringservices/nakama-pipelines
             environment: UAT
             strategy:
                 runOnce:
@@ -96,7 +99,7 @@ stages:
       jobs:
           - deployment: 'Deploy_PRODUCTION'
             displayName: 'Deploy PRODUCTION'
-            container: salesforce/salesforcedx:latest-full
+            container: nakamapartneringservices/nakama-pipelines
             environment: PRODUCTION
             strategy:
                 runOnce:
