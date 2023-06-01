@@ -30,7 +30,7 @@ const showToastSuccess = (self, options) => {
  *     - {string} message - Text to show in the notification.
  *     - {string} title - Alternative title.
  *     - {string} mode - Determines how persistent the toast is. Possible values are: dismissable | pester | sticky
- *     - {array}  messageData - url and label values that replace the {index} placeholders in the message string.
+ *     - {array}  messageData - url and label values that replace the {index} placeholders in the message string
  */
 const showToastError = (self, options) => {
 	options = options ? options : {};

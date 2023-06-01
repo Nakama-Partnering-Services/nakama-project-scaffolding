@@ -16,6 +16,7 @@ trigger:
             - patch/*
             # temporal
             - simple
+            - chore/with-docker
     paths:
         include:
             - force-app/*
@@ -47,7 +48,7 @@ stages:
       # temporal
       condition: and(
           eq(variables['Build.Reason'], 'IndividualCI'),
-          startsWith( variables['Build.SourceBranch'], 'refs/heads/simple' )
+          startsWith( variables['Build.SourceBranch'], 'refs/heads/chore/with-docker' )
           )
       jobs:
           - job: 'Deploy'
@@ -58,7 +59,9 @@ stages:
                     # QA:
                     #   ENVIRONMENT: 'QA'
                     # TODO: add lower environments
-            container: nakamapartneringservices/nakama-pipelines
+            container:
+                image: nakamapartneringservices/nakama-pipelines
+                endpoint: NakamaBaseApp
             steps:
                 - template: .azure/templates/deploy.yml
                   parameters:
