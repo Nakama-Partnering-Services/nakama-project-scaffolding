@@ -14,9 +14,6 @@ trigger:
             - main
             - rc/*
             - patch/*
-            # temporal
-            - simple
-            - chore/with-docker
     paths:
         include:
             - force-app/*
@@ -46,10 +43,9 @@ stages:
 
     - stage: QA_deployment
       displayName: 'Deployment to QA and lower environments'
-      # temporal
       condition: and(
           eq(variables['Build.Reason'], 'IndividualCI'),
-          startsWith( variables['Build.SourceBranch'], 'refs/heads/chore/with-docker' )
+          startsWith( variables['Build.SourceBranch'], 'refs/heads/main' )
           )
       jobs:
           - job: 'Deploy'
