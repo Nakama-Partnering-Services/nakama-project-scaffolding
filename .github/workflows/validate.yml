@@ -5,6 +5,7 @@ on:
             - main
             - rc/**
             - patch/**
+            - simple
         paths:
             - force-app/**
 
