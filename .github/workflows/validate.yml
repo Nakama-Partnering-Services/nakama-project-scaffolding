@@ -78,6 +78,7 @@ jobs:
 
             - name: 'Verify PMD'
               run: |
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
                   git fetch origin $GITHUB_BASE_REF
                   CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- '**/classes/*.cls' '**/classes/**/*.cls' '**/triggers/**/*.trigger')
                   CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
@@ -95,8 +96,8 @@ jobs:
     CICD-validation-deployment:
         name: 'CICD validation deployment'
         uses: ./.github/workflows/validate-deployment.yml
-        # needs: [verify-formatting, verify-linting, verify-pmd]
-        if: ${{ github.base_ref == 'simple' }}
+        needs: [verify-formatting, verify-linting, verify-pmd]
+        if: ${{ github.base_ref == 'main' }}
         with:
             DESTINATION_ENVIRONMENT: CICD
         secrets: inherit
