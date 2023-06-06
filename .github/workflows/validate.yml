@@ -30,7 +30,7 @@ jobs:
               run: |
                   git config --global --add safe.directory $GITHUB_WORKSPACE
                   git fetch origin $GITHUB_BASE_REF
-                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
+                  CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$GITHUB_BASE_REF HEAD -- ':(exclude)**/layouts/**' ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
                   for FILE in $CHANGED_FILES;
                   do
                       npx prettier --list-different "$FILE"

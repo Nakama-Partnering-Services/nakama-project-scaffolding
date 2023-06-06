@@ -1,4 +1,8 @@
-image: salesforce/salesforcedx:latest-full
+image:
+    name: nakamapartneringservices/nakama-pipelines
+    username: $DOCKER_HUB_USERNAME
+    password: $DOCKER_HUB_PASSWORD
+    email: DOCKER_HUB_EMAIL # seems to be mandatory
 
 definitions:
     caches:
@@ -18,7 +22,7 @@ pipelines:
                   - step:
                         name: Verify formatting
                         script:
-                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
+                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/layouts/**' ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
                             - IFS=$'\n'
                             - |
                                 for FILE in $CHANGED_FILES;
