@@ -4,6 +4,9 @@ image:
     password: $DOCKER_HUB_PASSWORD
     email: DOCKER_HUB_EMAIL # seems to be mandatory
 
+clone:
+    depth: full
+
 pipelines:
     pull-requests:
         '{feature,bugfix,hotfix}/*': # Note: only work for source branches, not target branches

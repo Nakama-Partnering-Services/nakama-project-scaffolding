@@ -27,7 +27,7 @@ const showToastSuccess = (self, options) => {
  * Shows an error toast notification
  * @param {object} self - The context (this) where you call the notification. Mandatory.
  * @param {object} options - Params to show the notification. Optional
- *     - {string} message - Text to show in the notification
+ *     - {string} message - Text to show in the notification.
  *     - {string} title - Alternative title.
  *     - {string} mode - Determines how persistent the toast is. Possible values are: dismissable | pester | sticky
  *     - {array}  messageData - url and label values that replace the {index} placeholders in the message string
