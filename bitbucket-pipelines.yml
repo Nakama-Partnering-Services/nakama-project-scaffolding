@@ -6,7 +6,7 @@ image:
 
 pipelines:
     pull-requests:
-        '{feature,bugfix,hotfix}/*': # Note: only work for source branches, not target branches.
+        '{feature,bugfix,hotfix}/*': # Note: only work for source branches, not target branches
             - parallel:
                   - step:
                         name: Verify formatting
