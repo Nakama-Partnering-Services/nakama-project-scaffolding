@@ -65,7 +65,7 @@ const showToastWarning = (self, options) => {
  * Shows an info toast notification
  * @param {object} self - The context (this) where you call the notification. Mandatory.
  * @param {object} options - Params to show the notification. Optional
- *     - {string} message - Text to show in the notification
+ *     - {string} message - Text to show in the notification.
  *     - {string} title - Alternative title
  *     - {string} mode - Determines how persistent the toast is. Possible values are: dismissable | pester | sticky
  */
