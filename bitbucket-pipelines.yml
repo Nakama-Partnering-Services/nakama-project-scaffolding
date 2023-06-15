@@ -80,7 +80,7 @@ pipelines:
                           includePaths:
                               - 'force-app/**'
     branches:
-        feature/with-docker-for-bitbucket:
+        main:
             - parallel:
                   - step:
                         name: Deploy CICD
