@@ -24,7 +24,7 @@ const showToastSuccess = (self, options) => {
 	self.dispatchEvent(showSuccess);
 };
 /**
- * Shows an error toast notification.
+ * Shows an error toast notification
  * @param {object} self - The context (this) where you call the notification. Mandatory.
  * @param {object} options - Params to show the notification. Optional
  *     - {string} message - Text to show in the notification.
