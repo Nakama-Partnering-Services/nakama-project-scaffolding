@@ -88,8 +88,8 @@ pipelines:
                         deployment: CICD
                         script:
                             - source .env.replacements # TODO: test if it works properly
-                            - bash /deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
-                            - curl -X PUT -H 'Authorization:Bearer $PIPELINE_ACCESS_TOKEN' --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BCICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Accept:application/json' -H 'Content-Type:application/json' -d '{"key":"CICD_LAST_DEPLOYMENT_COMMIT_SHA", "value":"$BITBUCKET_COMMIT"}'
+                            # - bash /deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
+                            - curl -X GET -H 'Authorization:Bearer $PIPELINE_ACCESS_TOKEN' --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BCICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D
                         condition:
                             changesets:
                                 includePaths:
