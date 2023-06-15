@@ -90,7 +90,7 @@ pipelines:
                             - source .env.replacements # TODO: test if it works properly
                             # - bash /deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
                             - echo
-                            - curl -X GET -H 'Authorization:Bearer $PIPELINE_ACCESS_TOKEN' --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$CICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D
+                            - curl -X GET -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$CICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D
                         condition:
                             changesets:
                                 includePaths:
