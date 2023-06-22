@@ -14,11 +14,12 @@ pipelines:
                         name: Verify formatting
                         script:
                             - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/layouts/**' ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
+                            - npm ci # TODO: run docker image locally and try to troubleshoot why this is needed for prettier consistency. Faced when throwing exceptions in apex with multi-line string messages
                             - IFS=$'\n'
                             - |
                                 for FILE in $CHANGED_FILES;
                                 do
-                                    npx prettier --list-different "$FILE"
+                                    npx prettier --check "$FILE"
                                 done
                             - unset IFS
                   - step:
@@ -52,12 +53,15 @@ pipelines:
                         name: Deltas validation deployment
                         # deployment: # CICD # UAT # PRODUCTION
                         script:
-                            - DESTINATION_ENVIRONMENT=$(if [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "main" ]; then echo "CICD"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^rc/[0-9].[0-9].[0-9]$ ]]; then echo "UAT"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^patch/[0-9].[0-9].[0-9]$ ]]; then echo "PRODUCTION"; fi)
+                            - DESTINATION_ENVIRONMENT=$(if [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "main" ]; then echo "PRODUCTION"; fi)
                             - pull_request_response=$(curl -X GET -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pullrequests/$BITBUCKET_PR_ID)
                             - echo $pull_request_response > pull_request.json
                             - description=$(jq '.description' pull_request.json)
                             - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
-                            # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
+                            - |
+                                if [ ! $RUN_TEST_PARAMETER ]; then
+                                    RUN_TEST_PARAMETER=$(node /decideTestLevel.js origin/$BITBUCKET_PR_DESTINATION_BRANCH)
+                                fi
                             - bash /deploy.sh $DESTINATION_ENVIRONMENT origin/$BITBUCKET_PR_DESTINATION_BRANCH true $RUN_TEST_PARAMETER
                         condition:
                             changesets:
@@ -87,6 +91,7 @@ pipelines:
                         deployment: CICD
                         script:
                             - source .env.replacements # TODO: test if it works properly
+                            - RUN_TEST_PARAMETER=$(node /decideTestLevel.js $CICD_LAST_DEPLOYMENT_COMMIT_SHA)
                             - bash /deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
                             - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$CICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"CICD_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                         condition:

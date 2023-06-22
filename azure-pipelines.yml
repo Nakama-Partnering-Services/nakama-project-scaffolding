@@ -14,7 +14,6 @@ trigger:
             - main
             - rc/*
             - patch/*
-            - simple
     paths:
         include:
             - force-app/*

@@ -29,7 +29,6 @@ jobs:
                   path: ./
                   mode: replacements
 
-            # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
             - name: 'Get deltas and deploy'
               env:
                   SFDX_AUTH_URL: ${{ inputs.DESTINATION_ENVIRONMENT }}_SFDX_AUTH_URL
@@ -41,6 +40,9 @@ jobs:
                   RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "${{ github.event.pull_request.body }}" | tr -d '"')
                   echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
                   sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
+                  if [ ! $RUN_TEST_PARAMETER ]; then
+                      RUN_TEST_PARAMETER=$(node /decideTestLevel.js origin/$GITHUB_BASE_REF)
+                  fi
                   bash /deploy.sh ${{ inputs.DESTINATION_ENVIRONMENT }} origin/$GITHUB_BASE_REF true $RUN_TEST_PARAMETER
 
             - name: 'Print results'
