@@ -33,6 +33,7 @@ variables:
     TARGET_BRANCH_REF: $(System.PullRequest.TargetBranch)
     DELETE: refs/heads/
 
+# Note: in order to use a private docker image, follow these instructions and add Service Connection name to container.endpoint property: https://stackoverflow.com/questions/66429863/how-to-push-an-image-to-docker-hub-in-azure-pipelines
 stages:
     - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
           - template: .azure/templates/scheduled-tests.yml
@@ -55,7 +56,9 @@ stages:
                     # QA:
                     #   ENVIRONMENT: 'QA'
                     # TODO: add lower environments
-            container: salesforce/salesforcedx:latest-full
+            container:
+                image: nakamapartneringservices/nakama-pipelines
+                endpoint: DockerHubNakama
             steps:
                 - template: .azure/templates/deploy.yml
                   parameters:
@@ -72,7 +75,9 @@ stages:
       jobs:
           - deployment: 'Deploy_UAT'
             displayName: 'Deploy UAT'
-            container: salesforce/salesforcedx:latest-full
+            container:
+                image: nakamapartneringservices/nakama-pipelines
+                endpoint: DockerHubNakama
             environment: UAT
             strategy:
                 runOnce:
@@ -96,7 +101,9 @@ stages:
       jobs:
           - deployment: 'Deploy_PRODUCTION'
             displayName: 'Deploy PRODUCTION'
-            container: salesforce/salesforcedx:latest-full
+            container:
+                image: nakamapartneringservices/nakama-pipelines
+                endpoint: DockerHubNakama
             environment: PRODUCTION
             strategy:
                 runOnce:

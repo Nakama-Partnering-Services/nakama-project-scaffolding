@@ -1,13 +1,8 @@
 # Changelog
 
+# TODO: Feature based development? build UI for Jira, VSCode or Salesforce, detecting all the Jira ticker numbers at the end on each commit message on the main branch since last deployment, allow the user to select them, and cherry pick the commits with their references to a release branch and deploy it
+
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
-
-### [1.3.1](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.3.0...v1.3.1) (2023-09-12)
-
-### Bug Fixes
-
--   lintstagedrc.js ([a1f5a7e](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/a1f5a7e27d2bb9d5fbda66f6d06885eddd451eac))
--   reference TARGET_ENVIRONMENT ([b72fe9e](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/b72fe9e5c0329b2280ff165f564a1b495571edc2))
 
 ## [1.3.0](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.2.1...v1.3.0) (2023-05-20)
 

@@ -6,7 +6,7 @@
 #         - .sfdx/
 
 default:
-    image: salesforce/salesforcedx:latest-full
+    image: nakamapartneringservices/nakama-pipelines
 
 .sfdx-changes:
     - force-app/**/main/**/*
@@ -22,19 +22,6 @@ code_quality:
           when: never
         - changes: !reference [.sfdx-changes]
 
-install-npm-dependancies:
-    stage: install-npm
-    rules:
-        - if: $VERIFY_FORMATTING_DISABLED && $VERIFY_LINTING_DISABLED
-          when: never
-        # Note: always need to be specified since, default "success" is not reached due to previous parent triggering job being not completed as it follows a depend strategy
-        - when: always
-    script:
-        - npm ci
-    artifacts:
-        paths:
-            - node_modules
-
 verify-formatting:
     stage: local-validations
     rules:
@@ -42,7 +29,7 @@ verify-formatting:
           when: never
         - when: always
     script:
-        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
+        - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD -- ':(exclude)**/layouts/**' ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
         - IFS=$'\n'
         - |
             for FILE in $CHANGED_FILES;
@@ -79,7 +66,6 @@ verify-linting:
 
 verify-pmd:
     stage: local-validations
-    needs: []
     rules:
         - if: $VERIFY_PMD_DISABLED
           when: never
@@ -87,7 +73,6 @@ verify-pmd:
     script:
         - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r $CI_MERGE_REQUEST_DIFF_BASE_SHA HEAD)
         - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
-        - sfdx plugins:install @salesforce/sfdx-scanner
         - sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
 
 deltas-validation-deployment:
@@ -116,9 +101,7 @@ deltas-validation-deployment:
         - description=$(jq '.description' merge_request.json)
         - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
         # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
-        - curl -H "Authorization:token $NAKAMA_ACCESS_TOKEN" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
-        - chmod +x ./deploy.sh
-        - ./deploy.sh $TARGET_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
+        - bash /deploy.sh $TARGET_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
     artifacts:
         when: always
         paths:
@@ -171,11 +154,10 @@ verify-test-coverage:
           when: never
         - changes: !reference [.sfdx-changes]
     script:
-        - echo 'y' | sfdx plugins:install nakama-plugin-sfdx
-        - sfdx nps:coverage:formatters:mappaths -p test-results/coverage/cobertura.xml -t cobertura
         - |
             if [ $NON_TEST_CLASSES ]; then
                 sfdx nps:coverage:verify --path results.json --required-coverage 85 --classes $NON_TEST_CLASSES
+                sfdx nps:coverage:formatters:mappaths -p test-results/coverage/cobertura.xml -t cobertura
             fi
     artifacts:
         when: always

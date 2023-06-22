@@ -1,29 +1,25 @@
-image: salesforce/salesforcedx:latest-full
+image:
+    name: nakamapartneringservices/nakama-pipelines
+    username: $DOCKER_HUB_USERNAME
+    password: $DOCKER_HUB_PASSWORD
 
-definitions:
-    caches:
-        custom-npm-cache: node_modules
+clone:
+    depth: full
 
 pipelines:
     pull-requests:
-        '{feature,bugfix,hotfix}/*': # Note: only work for source branches, not target branches.
-            - step:
-                  # caches: Note: this does not work as it is
-                  #     - node
-                  script:
-                      - npm ci
-                  artifacts:
-                      - node_modules/**
+        '{feature,bugfix,hotfix}/*': # Note: only work for source branches, not target branches
             - parallel:
                   - step:
                         name: Verify formatting
                         script:
-                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
+                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/layouts/**' ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
+                            - npm ci # TODO: run docker image locally and try to troubleshoot why this is needed for prettier consistency. Faced when throwing exceptions in apex with multi-line string messages
                             - IFS=$'\n'
                             - |
                                 for FILE in $CHANGED_FILES;
                                 do
-                                    npx prettier --list-different "$FILE"
+                                    npx prettier --check "$FILE"
                                 done
                             - unset IFS
                   - step:
@@ -47,7 +43,6 @@ pipelines:
                         script:
                             - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD)
                             - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
-                            - sfdx plugins:install @salesforce/sfdx-scanner
                             - sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
                         condition:
                             changesets:
@@ -58,15 +53,16 @@ pipelines:
                         name: Deltas validation deployment
                         # deployment: # CICD # UAT # PRODUCTION
                         script:
-                            - DESTINATION_ENVIRONMENT=$(if [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "main" ]; then echo "CICD"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^rc/[0-9].[0-9].[0-9]$ ]]; then echo "UAT"; elif [[ "$BITBUCKET_PR_DESTINATION_BRANCH" =~ ^patch/[0-9].[0-9].[0-9]$ ]]; then echo "PRODUCTION"; fi)
+                            - DESTINATION_ENVIRONMENT=$(if [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "main" ]; then echo "PRODUCTION"; fi)
                             - pull_request_response=$(curl -X GET -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pullrequests/$BITBUCKET_PR_ID)
                             - echo $pull_request_response > pull_request.json
                             - description=$(jq '.description' pull_request.json)
                             - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
-                            # Consider hardcoding RunLocalTest for safety, but do not execute tests if changes only contains flexipages/layouts/VF/Aura/LWC/experience builder
-                            - curl -H "Authorization:token $NAKAMA_ACCESS_TOKEN" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
-                            - chmod +x ./deploy.sh
-                            - ./deploy.sh  $DESTINATION_ENVIRONMENT $CI_MERGE_REQUEST_DIFF_BASE_SHA true $RUN_TEST_PARAMETER
+                            - |
+                                if [ ! $RUN_TEST_PARAMETER ]; then
+                                    RUN_TEST_PARAMETER=$(node /decideTestLevel.js origin/$BITBUCKET_PR_DESTINATION_BRANCH)
+                                fi
+                            - bash /deploy.sh $DESTINATION_ENVIRONMENT origin/$BITBUCKET_PR_DESTINATION_BRANCH true $RUN_TEST_PARAMETER
                         condition:
                             changesets:
                                 includePaths:
@@ -95,10 +91,9 @@ pipelines:
                         deployment: CICD
                         script:
                             - source .env.replacements # TODO: test if it works properly
-                            - curl -H "Authorization:token $NAKAMA_ACCESS_TOKEN" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
-                            - chmod +x ./deploy.sh
-                            - ./deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
-                            - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7BCICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"CICD_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
+                            - RUN_TEST_PARAMETER=$(node /decideTestLevel.js $CICD_LAST_DEPLOYMENT_COMMIT_SHA)
+                            - bash /deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
+                            - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$CICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"CICD_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                         condition:
                             changesets:
                                 includePaths:
@@ -111,9 +106,7 @@ pipelines:
                   deployment: UAT
                   script:
                       - source .env.replacements # TODO: test if it works properly
-                      - curl -H "Authorization:token $NAKAMA_ACCESS_TOKEN" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
-                      - chmod +x ./deploy.sh
-                      - ./deploy.sh UAT $UAT_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
+                      - bash /deploy.sh UAT $UAT_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
                       - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$UAT_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"UAT_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
                   condition:
                       changesets:
@@ -126,9 +119,7 @@ pipelines:
                         name: Daily validation deployment with tests
                         deployment: CICD
                         script:
-                            - curl -H "Authorization:token $NAKAMA_ACCESS_TOKEN" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/validation-with-tests.sh > ./validation-with-tests.sh
-                            - chmod +x ./validation-with-tests.sh
-                            - ./validation-with-tests.sh CICD
+                            - bash /validation-with-tests.sh CICD
                   # TODO: add QA, UAT, PRODUCTION and HOTFIX environments
         manual-deployment:
             - variables:
@@ -153,9 +144,7 @@ pipelines:
                   script:
                       - source .env.replacements # TODO: test if it works properly
                       - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA})
-                      - curl -H "Authorization:token $NAKAMA_ACCESS_TOKEN" -H 'Accept:application/vnd.github.VERSION.raw' https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/scripts/shell/pipelines/deploy.sh > ./deploy.sh
-                      - chmod +x ./deploy.sh
-                      - ./deploy.sh $DESTINATION_ENVIRONMENT $LAST_DEPLOYMENT_COMMIT_SHA $checkonly $testlevel $runtests
+                      - bash /deploy.sh $DESTINATION_ENVIRONMENT $LAST_DEPLOYMENT_COMMIT_SHA $checkonly $testlevel $runtests
             - step:
                   name: Update LAST_DEPLOYMENT_COMMIT_SHA
                   script:

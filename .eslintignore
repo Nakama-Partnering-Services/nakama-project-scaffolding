@@ -15,5 +15,6 @@
 **/aura/**/*.xml
 **/aura/**/*.app
 **/aura/**/*.md
+**/pages/**/*.page
 frameworks/**
 .sfdx
