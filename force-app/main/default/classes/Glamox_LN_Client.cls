@@ -1,4 +1,4 @@
-global class Glamox_LN_Client
+global class Glamox_LN_Client {
 	public static final string SOAP_NAMESPACE = 'http://schemas.xmlsoap.org/soap/envelope/';
 	public static final string XSI_NAMESPACE = 'http://www.w3.org/2001/XMLSchema-instance';
 	public static final string ITEM_NAMESPACE = 'http://www.infor.com/businessinterface/Item_v3';
