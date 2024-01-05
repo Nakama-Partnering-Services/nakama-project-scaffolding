@@ -1,15 +1,22 @@
 {
-	"packageDirectories":[
-		{
-			"path": "force-app",
-			"default": true
-		}
-	],
-	"name": "nakama-project-scaffolding",
-	"sfdcLoginUrl": "https://login.salesforce.com",
-	"sourceApiVersion": "56.0",
-	"packageAliases": {
-		"Frameworks": "0Ho7Q0000008OO8SAM",
-		"Frameworks@1.0.5-1": "04t7Q000000dFi1QAE"
-	}
+  "packageDirectories": [
+    {
+      "path": "force-app",
+      "default": true,
+      "package": "Deployment Information",
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "versionDescription": ""
+    }
+  ],
+  "namespace": "nakama",
+  "name": "nakama-project-scaffolding",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "56.0",
+  "packageAliases": {
+    "Frameworks": "0Ho7Q0000008OO8SAM",
+    "Frameworks@1.0.5-1": "04t7Q000000dFi1QAE",
+    "Deployment Information": "0Ho7Q000000wkKNSAY",
+    "Deployment Information@0.1.0-1": "04t7Q000000u32BQAQ"
+  }
 }
