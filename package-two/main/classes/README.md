@@ -1,0 +1,1 @@
+Classes do not need to be classified in subfolders since the prefixes/domain (Account, Case, etc...) and suffixes (Test, Batch, Sch, Rest, etc...) are normally enough for classification.

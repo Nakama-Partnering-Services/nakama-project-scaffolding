@@ -7,6 +7,12 @@
       "versionName": "ver 0.1",
       "versionNumber": "0.1.0.NEXT",
       "versionDescription": ""
+    },
+    {
+      "path": "package-one"
+    },
+    {
+      "path": "package-two"
     }
   ],
   "namespace": "nakama",
