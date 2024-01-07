@@ -1,8 +1,19 @@
 # Changelog
 
-# TODO: Feature based development? build UI for Jira, VSCode or Salesforce, detecting all the Jira ticker numbers at the end on each commit message on the main branch since last deployment, allow the user to select them, and cherry pick the commits with their references to a release branch and deploy it
-
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [1.4.0](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.3.1...v1.4.0) (2024-01-07)
+
+### Features
+
+-   create Deployment Information namespaced unlocked package ([9deab6d](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/9deab6d393649d93217c888051b5e428167a47ed))
+-   usage of docker image to improve privacy and speed ([#21](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/issues/21)) ([034bf50](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/034bf500ebf2783a5fe1bf71383df8a3d830125b))
+
+### Bug Fixes
+
+-   branch reference ([be370d1](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/be370d1087953235a816a8cacbdf0222e433f597))
+-   lintstagedrc.js ([1837bc3](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/1837bc3d8f1ea2982d3fbc4551c93e403e69c69f))
+-   remove unsused variable ([9173e32](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/9173e322ca4263f95a1e546fcfd4c210ac1009f5))
 
 ## [1.3.0](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.2.1...v1.3.0) (2023-05-20)
 
