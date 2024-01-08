@@ -2,7 +2,7 @@
 # More information: https://prettier.io/docs/en/ignore.html
 #
 
-# Tables in markdown files are formatted differently if they placed directly after text without blank like. This format is our ideal one. Examples are in our runbooks.
+# Tables in markdown files are formatted differently if they are placed directly after text without blank like. This format is our ideal one. Examples are in our runbooks.
 
 **/staticresources/**
 .localdevserver
