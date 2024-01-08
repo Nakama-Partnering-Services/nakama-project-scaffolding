@@ -1,0 +1,61 @@
+name: 'Deploy'
+description: 'Deploy changes to destination environment'
+
+# https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#inputs
+# Note: description is required.
+# Note: regarless of what documentantion (https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#inputs) states,
+# we have observed that input variables in composite actions will always be available in both formats, uppercase and lowercase, with the ${ inputs.* } context.
+
+inputs:
+    TARGET_ORG:
+        description: 'Destination environment of the deployment.'
+        required: true
+    SFDX_AUTH_URL:
+        description: 'URL used to authenticate against the target environment.'
+        required: true
+    USE_MOST_RECENT:
+        description: 'If true, if there is a successful validation deployment with test execution (NoTestRun level is not valid) in the last 10 days, use it for a quick deploy. Else, will result in error. Should normally be used for deployment to PRODUCTION after a successful validation. Note: make sure you are in the correct branch, as latest commit of the branch will be used to update the deployment information of the environment. When this parameter is true, DRY_RUN and TEST_LEVEL are ignored, as well as replacements.'
+        required: true
+    DRY_RUN:
+        description: 'If true, changes are not actually deployed, but just validated.'
+        required: true
+        # type: boolean # Note: it does not break, although it does not work either, since it would still be a string.
+    TEST_LEVEL:
+        description: 'Specifies which level of deployment tests to run. Note that for Production, NoTestRun is not a valid value if apex is included in the deployment. Similarly, if the deployment is just a validation, even if successful, it can not be used in a quick deploy if it had a test level of NoTestRun, regardless of the metadata included in the deployment.'
+        required: true
+    TESTS:
+        description: 'Lists of the Apex classes containing the deployment tests to run. Use this parameter when you set TEST_LEVEL to RunSpecifiedTests. Default value is based on auto-identified test classes.'
+        required: false
+
+# Note: despite using 'name' in our steps, these names do not appear in the github logs, so we leave them only for clarification here.
+# Note: run steps conditionally based on if statements is not supported for composite actions.
+# Note: actions/checkout@v4 needs to be executed first from the parent workflow to be able to find this action, hence, we cannot just centralize it here.
+runs:
+    using: composite
+    steps:
+        - uses: actions/download-artifact@v3
+          continue-on-error: true
+          with:
+              name: deltas
+              path: deltas
+
+        # Note: this job could be skipped if ${{ inputs.USE_MOST_RECENT }} == true
+        - name: 'Load .env.replacements'
+          uses: xom9ikk/dotenv@v2
+          with:
+              path: ./
+              mode: replacements
+
+        - name: 'Deploy deltas'
+          env:
+              # Note: used mainly for detection of environment replacements.
+              TARGET_ORG: ${{ inputs.TARGET_ORG }}
+              ${{ inputs.TARGET_ORG }}_SFDX_AUTH_URL: ${{ inputs.SFDX_AUTH_URL }}
+          # Note: inputs.TESTS may come empty, and, if so, hardcoding -t will throw an error because the flag expects a value.
+          run: |
+              git config --global --add safe.directory $GITHUB_WORKSPACE
+              if [ -n "${{ inputs.TESTS }}" ]; then
+                  TESTS_FLAG+="-t ${{ inputs.TESTS }}"
+              fi
+              sf nakama deploy deltas -o $TARGET_ORG --dry-run ${{ inputs.DRY_RUN }} -r ${{ inputs.USE_MOST_RECENT }} -l ${{ inputs.TEST_LEVEL }} $TESTS_FLAG
+          shell: bash

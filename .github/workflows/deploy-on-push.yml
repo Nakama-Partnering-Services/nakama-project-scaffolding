@@ -1,0 +1,70 @@
+name: 'Deploy on push'
+on:
+    push:
+        branches:
+            - main
+            # Note: workflow does not trigger when just pushing a new branch to remote if it does not contain new changes, so another commit with changes under force-app/** would be needed.
+            - rc/**
+        paths:
+            - force-app/**
+
+jobs:
+    get-target-orgs:
+        name: 'Get target orgs'
+        runs-on: ubuntu-latest
+        outputs:
+            TARGET_ORGS: ${{ steps.get-target-orgs.outputs.TARGET_ORGS }}
+            JIRA_UPDATE_ORG: ${{ steps.get-target-orgs.outputs.JIRA_UPDATE_ORG }}
+        steps:
+            - name: 'Get target orgs'
+              id: get-target-orgs
+              run: |
+                  if [ "${{ github.ref_name }}" = "main" ]; then
+                      TARGET_ORGS=${{ vars.LOWER_ENVIRONMENTS }}
+                      JIRA_UPDATE_ORG=QA
+                  elif [[ "${{ github.ref_name }}" =~ ^rc/[0-9]?[0-9].[0-9]?[0-9].*$ ]]; then
+                      TARGET_ORGS=[\"UAT\"];
+                      JIRA_UPDATE_ORG=UAT
+                      echo "Debug TARGET_ORGS: $TARGET_ORGS"
+                  fi
+                  echo "TARGET_ORGS=$TARGET_ORGS" >> "$GITHUB_OUTPUT"
+                  echo "JIRA_UPDATE_ORG=$JIRA_UPDATE_ORG" >> "$GITHUB_OUTPUT"
+
+    deploy:
+        name: 'Deploy'
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        needs: [get-target-orgs]
+        strategy:
+            fail-fast: false
+            matrix:
+                TARGET_ORG: ${{ fromJSON(needs.get-target-orgs.outputs.TARGET_ORGS) }}
+        environment: ${{ matrix.TARGET_ORG }}
+        concurrency:
+            group: ${{ matrix.TARGET_ORG }}-${{ github.ref }}
+            cancel-in-progress: true
+        env:
+            SFDX_AUTH_URL: ${{ matrix.TARGET_ORG }}_SFDX_AUTH_URL
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: 'Deploy'
+              uses: ./.github/actions/deploy
+              with:
+                  TARGET_ORG: ${{ matrix.TARGET_ORG }}
+                  SFDX_AUTH_URL: ${{ secrets[env.SFDX_AUTH_URL] }}
+                  USE_MOST_RECENT: 'false'
+                  DRY_RUN: 'false'
+                  TEST_LEVEL: 'Default'
+
+    update-jira-issues:
+        name: 'Update Jira issues'
+        needs: [get-target-orgs, deploy]
+        uses: ./.github/workflows/update-jira-issues.yml
+        with:
+            TARGET_ORG: ${{ needs.get-target-orgs.outputs.JIRA_UPDATE_ORG }}
+        secrets: inherit

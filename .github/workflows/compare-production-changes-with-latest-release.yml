@@ -1,0 +1,73 @@
+name: 'Compare production changes with latest release'
+
+on:
+    schedule:
+        - cron: '0 0 * * *'
+    workflow_dispatch:
+        inputs:
+            COMMIT_TEXT:
+                description: 'Commit message to use for changes retrieved from production'
+                required: true
+                default: 'fix: track changes retrieved from production since last release'
+            REVIEWERS:
+                description: 'A comma-separated list of reviewers (GitHub usernames) to request a review from'
+            TEAM_REVIEWERS:
+                description: 'A comma-separated list of GitHub teams to request a review from'
+
+jobs:
+    retrieve-and-compare:
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: 'Prepare production comparison'
+              id: prepare-production-comparison
+              env:
+                  PRODUCTION_SFDX_AUTH_URL: ${{ secrets.PRODUCTION_SFDX_AUTH_URL }}
+                  HUSKY: 0
+              run: |
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
+                  git config user.email "${{ vars.GH_ACTION_BOT_EMAIL }}"
+                  git config user.name "${{ vars.GH_ACTION_BOT_USERNAME }}"
+                  sf nakama prepare production comparison
+                  echo "RC_BRANCH=$(jq -r .rcBranch comparison.json)" >> $GITHUB_OUTPUT
+                  echo "COMPARISON_BRANCH=$(jq -r .comparisonBranch comparison.json)" >> $GITHUB_OUTPUT
+                  echo "CURRENT_DATETIME=$(jq -r .currentDatetime comparison.json)" >> $GITHUB_OUTPUT
+                  rm comparison.json
+
+            # Note: GitHub App Token is required to create a pull request from a GitHub Action and trigger workflows.
+            # Note: https://github.com/peter-evans/create-pull-request/issues/48#issuecomment-1712040977
+            - uses: tibdex/github-app-token@v1
+              # Note: if there are not changes to compare, output variables will be empty.
+              if: ${{ steps.prepare-production-comparison.outputs.COMPARISON_BRANCH != '' }}
+              id: generate-token
+              with:
+                  app_id: ${{ secrets.APP_ID }}
+                  private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+            # Note: make sure you also enable Allow GitHub Actions to create and approve pull requests under Settings > Actions in your repository.
+            - name: Create pull request from ${{ steps.prepare-production-comparison.outputs.COMPARISON_BRANCH || 'production changes' }} to ${{ steps.prepare-production-comparison.outputs.RC_BRANCH || 'latest release' }}
+              uses: peter-evans/create-pull-request@v5
+              # Note: if there are not changes to compare, output variables will be empty.
+              if: ${{ steps.prepare-production-comparison.outputs.COMPARISON_BRANCH != '' }}
+              env:
+                  DEFAULT_COMMIT_MESSAGE: 'fix: track changes retrieved from production since last release'
+                  HUSKY: 0
+              with:
+                  token: ${{ steps.generate-token.outputs.token }}
+                  commit-message: '${{ inputs.COMMIT_TEXT || env.DEFAULT_COMMIT_MESSAGE }}'
+                  branch: ${{ steps.prepare-production-comparison.outputs.COMPARISON_BRANCH }}
+                  base: ${{ steps.prepare-production-comparison.outputs.RC_BRANCH }}
+                  title: 'fix: track changes retrieved from production (${{ steps.prepare-production-comparison.outputs.CURRENT_DATETIME }}) since last release'
+                  body: 'Created by Github action - Compares changes done in production (not tracked in Git) with a branch created from latest release tag. Once merged, follow the instructions in the section "Main branch update with rebase" in the [DevOps Strategies Page](https://github.com/Nakama-Partnering-Services/nakama-guides/blob/main/3-devops_strategies.md)'
+                  reviewers: ${{ inputs.REVIEWERS || vars.DEFAULT_REVIEWERS }}
+                  team-reviewers: ${{ inputs.TEAM_REVIEWERS || vars.DEFAULT_PR_REVIEWER_TEAM }}
+                  author: '${{ vars.GH_ACTION_BOT_USERNAME }} <${{ vars.GH_ACTION_BOT_EMAIL }}>'
+                  committer: '${{ vars.GH_ACTION_BOT_USERNAME }} <${{ vars.GH_ACTION_BOT_EMAIL }}>'

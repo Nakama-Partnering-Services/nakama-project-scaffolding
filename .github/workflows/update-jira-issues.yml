@@ -1,0 +1,99 @@
+name: 'Update Jira issue(s)'
+
+on:
+    workflow_call:
+        inputs:
+            TARGET_ORG:
+                required: true
+                type: string
+
+jobs:
+    get-commit-messages-since-last-deployment:
+        name: 'Get commit messages since last deployment'
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        env:
+            LAST_JIRA_COMMIT: ${{ inputs.TARGET_ORG }}_LAST_JIRA_COMMIT
+        outputs:
+            COMMIT_MESSAGES_SINCE_LAST_DEPLOYMENT: ${{ steps.get-commit-messages-since-last-deployment.outputs.COMMIT_MESSAGES_SINCE_LAST_DEPLOYMENT }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: 'Get commit messages since last deployment'
+              id: get-commit-messages-since-last-deployment
+              # Note: without "fetch-depth: 0", this works, but hardcoding "HEAD". The problem is not the secret, but HEAD
+              # git fetch origin 2aae98aab86cf522825d0127299d72a18d2e9f06
+              # git fetch origin ${{ vars[env.LAST_JIRA_COMMIT] }}
+              run: |
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
+                  echo "Target org: ${{ inputs.TARGET_ORG }}"
+                  COMMIT_MESSAGES_SINCE_LAST_DEPLOYMENT=$(node /scripts/node/list-commit-messages.js HEAD ${{ vars[env.LAST_JIRA_COMMIT] }})
+                  echo $COMMIT_MESSAGES_SINCE_LAST_DEPLOYMENT
+                  echo "COMMIT_MESSAGES_SINCE_LAST_DEPLOYMENT=$COMMIT_MESSAGES_SINCE_LAST_DEPLOYMENT" >> "$GITHUB_OUTPUT"
+
+            - name: 'Update last Jira commit'
+              uses: mmoyaferrer/set-github-variable@v1.0.0
+              with:
+                  name: ${{ env.LAST_JIRA_COMMIT }}
+                  value: ${{ github.sha }}
+                  repository: cat-home-experts/Salesforce
+                  token: ${{ secrets.PIPELINE_ACCESS_TOKEN }}
+
+    get-transition-for-jira-issues:
+        name: 'Get transition for Jira issues'
+        runs-on: ubuntu-latest
+        outputs:
+            JIRA_TRANSITION: ${{ steps.get-transition-for-jira-issues.outputs.JIRA_TRANSITION }}
+        steps:
+            - name: 'Get transition for Jira issues'
+              id: get-transition-for-jira-issues
+              run: |
+                  if [ "${{ inputs.TARGET_ORG }}" = "QA" ]; then
+                      JIRA_TRANSITION="Reviews Signed Off"
+                  elif [ "${{ inputs.TARGET_ORG }}" = "UAT" ]; then
+                      JIRA_TRANSITION="Test Complete"
+                  elif [ "${{ inputs.TARGET_ORG}}" = "PRODUCTION" ]; then
+                      JIRA_TRANSITION="Definition of Done has been Met"
+                  fi
+                  echo $JIRA_TRANSITION
+                  echo "JIRA_TRANSITION=$JIRA_TRANSITION" >> "$GITHUB_OUTPUT"
+
+    update-jira-issue:
+        name: 'Update Jira item'
+        runs-on: ubuntu-latest
+        needs: [get-commit-messages-since-last-deployment, get-transition-for-jira-issues]
+        continue-on-error: true
+        strategy:
+            max-parallel: 10
+            matrix:
+                COMMIT_MESSAGE: ${{ fromJSON(needs.get-commit-messages-since-last-deployment.outputs.COMMIT_MESSAGES_SINCE_LAST_DEPLOYMENT)}}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: 'Login'
+              uses: atlassian/gajira-login@v3
+              env:
+                  JIRA_BASE_URL: ${{ secrets.CI_JIRA_BASE_URL }}
+                  JIRA_USER_EMAIL: ${{ secrets.CI_JIRA_USER_EMAIL }}
+                  JIRA_API_TOKEN: ${{ secrets.CI_JIRA_API_TOKEN }}
+
+            - name: 'Find Jira key in commit message'
+              id: find-jira-key
+              uses: atlassian/gajira-find-issue-key@v3
+              with:
+                  string: ${{ matrix.COMMIT_MESSAGE }}
+
+            - name: 'Transition issue ${{ steps.find-jira-key.outputs.issue }}'
+              # Note: we need to check that the found key belongs to the matric commit message because the behaviour of the find-jira-key action
+              #  is misleading and somehow continues searching for a key in other commits which are not the one received by the matrix
+              if: steps.find-jira-key.outputs.issue != '' && contains(matrix.COMMIT_MESSAGE, steps.find-jira-key.outputs.issue)
+              uses: atlassian/gajira-transition@v3
+              with:
+                  issue: ${{ steps.find-jira-key.outputs.issue }}
+                  transition: ${{ needs.get-transition-for-jira-issues.outputs.JIRA_TRANSITION }}

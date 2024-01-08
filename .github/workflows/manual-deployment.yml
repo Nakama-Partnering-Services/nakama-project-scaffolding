@@ -1,78 +1,135 @@
-name: Manual deployment
+name: 'Manual deployment'
+
 on:
+    # Note: inputs can't be shared between workflow_dispatch and workflow_call events: https://github.com/orgs/community/discussions/39357
+    # Note: while 'inputs' context is always available, 'github.event' context will correspond to the Webhook event payload: https://docs.github.com/en/enterprise-cloud@latest/actions/using-workflows/events-that-trigger-workflows#workflow_call
+    # In case of 'workflow_dispatch', 'inputs' is available as it is part of the Webhook request body parameters: https://docs.github.com/en/enterprise-cloud@latest/webhooks/webhook-events-and-payloads#workflow_dispatch
+    # On the other hand, 'workflow_call' events have the same Webhook event payload of the caller workflow instead, typically 'push' or 'pull_request', which Webhook request body parameters do not have 'inputs'.
     workflow_dispatch:
         inputs:
-            destination:
-                description: 'Destination environment for the manual deployment. Mainly used for deployments to UAT and PRODUCTION.'
+            TARGET_ORG:
+                description: 'Target org for the manual deployment. Mainly used for deployments to UAT and PRODUCTION.'
+                default: 'PRODUCTION'
                 required: true
-                type: choice
-                options:
-                    - CICD
-                    # - QA
-                    # - UAT
-                    # - PRODUCTION
-                    # - HOTFIX
-            checkonly:
-                description: 'If true, changes are not actually deployed, but just validated.'
-                required: false
+                type: string
+            USE_MOST_RECENT:
+                description: 'If true, if there is a successful validation deployment with test execution (NoTestRun level is not valid) in the last 10 days, use it for a quick deploy. Else, will result in error. Should normally be used for deployment to PRODUCTION after a successful validation. Note: make sure you are in the correct branch, since latest commit of the branch will be used to update the deployment information of the environment. When this parameter is true, DRY_RUN and TEST_LEVEL are ignored.'
+                required: true
                 type: boolean
-            testlevel:
-                description: 'Specifies which level of deployment tests to run. Valid values are:'
-                default: RunLocalTests
-                required: false
+            DRY_RUN:
+                description: 'If true, changes are not actually deployed, but just validated.'
+                required: true
+                type: boolean
+            TEST_LEVEL:
+                description: 'Specifies which level of deployment tests to run. NoTestRun cannot be used in production organizations. Similarly, if the deployment is just a validation, even if successful, it cannot be used in a quick deploy if it did not really run any test. Valid values are:'
+                default: 'Default'
+                required: true
                 type: choice
                 options:
                     - NoTestRun
                     - RunSpecifiedTests
                     - RunLocalTests
                     - RunAllTestsInOrg
-            runtests:
-                description: 'Lists of the Apex classes containing the deployment tests to run. Use this parameter when you set testlevel to RunSpecifiedTests. Default value is based on autoidentified test classes.'
-                type: string
+                    - Default
+            TESTS:
+                description: 'Lists of the Apex classes containing the deployment tests to run. Use this parameter when you set TEST_LEVEL to RunSpecifiedTests. Default value is based on auto-identified test classes.'
                 required: false
+                type: string
+            RELEASE_VERSIONING:
+                description: 'Which versioning to apply to the release. Use this parameter when you set TARGET_ORG to PRODUCTION and DRY_RUN to false.'
+                default: 'patch'
+                required: false
+                type: choice
+                options:
+                    - major
+                    - minor
+                    - patch
 
 jobs:
-    deploy-deltas:
-        name: 'Deploy deltas'
+    deploy:
+        name: 'Deploy'
         runs-on: ubuntu-latest
         container:
             image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        environment: ${{ github.event.inputs.destination }}
+        # Note: conditionally specifying the environment only if it is a real deployment for the sake of Jira metrics, otherwise, null.
+        environment: ${{ inputs.DRY_RUN == false && inputs.TARGET_ORG  || '' }}
         concurrency:
-            group: ${{ github.event.inputs.destination }}-${{ github.ref }}
+            group: ${{ inputs.TARGET_ORG }}-${{ github.ref }}
             cancel-in-progress: true
+        env:
+            SFDX_AUTH_URL: ${{ inputs.TARGET_ORG }}_SFDX_AUTH_URL
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
+
+            - name: 'Deploy'
+              uses: ./.github/actions/deploy
               with:
+                  TARGET_ORG: ${{ inputs.TARGET_ORG }}
+                  SFDX_AUTH_URL: ${{ secrets[env.SFDX_AUTH_URL] }}
+                  USE_MOST_RECENT: ${{ inputs.USE_MOST_RECENT }}
+                  DRY_RUN: ${{ inputs.DRY_RUN }}
+                  TEST_LEVEL: ${{ inputs.TEST_LEVEL }}
+                  TESTS: ${{ inputs.TESTS }}
+
+    update-jira-issues:
+        name: 'Update Jira issues'
+        needs: [deploy]
+        if: (inputs.TARGET_ORG == 'QA' || inputs.TARGET_ORG == 'UAT' || inputs.TARGET_ORG == 'PRODUCTION') && inputs.DRY_RUN == false
+        uses: ./.github/workflows/update-jira-issues.yml
+        with:
+            TARGET_ORG: ${{ inputs.TARGET_ORG }}
+        secrets: inherit
+
+    release:
+        name: 'Release'
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        needs: [deploy]
+        if: inputs.TARGET_ORG == 'PRODUCTION' && inputs.DRY_RUN == false
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  # Note: depth 0 is needed in order to update release notes based on the commit history.
                   fetch-depth: 0
+                  # Note: not persisting credentials since it overrides the GitHub App token used to push changes and trigger workflows.
+                  persist-credentials: false
 
-            - name: 'Load .env.replacements'
-              uses: xom9ikk/dotenv@v2
+            - name: 'Release to CCV'
+              uses: cat-home-experts/go-releaser@main
               with:
-                  path: ./
-                  mode: replacements
+                  token: ${{ secrets.CI_CCV_TOKEN }}
+                  branch: ${{ github.ref_name }}
+                  environment: prod
+                  service: salesforce
+                  revision: ${{ github.sha }}
+                  repository_url: ${{ github.server_url }}/${{ github.repository }}
 
-            - name: 'Get deltas and deploy'
-              env:
-                  SFDX_AUTH_URL: ${{ github.event.inputs.destination }}_SFDX_AUTH_URL
-                  LAST_DEPLOYMENT_COMMIT_SHA: ${{ github.event.inputs.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
+            # Note: GitHub App Token is required to push changes from a GitHub Action and trigger workflows.
+            # Note: https://github.com/peter-evans/create-pull-request/issues/48#issuecomment-1712040977
+            - uses: tibdex/github-app-token@v1
+              id: generate-token
+              with:
+                  app_id: ${{ secrets.APP_ID }}
+                  private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+            # Note: not using release-please action since 'commit-and-tag-version' is more flexible.
+            # Note: not using semantic-release since package publishing is not needed.
+            - name: 'Update release notes and push new tag'
               run: |
                   git config --global --add safe.directory $GITHUB_WORKSPACE
-                  echo ${{ secrets[env.SFDX_AUTH_URL] }} > ./DESTINATION_SFDX_AUTH_URL.txt
-                  sfdx auth:sfdxurl:store --sfdxurlfile ./DESTINATION_SFDX_AUTH_URL.txt --setdefaultusername
-                  bash /deploy.sh ${{ github.event.inputs.destination }} ${{ secrets[env.LAST_DEPLOYMENT_COMMIT_SHA] }} ${{ github.event.inputs.checkonly }} ${{ github.event.inputs.testlevel }} ${{ github.event.inputs.runtests }}
+                  git config user.email "${{ vars.GH_ACTION_BOT_EMAIL }}"
+                  git config user.name "${{ vars.GH_ACTION_BOT_USERNAME }}"
+                  npx commit-and-tag-version --release-as ${{ inputs.RELEASE_VERSIONING }}
 
-            - name: 'Update last deployment commit SHA'
-              # https://github.com/actions/runner/issues/1483
-              if: github.event.inputs.checkonly == 'false'
-              env:
-                  LAST_DEPLOYMENT_COMMIT_SHA: ${{ github.event.inputs.destination }}_LAST_DEPLOYMENT_COMMIT_SHA
-              uses: hmanzur/actions-set-secret@v2.0.0
+            - uses: ad-m/github-push-action@master
               with:
-                  name: ${{ env.LAST_DEPLOYMENT_COMMIT_SHA }}
-                  value: ${{ github.sha }}
-                  repository: ${{ github.repository }}
-                  token: ${{ secrets.PIPELINE_ACCESS_TOKEN }}
+                  github_token: ${{ steps.generate-token.outputs.token }}
+                  branch: ${{ github.ref }}
+                  tags: true

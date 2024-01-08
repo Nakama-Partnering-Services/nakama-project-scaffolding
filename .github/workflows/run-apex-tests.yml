@@ -1,0 +1,27 @@
+name: 'Run apex tests'
+on:
+    schedule:
+        - cron: '0 0 * * *'
+    workflow_dispatch:
+
+jobs:
+    run-apex-tests:
+        name: 'Run apex tests'
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        strategy:
+            fail-fast: false
+            matrix:
+                TARGET_ORG: ${{ fromJSON(vars.MAIN_ENVIRONMENTS) }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: 'Validate deployment executing local tests'
+              # Note: we can't reference env from another env, so using format expression instead.
+              env:
+                  ${{ matrix.TARGET_ORG }}_SFDX_AUTH_URL: ${{ secrets[format('{0}_SFDX_AUTH_URL', matrix.TARGET_ORG)] }}
+              run: sf nakama validate tests -o ${{ matrix.TARGET_ORG }}

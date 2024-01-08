@@ -1,0 +1,262 @@
+name: 'Validate pull request'
+on:
+    pull_request:
+        branches:
+            - main
+            - rc/**
+        paths:
+            - force-app/**
+
+# Note: if the same branch has differente PR open to get itself merged into different targets, each PR triggering a validation,
+# the reference of valid checks will be messed and all of them will just point to the last validation check.
+
+jobs:
+    get-deltas:
+        name: 'Get deltas'
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/checkout@v4
+
+            # Note: validations of PR will be executed against the deltas generated from the target branch,
+            # even if `sf nakama deploy deltas` is also able to generate deltas against the last commit deployed in the target org.
+            - name: 'Get deltas'
+              run: |
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
+                  sf nakama generate deltas
+
+            - uses: actions/upload-artifact@v3
+              with:
+                  name: deltas
+                  path: deltas
+
+    get-deployment-target-org:
+        name: 'Get deployment target org'
+        runs-on: ubuntu-latest
+        outputs:
+            TARGET_ORG: ${{ steps.get-deployment-target-org.outputs.TARGET_ORG }}
+        steps:
+            # TODO: consider moving this into a plugin-nakama command
+            - name: 'Get deployment target org variables'
+              id: get-deployment-target-org
+              run: |
+                  if [ "${{ github.base_ref }}" = "main" ]; then
+                      TARGET_ORG="INT";
+                  elif [[ "${{ github.base_ref }}" =~ ^rc/[0-9]?[0-9].[0-9]?[0-9].*$ ]]; then
+                      TARGET_ORG="UAT";
+                  fi
+                  echo "TARGET_ORG=$TARGET_ORG" >> "$GITHUB_OUTPUT"
+
+    get-deployment-tests-specifications:
+        name: 'Get deployment tests specifications'
+        needs: [get-deltas]
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        outputs:
+            TEST_LEVEL: ${{ steps.get-deployment-tests-specifications.outputs.TEST_LEVEL }}
+            TESTS: ${{ steps.get-deployment-tests-specifications.outputs.TESTS }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: deltas
+                  path: deltas
+
+            - name: 'Get deployment tests specifications'
+              id: get-deployment-tests-specifications
+              env:
+                  PULL_REQUEST_BODY: ${{ github.event.pull_request.body }}
+              run: |
+                  TESTS_SPECIFICATION=$(awk -F 'Tests:' '{print $2}' <<< "$PULL_REQUEST_BODY" | tr -d '"' | tr -d '\r')
+                  if [ -z "$TESTS_SPECIFICATION" ]; then
+                      TESTS_SPECIFICATION=$(sf nakama decide test level)
+                      echo "TEST LEVEL: $TESTS_SPECIFICATION"
+                  fi
+                  TESTS_SPECIFICATION_ARRAY=($TESTS_SPECIFICATION)
+                  TEST_LEVEL=${TESTS_SPECIFICATION_ARRAY[0]}
+                  TESTS=${TESTS_SPECIFICATION_ARRAY[1]}
+                  echo "TEST_LEVEL=$TEST_LEVEL" >> "$GITHUB_OUTPUT"
+                  echo "TESTS=$TESTS" >> "$GITHUB_OUTPUT"
+              # Note: the default shell for run steps inside a container is sh instead of bash. This can be overridden with jobs.<job_id>.defaults.run or jobs.<job_id>.steps[*].shell.
+              # Note: shell: bash is needed specifically due to usage of redirection <<< not allowed in basic shell.
+              shell: bash
+
+    validate-commitlint:
+        name: 'Validate Commitlint'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: wagoid/commitlint-github-action@v5
+              with:
+                  failOnErrors: false
+
+    validate-jest:
+        name: 'Validate Jest'
+        if: vars.VALIDATE_JEST == 'true'
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/checkout@v4
+              # Note: this is needed because just fetching origin/$GITHUB_BASE_REF results in an error "no merge base"
+              # https://stackoverflow.com/questions/64957915/github-actions-git-diff-master-head-fatal-no-merge-base
+              with:
+                  fetch-depth: 0
+
+            - name: 'Validate Jest'
+              # Note: Jest can only find uncommitted changed files in a git repository
+              run: |
+                  git config --global --add safe.directory $GITHUB_WORKSPACE
+                  sf nakama validate jest
+
+    validate-prettier:
+        name: 'Validate Prettier'
+        if: vars.VALIDATE_PRETTIER == 'true'
+        needs: [get-deltas]
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: deltas
+                  path: deltas
+
+            # Note: all files in the lwc or aura bundle are validated, not only the ones that were modified.
+            - name: 'Validate Prettier'
+              run: sf nakama validate prettier
+
+    validate-eslint:
+        name: 'Validate ESLint'
+        if: vars.VALIDATE_ESLINT == 'true'
+        needs: [get-deltas]
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: deltas
+                  path: deltas
+
+            # Note: all files in the lwc or aura bundle are validated, not only the ones that were modified.
+            - name: 'Validate ESLint'
+              run: sf nakama validate eslint
+
+    validate-pmd:
+        name: 'Validate PMD'
+        if: vars.VALIDATE_PMD == 'true'
+        needs: [get-deltas]
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: deltas
+                  path: deltas
+
+            - name: 'Validate PMD'
+              run: sf nakama validate pmd
+
+    validate-flows:
+        name: 'Validate Flows'
+        if: vars.VALIDATE_FLOWS == 'true'
+        needs: [get-deltas]
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: deltas
+                  path: deltas
+
+            - name: 'Validate Flows'
+              run: sf nakama validate flows
+
+    validate-deployment:
+        name: 'Validate deployment'
+        needs: [get-deployment-target-org, get-deployment-tests-specifications]
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        concurrency:
+            group: ${{ needs.get-deployment-target-org.outputs.TARGET_ORG }}-${{ github.ref }}
+            cancel-in-progress: true
+        env:
+            SFDX_AUTH_URL: ${{ needs.get-deployment-target-org.outputs.TARGET_ORG }}_SFDX_AUTH_URL
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: 'Validate deployment'
+              uses: ./.github/actions/deploy
+              with:
+                  TARGET_ORG: ${{ needs.get-deployment-target-org.outputs.TARGET_ORG }}
+                  SFDX_AUTH_URL: ${{ secrets[env.SFDX_AUTH_URL] }}
+                  DRY_RUN: 'true'
+                  USE_MOST_RECENT: 'false'
+                  TEST_LEVEL: ${{ needs.get-deployment-tests-specifications.outputs.TEST_LEVEL }}
+                  TESTS: ${{ needs.get-deployment-tests-specifications.outputs.TESTS }}
+
+            - uses: actions/upload-artifact@v3
+              with:
+                  name: deployment-results
+                  path: results.json
+
+    validate-test-coverage:
+        name: 'Validate test coverage'
+        if: vars.VALIDATE_TEST_COVERAGE == 'true'
+        needs: [validate-deployment]
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/download-artifact@v3
+              with:
+                  name: deltas
+                  path: deltas
+
+            - uses: actions/download-artifact@v3
+              with:
+                  name: deployment-results
+
+            - name: 'Validate test coverage'
+              run: sf nakama validate coverage
