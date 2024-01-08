@@ -1,19 +1,23 @@
 {
+	// Note: this file is intended to be used just as a template and it is expected to be modified by the user
 	"search.exclude": {
 		"**/node_modules": true,
 		"**/bower_components": true,
 		"**/.sfdx": true
 	},
 	"terminal.integrated.defaultProfile.windows": "Git Bash",
-	"salesforcedx-vscode-apex.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.6.10-hotspot",
+	// Note: below property is an example path when working locally in Windows
+	// "salesforcedx-vscode-apex.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.6.10-hotspot",
+	// Note: below property contains the proper value when working with Code Builder
+	"salesforcedx-vscode-apex.java.home": "/usr/lib/jvm/java-11-openjdk-amd64",
 	"salesforcedx-vscode-core.retrieve-test-code-coverage": true,
 	"trailing-spaces.trimOnSave": true,
 	"files.trimTrailingWhitespace": true,
 	"diffEditor.ignoreTrimWhitespace": false,
 	"editor.bracketPairColorization.enabled": true,
 	"editor.guides.bracketPairs": "active",
-	"editor.insertSpaces": false,
-	"editor.detectIndentation": false,
+	"editor.insertSpaces": true,
+	"editor.detectIndentation": true,
 	"editor.renderWhitespace": "all",
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
 	"prettier.trailingComma": "none",
@@ -21,8 +25,7 @@
 	"prettier.printWidth": 120,
 	"prettier.tabWidth": 4,
 	"prettier.useTabs": true,
-	"[xml]": {
-		"editor.defaultFormatter": "DotJoshJohnson.xml"
-	},
-	"apexPMD.rulesets": ["config/pmd-ruleset.xml"]
+	"prettier.documentSelectors": ["**/*.{page,component}"],
+	"apexPMD.rulesets": ["config/pmd-ruleset.xml"],
+	"codeBuilder.showWelcomePage": false
 }

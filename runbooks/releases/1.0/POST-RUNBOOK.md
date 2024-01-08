@@ -3,7 +3,7 @@
 This file should explain the manual steps after the release deployment. Example:
 
 These manual steps should be performed in the target environments after the deployment.
-| Manual Steps | CICD | QA | UAT | PRODUCTION | HOTFIX |
+| Manual Steps | INT | QA | UAT | PRODUCTION | HOTFIX |
 | ------------ | ------ | ------- | ------- | ---------- | ------ |
 | US-0001: | | | | | |
 | Example manual stteps: <br> - Step 1 <br> - Step 2 <br> | Done on 1st Jan 2022 by @Gabriel Serrano (5 mins aprox) | | | | |

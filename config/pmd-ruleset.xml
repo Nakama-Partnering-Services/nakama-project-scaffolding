@@ -1,33 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ruleset
-	name="Nakama ruleset for Salesforce.com Apex"
+	name="Salesforce ruleset"
 	xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
 
 	<description>
-        Nakama Partnering Services PMD ruleset
+        Salesforce PMD ruleset
 	</description>
 
+	<!-- Excluded metadata -->
+	<exclude-pattern>.*dlrs_.*</exclude-pattern>
+
 	<!-- STANDARD RULES -->
-	<rule ref="category/apex/bestpractices.xml">
-		<exclude name="ApexAssertionsShouldIncludeMessage" /> <!-- Not enforce, sometimes it is controversial and redundant -->
+
+	<rule ref="category/apex/security.xml">
+		<priority>1</priority> <!-- Only Security should show red, everything else default 2 -->
 	</rule>
-	<rule ref="category/apex/codestyle.xml" />
 	<rule ref="category/apex/design.xml" />
 	<rule ref="category/apex/performance.xml">
 		<exclude name="AvoidDebugStatements" /> <!-- We have smarter rule below -->
 	</rule>
-	<rule ref="category/apex/security.xml">
-		<priority>1</priority>
+	<rule ref="category/apex/codestyle.xml" />
+	<rule ref="category/apex/bestpractices.xml">
+		<exclude name="ApexAssertionsShouldIncludeMessage" />
+		<!-- Not enforce, sometimes it is controversial and redundant -->
 	</rule>
 	<rule ref="category/apex/documentation.xml">
-		<exclude name="ApexDoc" />
+		<exclude name="ApexDoc" /> <!-- Nonsense rule even against Clean Code -->
 	</rule>
+	<rule ref="category/apex/errorprone.xml" />
+	<rule ref="category/apex/multithreading.xml" />
 
 	<!-- CUSTOM APEX RULES -->
 
-	<rule name="AvoidProductionDebugLogs" language="apex" message="Avoid leaving System.debug() statments in code as they negatively influence performance." class="net.sourceforge.pmd.lang.apex.rule.ApexXPathRule">
+	<rule name="AvoidProductionDebugLogs" language="apex"
+		message="Avoid leaving System.debug() statments in code as they negatively influence performance."
+		class="net.sourceforge.pmd.lang.apex.rule.ApexXPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="xpath">
@@ -43,7 +52,10 @@
 
 	<!-- CUSTOM SF METADATA RULES -->
 
-	<!-- <rule name="NoUnderscoresInFieldNames" language="xml" message="Custom fields should not contain underscores." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="NoUnderscoresInFieldNames" language="xml"
+		message="Custom fields should not contain underscores."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
+		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
 			<property name="xpath">
@@ -54,9 +66,10 @@
 				</value>
 			</property>
 		</properties>
-	</rule> -->
+	</rule>
 
-	<!-- <rule name="CustomFieldNamingConvention" language="xml" message="Incorrectly named field" class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<!-- <rule name="CustomFieldNamingConvention" language="xml" message="Incorrectly named field"
+	class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<properties>
 			<property name="version" value="2.0" />
 			<property name="xpath">
@@ -81,13 +94,15 @@
 							(fullName/text[not(matches(@Image, "fcur_([A-Z][a-z0-9]+)+__c"))] and type/text[@Image="Currency"] and formula) or
 							(fullName/text[not(matches(@Image, "rcnt_([A-Z][a-z0-9]+)+__c"))] and type/text[@Image="Summary"] and summaryOperation/text[@Image="count"])
 						]
-                ]]>
+					]]>
 				</value>
 			</property>
 		</properties>
 	</rule> -->
 
-	<rule name="UnrestrictedPasswordPolicy" language="xml" message="It is a high security risk for any profile to have &quot;No Restriction&quot; as the password complexity requirement." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="UnrestrictedPasswordPolicy" language="xml"
+		message="It is a high security risk for any profile to have &quot;No Restriction&quot; as the password complexity requirement."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -101,7 +116,9 @@
 		</properties>
 	</rule>
 
-	<rule name="TooShortPasswordPolicy" language="xml" message="The default value for the password length is 8 characters. Less than 8 characters is not secure." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="TooShortPasswordPolicy" language="xml"
+		message="The default value for the password length is 8 characters. Less than 8 characters is not secure."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -115,7 +132,9 @@
 		</properties>
 	</rule>
 
-	<rule name="ModifyAllOnSysAdminProfile" language="xml" message="Only Admins can view and modify all data, if any other profile get these permissions, they could manipulate records that shouldn't" class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="ModifyAllOnSysAdminProfile" language="xml"
+		message="Only Admins can view and modify all data, if any other profile get these permissions, they could manipulate records that shouldn't"
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -129,7 +148,9 @@
 		</properties>
 	</rule>
 
-	<rule name="ModifyAllOnPermSet" language="xml" message="Allowing this user permission can give access and ability to modify sensitive data." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="ModifyAllOnPermSet" language="xml"
+		message="Allowing this user permission can give access and ability to modify sensitive data."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -143,7 +164,9 @@
 		</properties>
 	</rule>
 
-	<rule name="ViewAllOnPermSet" language="xml" message="Allowing this user permission can give access to sensitive data." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="ViewAllOnPermSet" language="xml"
+		message="Allowing this user permission can give access to sensitive data."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -157,7 +180,9 @@
 		</properties>
 	</rule>
 
-	<rule name="ManageUsersByNonSysAdmins" language="xml" message="Managing users needa to be limited to System Administrator Profile only." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="ManageUsersByNonSysAdmins" language="xml"
+		message="Managing users needa to be limited to System Administrator Profile only."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -171,7 +196,9 @@
 		</properties>
 	</rule>
 
-	<rule name="TooLongSessionTimeout" language="xml" message="Allowing access to an inactive session for more than 12 hours is a security risk." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="TooLongSessionTimeout" language="xml"
+		message="Allowing access to an inactive session for more than 12 hours is a security risk."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -185,7 +212,9 @@
 		</properties>
 	</rule>
 
-	<rule name="PasswordsNeverExpire" language="xml" message="Passwords need to expire every 90 days for security." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="PasswordsNeverExpire" language="xml"
+		message="Passwords need to expire every 90 days for security."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -199,7 +228,9 @@
 		</properties>
 	</rule>
 
-	<rule name="ViewSetupByNonSysAdmins" language="xml" message="Exposing the setup menu to non-authorized users." class="net.sourceforge.pmd.lang.rule.XPathRule">
+	<rule name="ViewSetupByNonSysAdmins" language="xml"
+		message="Exposing the setup menu to non-authorized users."
+		class="net.sourceforge.pmd.lang.rule.XPathRule">
 		<priority>3</priority>
 		<properties>
 			<property name="version" value="2.0"></property>
@@ -212,5 +243,4 @@
 			</property>
 		</properties>
 	</rule>
-
 </ruleset>

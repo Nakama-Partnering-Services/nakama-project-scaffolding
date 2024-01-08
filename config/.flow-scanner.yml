@@ -1,0 +1,24 @@
+rules:
+    APIVersion:
+        severity: error
+        expression: '===59'
+    CopyAPIName:
+        severity: error
+    DMLStatementInLoop:
+        severity: error
+    DuplicateDMLOperation:
+        severity: error
+    FlowDescription:
+        severity: error
+    HardcodedId:
+        severity: error
+    MissingFaultPath:
+        severity: warning
+    MissingNullHandler:
+        severity: warning
+    SOQLQueryInLoop:
+        severity: error
+    UnconnectedElement:
+        severity: error
+    UnusedVariable:
+        severity: error

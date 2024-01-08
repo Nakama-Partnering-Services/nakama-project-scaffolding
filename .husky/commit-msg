@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+. "$(dirname "$0")/_/husky.sh"
 
 npx --no-install commitlint --edit "$1"
+
+./scripts/shell/append_ticket_number_to_commit_message.sh "$1"
+

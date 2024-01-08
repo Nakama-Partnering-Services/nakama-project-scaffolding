@@ -1,14 +1,45 @@
 {
 	"orgName": "Nakama",
-	"edition": "Developer",
+	"edition": "Enterprise",
 	"language": "en_US",
-	"features": ["EnableSetPasswordInApi"],
+	"features": [
+		"API",
+		"AuthorApex",
+		"ContactsToMultipleAccounts",
+		"MarketingUser",
+		"LiveAgent",
+		"LegacyLiveAgentRouting",
+		"Sites",
+		"Communities"
+	],
 	"settings": {
+		"communitiesSettings": {
+			"enableNetworksEnabled": true
+		},
+		"opportunitySettings": {
+			"enableOpportunityTeam": true
+		},
+		"accountSettings": {
+			"enableAccountTeams": true,
+			"showViewHierarchyLink": true
+		},
+		"activitiesSettings": {
+			"enableEmailTracking": true
+		},
+		"quoteSettings": {
+			"enableQuote": true
+		},
+		"omniChannelSettings": {
+			"enableOmniChannel": true
+		},
 		"lightningExperienceSettings": {
 			"enableS1DesktopEnabled": true
 		},
-		"mobileSettings": {
-			"enableS1EncryptedStoragePref2": false
+		"emailAdministrationSettings": {
+			"enableEnhancedEmailEnabled": true
+		},
+		"pathAssistantSettings": {
+			"pathAssistantEnabled": true
 		}
 	}
 }

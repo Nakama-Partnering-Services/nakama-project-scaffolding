@@ -10,11 +10,18 @@
 
 coverage/
 
-frameworks/**
-
 config/pmd-ruleset.xml
 
+*.md
+
+frameworks/**
+
+**/experiences/**/*.json
+**/*.email
+
+# Exclude most xml files, except for SVG, for example
 **/*-meta.xml
 
-**/*.email
-**/experiences/**/*.json
+deltas/destructiveChanges/destructiveChanges.xml
+deltas/destructiveChanges/package.xml
+deltas/package/package.xml

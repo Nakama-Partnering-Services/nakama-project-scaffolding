@@ -1,9 +1,16 @@
 {
 	"recommendations": [
-		"salesforce.salesforcedx-vscode",
-		"redhat.vscode-xml",
-		"dbaeumer.vscode-eslint",
-		"esbenp.prettier-vscode",
-		"financialforce.lana"
+		"salesforce.salesforcedx-vscode-expanded",
+		"pmd.apex-pmd", // Note: not present in open-vsx version of salesforcedx-vscode-expanded
+		"shardulm94.trailing-spaces",
+		"vivaxy.vscode-conventional-commits",
+		"formulahendry.auto-close-tag",
+		"formulahendry.auto-complete-tag",
+		"formulahendry.auto-rename-tag",
+		"mhutchie.git-graph",
+		"eamodio.gitlens",
+		"pkief.material-icon-theme",
+		"usernamehw.errorlens",
+		"amatiasq.sort-imports"
 	]
 }

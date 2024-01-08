@@ -1,4 +1,5 @@
 {
+	"header": "# Release notes\n\n",
 	"types": [
 		{
 			"type": "feat",
@@ -7,6 +8,10 @@
 		{
 			"type": "fix",
 			"section": "Bug Fixes"
+		},
+		{
+			"type": "revert",
+			"section": "Reverted Changes"
 		},
 		{
 			"type": "chore",
@@ -38,10 +43,6 @@
 		},
 		{
 			"type": "ci",
-			"hidden": true
-		},
-		{
-			"type": "revert",
 			"hidden": true
 		}
 	]

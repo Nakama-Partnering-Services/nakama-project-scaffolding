@@ -1,0 +1,12 @@
+{
+	"env": {
+		"es2022": true
+	},
+	"ignorePatterns": ["**/staticresources/*.js"],
+	"rules": {
+		// Note: "indent": ["error", "tab"], not used, since it conflicts with Prettier.
+		"linebreak-style": ["error", "unix"],
+		"quotes": ["error", "single"],
+		"semi": ["error", "always"]
+	}
+}
