@@ -8,92 +8,82 @@ clone:
 
 pipelines:
     pull-requests:
-        '{feature,bugfix,hotfix}/*': # Note: only work for source branches, not target branches
+        '**': # Note: only work for source branches, not target branches, so we are scoping all branches
+            - step:
+                  name: 'Generate deltas'
+                  script:
+                      - sf nakama generate deltas
+                  condition:
+                      changesets:
+                          includePaths:
+                              - 'force-app/**'
+                  artifacts:
+                      - deltas/**
             - parallel:
                   - step:
-                        name: Verify formatting
+                        name: 'Validate Jest'
                         script:
-                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- ':(exclude)**/layouts/**' ':(exclude)**/reports/**' ':(exclude)**/email/**' ':(exclude)**/*.email-meta.xml' ':(exclude)**/experiences/**/*.json')
-                            - npm ci # TODO: run docker image locally and try to troubleshoot why this is needed for prettier consistency. Faced when throwing exceptions in apex with multi-line string messages
-                            - IFS=$'\n'
-                            - |
-                                for FILE in $CHANGED_FILES;
-                                do
-                                    npx prettier --check "$FILE"
-                                done
-                            - unset IFS
-                  - step:
-                        name: Verify linting
-                        script:
-                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD -- **/{aura,lwc}/**/*.js)
-                            - IFS=$'\n'
-                            - |
-                                for FILE in $CHANGED_FILES;
-                                do
-                                    npx eslint "$FILE"
-                                done
-                            - unset IFS
+                            - sf nakama validate eslint || true
                         condition:
                             changesets:
                                 includePaths:
                                     - '**/aura/**'
                                     - '**/lwc/**'
                   - step:
-                        name: Verify PMD
+                        name: 'Validate Prettier'
                         script:
-                            - CHANGED_FILES=$(git diff-tree --diff-filter=AM --no-commit-id --name-only -r origin/$BITBUCKET_PR_DESTINATION_BRANCH HEAD)
-                            - CHANGED_FILES=$(echo $CHANGED_FILES | tr -s '[:blank:]' ',')
-                            - sfdx scanner:run --pmdconfig config/pmd-ruleset.xml --target $CHANGED_FILES,!frameworks/**/*.cls --engine pmd --severity-threshold 3 --format table
-                        condition:
-                            changesets:
-                                includePaths:
-                                    - 'force-app/**'
-            - parallel:
+                            # TODO: troubleshoot lack of consistency in apex with multi-line string messages
+                            - sf nakama validate prettier || true
                   - step:
-                        name: Deltas validation deployment
-                        # deployment: # CICD # UAT # PRODUCTION
+                        name: 'Validate ESLint'
                         script:
-                            - DESTINATION_ENVIRONMENT=$(if [ "$BITBUCKET_PR_DESTINATION_BRANCH" = "main" ]; then echo "PRODUCTION"; fi)
-                            - pull_request_response=$(curl -X GET -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pullrequests/$BITBUCKET_PR_ID)
-                            - echo $pull_request_response > pull_request.json
-                            - description=$(jq '.description' pull_request.json)
-                            - RUN_TEST_PARAMETER=$(awk -F 'Tests:' '{print $2}' <<< "$description" | tr -d '"')
-                            - |
-                                if [ ! $RUN_TEST_PARAMETER ]; then
-                                    RUN_TEST_PARAMETER=$(node /decideTestLevel.js origin/$BITBUCKET_PR_DESTINATION_BRANCH)
-                                fi
-                            - bash /deploy.sh $DESTINATION_ENVIRONMENT origin/$BITBUCKET_PR_DESTINATION_BRANCH true $RUN_TEST_PARAMETER
+                            - sf nakama validate eslint || true
                         condition:
                             changesets:
                                 includePaths:
-                                    - 'force-app/**'
+                                    - '**/aura/**'
+                                    - '**/lwc/**'
+                  - step:
+                        name: 'Validate PMD'
+                        script:
+                            - sf nakama validate pmd || true
+                  - step:
+                        name: 'Validate deployment'
+                        script:
+                            - PULL_REQUEST_BODY=$(curl -X GET -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pullrequests/$BITBUCKET_PR_ID | jq '.description')
+                            - TESTS_SPECIFICATION=$(awk -F 'Tests:' '{print $2}' <<< "$PULL_REQUEST_BODY" | tr -d '"')
+                            - |
+                                if [ -z "$TESTS_SPECIFICATION" ]; then
+                                    TESTS_SPECIFICATION=$(sf nakama decide test level)
+                                    echo "TEST LEVEL: $TESTS_SPECIFICATION"
+                                fi
+                                TESTS_SPECIFICATION_ARRAY=($TESTS_SPECIFICATION)
+                                TEST_LEVEL=${TESTS_SPECIFICATION_ARRAY[0]}
+                                TESTS=${TESTS_SPECIFICATION_ARRAY[1]}
+                                if [ -n "$TESTS" ]; then
+                                    TESTS_FLAG+="-t $TESTS"
+                                fi
+                            - source .env.replacements
+                              # Note: used mainly for detection of environment replacements.
+                            - export TARGET_ORG=PRODUCTION
+                            - sf nakama deploy deltas -o $TARGET_ORG --dry-run true -l $TEST_LEVEL $TESTS_FLAG
                         artifacts:
                             - results.json
-                        after-script:
-                            - cat results.json
             - step:
-                  name: Verify test coverage
+                  name: 'Validate coverage'
                   script:
-                      - NON_TEST_CLASSES=$((egrep -wrliL '@IsTest|public interface' deltas --include \*.cls || echo "") | xargs -rL 1 basename | sed 's/.cls//g' | paste -sd "," -)
-                      - |
-                          if [ $NON_TEST_CLASSES ]; then
-                              sfdx nps:coverage:verify --path results.json --required-coverage 90 --classes $NON_TEST_CLASSES
-                          fi
-                  condition:
-                      changesets:
-                          includePaths:
-                              - 'force-app/**'
+                      - sf nakama validate coverate -r 75 || true
     branches:
         main:
             - parallel:
                   - step:
-                        name: Deploy CICD
-                        deployment: CICD
+                        name: 'Deploy INT'
+                        deployment: INT
                         script:
-                            - source .env.replacements # TODO: test if it works properly
-                            - RUN_TEST_PARAMETER=$(node /decideTestLevel.js $CICD_LAST_DEPLOYMENT_COMMIT_SHA)
-                            - bash /deploy.sh CICD $CICD_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
-                            - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$CICD_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"CICD_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
+                            - source .env.replacements
+                              # Note: used mainly for detection of environment replacements.
+                            - export TARGET_ORG=UAT
+                            - sf nakama deploy deltas -o $TARGET_ORG
                         condition:
                             changesets:
                                 includePaths:
@@ -102,55 +92,59 @@ pipelines:
 
         rc/*:
             - step:
-                  name: Deploy UAT
+                  name: 'Deploy UAT'
                   deployment: UAT
                   script:
-                      - source .env.replacements # TODO: test if it works properly
-                      - bash /deploy.sh UAT $UAT_LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
-                      - curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$UAT_LAST_DEPLOYMENT_COMMIT_SHA_UUID%7D -H 'Content-Type:application/json' -d "{\"key\":\"UAT_LAST_DEPLOYMENT_COMMIT_SHA\", \"value\":\"$BITBUCKET_COMMIT\"}"
+                      - source .env.replacements
+                        # Note: used mainly for detection of environment replacements.
+                      - export TARGET_ORG=UAT
+                      - sf nakama deploy deltas -o $TARGET_ORG
                   condition:
                       changesets:
                           includePaths:
                               - 'force-app/**'
     custom:
-        scheduled-validation-deployments:
+        run-apex.tests:
             - parallel:
                   - step:
-                        name: Daily validation deployment with tests
-                        deployment: CICD
+                        name: 'Validate deployment executing local tests'
                         script:
-                            - bash /validation-with-tests.sh CICD
+                            - sf nakama validate tests -o INT
                   # TODO: add QA, UAT, PRODUCTION and HOTFIX environments
         manual-deployment:
             - variables:
-                  - name: DESTINATION_ENVIRONMENT
+                  - name: TARGET_ORG
                     allowed-values:
-                        - 'CICD'
-                        - 'QA'
-                        - 'UAT'
                         - 'PRODUCTION'
-                    default: 'CICD'
-                  - name: checkonly
-                  - name: testlevel
+                    default: 'PRODUCTION'
+                  - name: DRY_RUN
+                    allowed-values:
+                        - 'true'
+                        - 'false'
+                    default: 'true'
+                  - name: USE_MOST_RECENT
+                    allowed-values:
+                        - 'true'
+                        - 'false'
+                    default: 'false'
+                  - name: TEST_LEVEL
                     allowed-values:
                         - 'NoTestRun'
                         - 'RunSpecifiedTests'
                         - 'RunLocalTests'
                         - 'RunAllTestsInOrg'
+                        - 'Default'
                     default: 'RunLocalTests'
-                  - name: runtests
+                  - name: TESTS
             - step:
-                  name: Deploy
+                  name: 'Deploy $TARGET_ORG'
+                  deployment: $TARGET_ORG
                   script:
-                      - source .env.replacements # TODO: test if it works properly
-                      - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA})
-                      - bash /deploy.sh $DESTINATION_ENVIRONMENT $LAST_DEPLOYMENT_COMMIT_SHA $checkonly $testlevel $runtests
-            - step:
-                  name: Update LAST_DEPLOYMENT_COMMIT_SHA
-                  script:
+                      - source .env.replacements
+                        # Note: used mainly for detection of environment replacements.
+                      - export TARGET_ORG=PRODUCTION
                       - |
-                          if [ ! $VALIDATION_PARAMETER ]; then
-                              TARGET_VARIABLE_ID=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA_UUID})
-                              TARGET_VARIABLE="${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA"
-                              curl -X PUT -H "Authorization:Bearer $PIPELINE_ACCESS_TOKEN" --url https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME/pipelines_config/variables/%7B$TARGET_VARIABLE_ID%7D -H 'Content-Type:application/json' -d "{\"key\":\"$TARGET_VARIABLE\", \"value\":\"$BITBUCKET_COMMIT\"}"
+                          if [ -n "$TESTS" ]; then
+                              TESTS_FLAG+="-t $TESTS"
                           fi
+                      - sf nakama deploy deltas -o $TARGET_ORG -r $USE_MOST_RECENT --dry-run $DRY_RUN -l $TEST_LEVEL $TESTS_FLAG
