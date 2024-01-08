@@ -49,7 +49,3 @@ $RECYCLE.BIN/
 
 # Consider ignoring default folders in order to force the team to move their newly retrieved metadata to the appropriate folders
 # **/default/**
-# The following lines are needed to prevent the Last deployment information from being ignored,
-# so that it can be detected when retrieved while updating the last deployment commit.
-# !**/default/**/customMetadata/
-# !**/default/customMetadata/nakama__DeploymentInformation.nakama__Last.md-meta.xml
