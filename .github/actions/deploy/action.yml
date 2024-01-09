@@ -57,5 +57,5 @@ runs:
               if [ -n "${{ inputs.TESTS }}" ]; then
                   TESTS_FLAG+="-t ${{ inputs.TESTS }}"
               fi
-              sf nakama deploy deltas -o $TARGET_ORG --dry-run ${{ inputs.DRY_RUN }} -r ${{ inputs.USE_MOST_RECENT }} -l ${{ inputs.TEST_LEVEL }} $TESTS_FLAG
+              sf nakama deploy deltas -o $TARGET_ORG -r ${{ inputs.USE_MOST_RECENT }} --dry-run ${{ inputs.DRY_RUN }} -l ${{ inputs.TEST_LEVEL }} $TESTS_FLAG
           shell: bash
