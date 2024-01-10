@@ -1,3 +1,7 @@
+# Azure Pipelines doesn't support all YAML features.
+# Unsupported features include anchors, complex keys, and sets.
+# Also, unlike standard YAML, Azure Pipelines depends on seeing stage, job, task, or a task shortcut like script as the first key in a mapping.
+
 name: '$(Build.SourceBranchName) $(Date:yyyy)-$(Date:MM)-$(Date:dd) ($(Rev:rr))'
 
 schedules:
@@ -13,36 +17,70 @@ trigger:
         include:
             - main
             - rc/*
-            - patch/*
     paths:
         include:
             - force-app/*
 
+# Note: this is only supported for GitHub and Bitbucket Cloud, for Azure, it is needed to set up branch policies.
+# pr:
+#     branches:
+#         include:
+#             - main
+#             - rc/*
+#     paths:
+#         include:
+#             - force-app/*
+
 pool:
     vmImage: 'ubuntu-latest'
 
+# Note: if a parameter does not have a default value, it will be required, hence, for the most optional ones, we set 'false' as default.
 parameters:
-    - name: VALIDATION
+    - name: TARGET_ORG
+      displayName: 'Target org'
+      type: string
+      default: 'PRODUCTION'
+    - name: USE_MOST_RECENT
+      displayName: 'Use most recent validation deployment'
+      type: boolean
+      default: false
+    - name: DRY_RUN
+      displayName: 'Dry run validation deployment'
       type: boolean
       default: true
-    - name: RUN_TEST_PARAMETER
+    - name: TEST_LEVEL
+      displayName: 'Test level'
       type: string
-      default: RunLocalTests
-
-variables:
-    TARGET_BRANCH_REF: $(System.PullRequest.TargetBranch)
-    DELETE: refs/heads/
+      default: 'RunLocalTests'
+      values:
+          - NoTestRun
+          - RunSpecifiedTests
+          - RunLocalTests
+          - RunAllTestsInOrg
+          - Default
+    - name: TESTS
+      displayName: 'Tests classes to run'
+      type: string
+      default: 'false'
+    - name: PACKAGE_VERSION_ID
+      displayName: 'Package version Id'
+      type: string
+      default: 'false'
+    - name: INSTALLATION_KEY
+      displayName: 'Installation key'
+      type: string
+      default: 'false'
 
 # Note: in order to use a private docker image, follow these instructions and add Service Connection name to container.endpoint property: https://stackoverflow.com/questions/66429863/how-to-push-an-image-to-docker-hub-in-azure-pipelines
 stages:
     - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
-          - template: .azure/templates/scheduled-tests.yml
+          - template: .azure/templates/run-apex-tests.yml
 
     - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-          - template: .azure/templates/validate.yml
+          - template: .azure/templates/validate-pull-request.yml
 
-    - stage: QA_deployment
-      displayName: 'Deployment to QA and lower environments'
+    - stage: qa_deployment
+      displayName: 'Deployment until QA and lower environments'
       condition: and(
           eq(variables['Build.Reason'], 'IndividualCI'),
           startsWith( variables['Build.SourceBranch'], 'refs/heads/main' )
@@ -51,8 +89,8 @@ stages:
           - job: 'Deploy'
             strategy:
                 matrix:
-                    CICD:
-                        ENVIRONMENT: 'CICD'
+                    INT:
+                        TARGET_ORG: 'INT'
                     # QA:
                     #   ENVIRONMENT: 'QA'
                     # TODO: add lower environments
@@ -62,11 +100,14 @@ stages:
             steps:
                 - template: .azure/templates/deploy.yml
                   parameters:
-                      VALIDATION: false
-                      RUN_TEST_PARAMETER: 'NoTestRun'
-                      DESTINATION_ENVIRONMENT: $ENVIRONMENT
+                      # Note: need parenthesis around in order for the matrix variable to be expanded properly as a parameter in the displayName.
+                      TARGET_ORG: $(TARGET_ORG)
+                      USE_MOST_RECENT: false
+                      DRY_RUN: false
+                      TEST_LEVEL: 'NoTestRun'
+                      TESTS: ''
 
-    - stage: UAT_deployment
+    - stage: uat_deployment
       displayName: 'Deployment to UAT'
       condition: and(
           eq(variables['Build.Reason'], 'IndividualCI'),
@@ -83,35 +124,72 @@ stages:
                 runOnce:
                     deploy:
                         steps:
-                            - checkout: self
+                            # - checkout: self TODO: check if needed
                             - template: .azure/templates/deploy.yml
                               parameters:
-                                  VALIDATION: ${{ parameters.VALIDATION }}
-                                  RUN_TEST_PARAMETER: ${{ parameters.RUN_TEST_PARAMETER }}
-                                  DESTINATION_ENVIRONMENT: UAT
+                                  # Note: need parenthesis around in order for the matrix variable to be expanded properly as a parameter in the displayName.
+                                  TARGET_ORG: $(TARGET_ORG)
+                                  USE_MOST_RECENT: false
+                                  DRY_RUN: false
+                                  TEST_LEVEL: 'NoTestRun'
+                                  TESTS: ''
 
-    - stage: PRODUCTION_deployment
-      displayName: 'Deployment to PRODUCTION'
-      condition: and(
+    - stage: manual_deployment
+      displayName: 'Manual deployment'
+      condition: ${{ and(
           eq(variables['Build.Reason'], 'Manual'),
+          eq(parameters.PACKAGE_VERSION_ID, 'false'),
           or(
           startsWith( variables['Build.SourceBranch'], 'refs/heads/rc' ),
           startsWith( variables['Build.SourceBranch'], 'refs/heads/patch' )
-          ))
+          )) }}
       jobs:
-          - deployment: 'Deploy_PRODUCTION'
-            displayName: 'Deploy PRODUCTION'
+          # Note: the deployment requires the environment to be created in Azure DevOps, and that requires some permissions that do not have.
+          # - deployment: manual_deployment
+          #   environment: ${{ parameters.TARGET_ORG }}
+          - job: 'Manual_deployment'
+            displayName: 'Deploy to ${{ parameters.TARGET_ORG }}'
             container:
                 image: nakamapartneringservices/nakama-pipelines
                 endpoint: DockerHubNakama
-            environment: PRODUCTION
+            # strategy:
+            #     runOnce:
+            #         deploy:
+            steps:
+                - template: .azure/templates/deploy.yml
+                  parameters:
+                      TARGET_ORG: ${{ parameters.TARGET_ORG }}
+                      USE_MOST_RECENT: ${{ parameters.USE_MOST_RECENT }}
+                      DRY_RUN: ${{ parameters.DRY_RUN }}
+                      TEST_LEVEL: ${{ parameters.TEST_LEVEL }}
+                      TESTS: ${{ parameters.TESTS }}
+
+    - stage: install_package_in_all_orgs
+      displayName: 'Install package in all orgs'
+      condition: ${{ and(
+          eq(variables['Build.Reason'], 'Manual'),
+          ne(parameters.PACKAGE_VERSION_ID, 'false')
+          ) }}
+      jobs:
+          - job: 'Install_package_in_all_orgs'
+            displayName: 'Install package in all orgs'
             strategy:
-                runOnce:
-                    deploy:
-                        steps:
-                            - checkout: self
-                            - template: .azure/templates/deploy.yml
-                              parameters:
-                                  VALIDATION: ${{ parameters.VALIDATION }}
-                                  RUN_TEST_PARAMETER: ${{ parameters.RUN_TEST_PARAMETER }}
-                                  DESTINATION_ENVIRONMENT: PRODUCTION
+                matrix:
+                    INT:
+                        TARGET_ORG: 'INT'
+                    # QA:
+                    #   ENVIRONMENT: 'QA'
+                    # UAT:
+                    #     TARGET_ORG: 'UAT'
+                    # PRODUCTION:
+                    #     TARGET_ORG: 'PRODUCTION'
+                    # TODO: add all environments
+            container:
+                image: nakamapartneringservices/nakama-pipelines
+                endpoint: DockerHubNakama
+            steps:
+                - template: .azure/templates/install-package.yml
+                  parameters:
+                      TARGET_ORG: $(TARGET_ORG)
+                      PACKAGE_VERSION_ID: ${{ parameters.PACKAGE_VERSION_ID }}
+                      INSTALLATION_KEY: ${{ parameters.INSTALLATION_KEY }}
