@@ -5,6 +5,7 @@ on:
         inputs:
             PACKAGE_VERSION_ID:
                 description: 'The Id of the package version to install. Starts by 04t.'
+                default: '04t...'
                 required: true
                 type: string
             INSTALLATION_KEY:
