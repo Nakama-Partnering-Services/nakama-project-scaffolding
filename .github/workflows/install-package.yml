@@ -1,0 +1,36 @@
+name: 'Install package'
+
+on:
+    workflow_dispatch:
+        inputs:
+            PACKAGE_VERSION_ID:
+                description: 'The Id of the package version to install. Starts by 04t.'
+                required: true
+                type: string
+            INSTALLATION_KEY:
+                description: 'The installation key of the package version to install, if needed.'
+                required: false
+                type: string
+jobs:
+    install-package:
+        name: 'Install package'
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        strategy:
+            fail-fast: false
+            matrix:
+                TARGET_ORG: ${{ fromJSON(vars.ALL_ENVIRONMENTS) }}
+        steps:
+            - name: 'Install package'
+              # Note: we can't reference env from another env, so using format expression instead.
+              env:
+                  ${{ matrix.TARGET_ORG }}_SFDX_AUTH_URL: ${{ secrets[format('{0}_SFDX_AUTH_URL', matrix.TARGET_ORG)] }}
+              run: |
+                  if [ -n "${{ inputs.INSTALLATION_KEY }}" ]; then
+                      INSTALLATION_KEY_FLAG="--installation-key ${{ inputs.INSTALLATION_KEY }}"
+                  fi
+                  sf nakama install package -o ${{ matrix.TARGET_ORG }} -p ${{ inputs.PACKAGE_VERSION_ID }} $INSTALLATION_KEY_FLAG
