@@ -16,6 +16,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
+                # Note: ${{ vars.MAIN_ENVIRONMENTS }} in the format: ["DEV1","DEV2","QA","UAT"]
                 TARGET_ORG: ${{ fromJSON(vars.MAIN_ENVIRONMENTS) }}
         steps:
             - uses: actions/checkout@v4

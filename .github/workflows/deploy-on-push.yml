@@ -16,6 +16,7 @@ jobs:
             TARGET_ORGS: ${{ steps.get-target-orgs.outputs.TARGET_ORGS }}
             JIRA_UPDATE_ORG: ${{ steps.get-target-orgs.outputs.JIRA_UPDATE_ORG }}
         steps:
+            # Note: ${{ vars.LOWER_ENVIRONMENTS }} in the format: [\"DEV1\",\"DEV2\",\"QA\",\"UAT\"]
             - name: 'Get target orgs'
               id: get-target-orgs
               run: |
