@@ -115,7 +115,7 @@ pipelines:
                         script:
                             - |
                                 if [ -n "$INSTALLATION_KEY" ]; then
-                                    INSTALLATION_KEY_FLAG+="-k $INSTALLATION_KEY"
+                                    INSTALLATION_KEY_FLAG+="--installation-key $INSTALLATION_KEY"
                                 fi
                             - sf nakama install package -o INT -p $PACKAGE_VERSION_ID $INSTALLATION_KEY_FLAG
         run-apex-tests:
