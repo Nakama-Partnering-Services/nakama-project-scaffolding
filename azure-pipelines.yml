@@ -51,7 +51,7 @@ parameters:
     - name: TEST_LEVEL
       displayName: 'Test level'
       type: string
-      default: 'RunLocalTests'
+      default: 'Default'
       values:
           - NoTestRun
           - RunSpecifiedTests

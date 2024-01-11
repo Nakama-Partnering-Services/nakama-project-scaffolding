@@ -148,7 +148,7 @@ pipelines:
                         - 'RunLocalTests'
                         - 'RunAllTestsInOrg'
                         - 'Default'
-                    default: 'RunLocalTests'
+                    default: 'Default'
                   - name: TESTS
             - step:
                   name: 'Deploy $TARGET_ORG'
