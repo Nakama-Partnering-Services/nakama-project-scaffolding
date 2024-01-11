@@ -131,16 +131,16 @@ pipelines:
                     allowed-values:
                         - 'PRODUCTION'
                     default: 'PRODUCTION'
-                  - name: DRY_RUN
-                    allowed-values:
-                        - 'true'
-                        - 'false'
-                    default: 'true'
                   - name: USE_MOST_RECENT
                     allowed-values:
                         - 'true'
                         - 'false'
                     default: 'false'
+                  - name: DRY_RUN
+                    allowed-values:
+                        - 'true'
+                        - 'false'
+                    default: 'true'
                   - name: TEST_LEVEL
                     allowed-values:
                         - 'NoTestRun'
