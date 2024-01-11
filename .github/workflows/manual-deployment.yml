@@ -18,6 +18,7 @@ on:
                 type: boolean
             DRY_RUN:
                 description: 'If true, changes are not actually deployed, but just validated.'
+                default: true
                 required: true
                 type: boolean
             TEST_LEVEL:
