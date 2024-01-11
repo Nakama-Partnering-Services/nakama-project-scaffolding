@@ -11,8 +11,8 @@ on:
 # the reference of valid checks will be messed and all of them will just point to the last validation check.
 
 jobs:
-    get-deltas:
-        name: 'Get deltas'
+    generate-deltas:
+        name: 'Generate deltas'
         runs-on: ubuntu-latest
         container:
             image: nakamapartneringservices/nakama-pipelines
@@ -24,7 +24,7 @@ jobs:
 
             # Note: validations of PR will be executed against the deltas generated from the target branch,
             # even if `sf nakama deploy deltas` is also able to generate deltas against the last commit deployed in the target org.
-            - name: 'Get deltas'
+            - name: 'Generate deltas'
               run: |
                   git config --global --add safe.directory $GITHUB_WORKSPACE
                   sf nakama generate deltas
@@ -53,7 +53,7 @@ jobs:
 
     get-deployment-tests-specifications:
         name: 'Get deployment tests specifications'
-        needs: [get-deltas]
+        needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
             image: nakamapartneringservices/nakama-pipelines
@@ -123,7 +123,7 @@ jobs:
     validate-prettier:
         name: 'Validate Prettier'
         if: vars.VALIDATE_PRETTIER == 'true'
-        needs: [get-deltas]
+        needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
             image: nakamapartneringservices/nakama-pipelines
@@ -145,7 +145,7 @@ jobs:
     validate-eslint:
         name: 'Validate ESLint'
         if: vars.VALIDATE_ESLINT == 'true'
-        needs: [get-deltas]
+        needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
             image: nakamapartneringservices/nakama-pipelines
@@ -167,7 +167,7 @@ jobs:
     validate-pmd:
         name: 'Validate PMD'
         if: vars.VALIDATE_PMD == 'true'
-        needs: [get-deltas]
+        needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
             image: nakamapartneringservices/nakama-pipelines
@@ -188,7 +188,7 @@ jobs:
     validate-flows:
         name: 'Validate Flows'
         if: vars.VALIDATE_FLOWS == 'true'
-        needs: [get-deltas]
+        needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
             image: nakamapartneringservices/nakama-pipelines
