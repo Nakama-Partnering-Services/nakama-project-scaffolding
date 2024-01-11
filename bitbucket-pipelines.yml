@@ -72,7 +72,7 @@ pipelines:
             - step:
                   name: 'Validate coverage'
                   script:
-                      - sf nakama validate coverate -r 75 || true
+                      - sf nakama validate coverage -r 75 || true
     branches:
         main:
             - parallel:
