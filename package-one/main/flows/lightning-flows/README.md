@@ -1,1 +1,0 @@
-Flows are classified between ligthning flows and process builders for clarification. Besides, we can optionally use the `LF_` and `PB_` prefixes respectively, but it is discouraged since normally we will never create new Process Builders. Optionally, they can be classified in subfolder based on their type (platform-event-triggered, record-triggered, screen, scheduled).

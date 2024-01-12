@@ -1,1 +1,0 @@
-Subfolders to classify standard-objects, custom-objects, custom-settings, custom-metadata-types, platform-events, etc... are not used since, `sfdx-git-delta` does not support them properly. Besides, some of them like standard-objects, custom-metadata-types and platform-events can be already differentiated by their (lack of) suffix.
