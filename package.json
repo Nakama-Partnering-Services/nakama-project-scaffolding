@@ -1,9 +1,7 @@
 {
-	"name": "nakama-project-scaffolding",
+	"name": "salesforce",
 	"private": true,
-	"version": "1.4.0",
-	"description": "This repository aims to contain the resources and frameworks used for the scaffolding of new sfdx projects.",
-	"repository": "https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding.git",
+	"version": "0.0.0",
 	"scripts": {
 		"lint": "eslint **/{aura,lwc}/**",
 		"test": "yarn test:unit",

@@ -2,39 +2,15 @@
 	"packageDirectories": [
 		{
 			"path": "force-app",
-			"default": true,
-			"package": "Deployment Information",
-			"versionName": "ver 0.1",
-			"versionNumber": "0.1.0.NEXT",
-			"versionDescription": ""
-		},
-		{
-			"path": "frameworks",
-			"package": "Frameworks",
-			"versionNumber": "1.0.6.NEXT",
-			"definitionFile": "config/project-scratch-def.json",
-			"default": false
-		},
-		{
-			"path": "package-one"
-		},
-		{
-			"path": "package-two"
+			"default": true
 		}
 	],
-	"namespace": "nakama",
-	"name": "nakama-project-scaffolding",
+	"name": "salesforce",
 	"sfdcLoginUrl": "https://login.salesforce.com",
-	"sourceApiVersion": "59.0",
-	"packageAliases": {
-		"Frameworks": "0Ho7Q0000008OO8SAM",
-		"Frameworks@1.0.6-2": "04t7Q000000IKzXQAW",
-		"Deployment Information": "0Ho7Q000000wkKNSAY",
-		"Deployment Information@0.1.0-1": "04t7Q000000u32BQAQ"
-	},
+	"sourceApiVersion": "60.0",
 	"replacements": [
 		{
-			"filename": "package-one/main/lwc/showToastUtility/showToastUtility.js",
+			"filename": "force-app/main/default/lwc/showToastUtility/showToastUtility.js",
 			"stringToReplace": "notifications handler",
 			"replaceWithEnv": "EXAMPLE",
 			"replaceWhenEnv": [
