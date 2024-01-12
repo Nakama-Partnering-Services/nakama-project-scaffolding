@@ -10,7 +10,7 @@ schedules:
       branches:
           include:
               - main
-      always: true # since something may have been directly changed in the orgs
+      always: true
 
 trigger:
     branches:
@@ -124,7 +124,6 @@ stages:
                 runOnce:
                     deploy:
                         steps:
-                            # - checkout: self TODO: check if needed
                             - template: .azure/templates/deploy.yml
                               parameters:
                                   # Note: need parenthesis around in order for the matrix variable to be expanded properly as a parameter in the displayName.
