@@ -2,46 +2,51 @@
 # .gitlab-ci.yml@jdkgabri/project-scaffolding-pipelines (separate repo with just gitlab-ci.yml and pipeline .yml files)
 # https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab-ci.yml
 
-# Variables for manual-deployment: some variables referenced in job rules, although empty,
+# Note: some variables referenced in job rules, although empty,
 # they exist since they are declared here, so we need to check emptyness specifically
 
 variables:
-    DESTINATION_ENVIRONMENT:
+    TARGET_ORG:
         value: ''
-        description: 'Destination environment for the manual deployment. Possible values are: CICD, QA, UAT, PRODUCTION, HOTFIX.'
+        description: 'Target org for the manual deployment. Mainly used for deployments to UAT and PRODUCTION.'
 
-    METADATA_DEPLOYMENT:
+    USE_MOST_RECENT:
         value: 'false'
-        description: 'Set to "true" if Salesforce metadata should be deployed.'
+        description: 'If true, if there is a successful validation deployment with test execution (NoTestRun level is not valid) in the last 10 days, use it for a quick deploy. Else, will result in error. Should normally be used for deployment to PRODUCTION after a successful validation. Note: make sure you are in the correct branch, since latest commit of the branch will be used to update the deployment information of the environment. When this parameter is true, DRY_RUN and TEST_LEVEL are ignored.'
 
-    checkonly:
-        value: 'false'
-        description: 'Set to "true" if you do not want the package(s) to be actually deployed, but just validated. Only applies when METADATA_DEPLOYMENT is set to "true".'
+    DRY_RUN:
+        value: 'true'
+        description: 'If true, changes are not actually deployed, but just validated.'
 
-    testlevel:
-        value: 'RunLocalTests'
-        description: 'Possible values are: NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is RunSpecifiedTests.'
+    TEST_LEVEL:
+        value: 'Default'
+        description: 'Specifies which level of deployment tests to run. NoTestRun cannot be used in production organizations. Similarly, if the deployment is just a validation, even if successful, it cannot be used in a quick deploy if it did not really run any test. Valid values are: NoTestRun, RunSpecifiedTests, RunLocalTests, RunAllTestsInOrg, Default.'
 
-    runtests:
+    TESTS:
         value: ''
-        description: 'Lists the Apex classes containing the deployment tests to run. Use this parameter when testlevel is RunSpecifiedTests. Only applies when METADATA_DEPLOYMENT is set to "true". Default value is based on autoidentified test classes.'
+        description: 'Lists of the Apex classes containing the deployment tests to run. Use this parameter when you set TEST_LEVEL to RunSpecifiedTests. Default value is based on auto-identified test classes.'
+
+    PACKAGE_VERSION_ID:
+        value: ''
+        description: 'The Id of the package version to install. Starts by 04t.'
+
+    INSTALLATION_KEY:
+        value: ''
+        description: 'The installation key of the package version to install, if needed.'
 
 stages:
     - dispatch-child-pipeline
-    # Moved here from validate.yml to work with included yml rather than dispatched child pipeline
+    # Note: moved here from validate-merge-request.yml to work with included yml rather than dispatched child pipeline
     - generate-code_quality-report
-    - local-validations
-    - org-validations
-    - show-results
-    - identify-non-test-classes
-    - verify-test-coverage
+    - generate-deltas
+    - validate-merge-request
+    - validate-test-coverage
 
-.any-changes:
-    - force-app/**/main/**/*
-    - force-app/**/test/classes/**/*
+.sfdx-changes:
+    - force-app/**/*
 
-.dest-envs:
-    - CICD
+.target-orgs:
+    - INT
     # - QA
     # TODO: add lower environments
 
@@ -49,13 +54,14 @@ validate-merge-request:
     stage: dispatch-child-pipeline
     rules:
         - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/)
+          changes: !reference [.sfdx-changes]
     script:
         - echo 'Starting MR validation with includes...'
 
-# Include is used with yml rather than dispatching child pipeline so that Unit test report are visible in parent pipeline
+# Note: include is used with yml rather than dispatching child pipeline so that unit tests reports are visible in parent pipeline
 # until this is solved: https://gitlab.com/gitlab-org/gitlab/-/issues/212894
 include:
-    - local: '.gitlab/pipelines/validate.yml'
+    - local: '.gitlab/pipelines/validate-merge-request.yml'
       rules:
           - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/)
 
@@ -65,9 +71,9 @@ deploy-QA-and-lower-environments:
         - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
           when: never
         - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-          changes: !reference [.any-changes]
+          changes: !reference [.sfdx-changes]
     variables:
-        DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
+        TARGET_ORG: $TARGET_ORG
     trigger:
         include:
             '.gitlab/pipelines/deploy.yml'
@@ -78,7 +84,7 @@ deploy-QA-and-lower-environments:
         strategy: depend
     parallel:
         matrix:
-            - DESTINATION_ENVIRONMENT: !reference [.dest-envs]
+            - TARGET_ORG: !reference [.target-orgs]
 
 deploy-UAT:
     stage: dispatch-child-pipeline
@@ -86,9 +92,9 @@ deploy-UAT:
         - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
           when: never
         - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^rc/
-          changes: !reference [.any-changes]
+          changes: !reference [.sfdx-changes]
     variables:
-        DESTINATION_ENVIRONMENT: UAT
+        TARGET_ORG: UAT
     trigger:
         include:
             '.gitlab/pipelines/deploy.yml'
@@ -98,37 +104,17 @@ deploy-UAT:
             # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/deploy.yml'
         strategy: depend
 
-create-frameworks-package-version:
-    stage: dispatch-child-pipeline
-    rules:
-        - if: $CREATE_PACKAGE_VERSION_DISABLED
-          when: never
-        - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
-          when: never
-        - if: $DEPLOY && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-          changes:
-              - frameworks/**/*
-    trigger:
-        include:
-            '.gitlab/pipelines/create-frameworks-package-version.yml'
-            # - project: 'jdkgabri/nakama-project-scaffolding'
-            #   ref: 'main'
-            #   file: '.gitlab/pipelines/create-frameworks-package-version.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/create-frameworks-package-version.yml'
-        strategy: depend
-
 manual-deployment:
     stage: dispatch-child-pipeline
     rules:
-        - if: $DESTINATION_ENVIRONMENT && $DESTINATION_ENVIRONMENT != "" && $METADATA_DEPLOYMENT == "true"
+        - if: $CI_PIPELINE_SOURCE == "web" && $TARGET_ORG && $TARGET_ORG != ""
     # Note: ths is not supposed to be needed since as per documentation it should be the default behaviour, however it is a non working issue: https://gitlab.com/gitlab-org/gitlab/-/issues/322772
     variables:
-        DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
-        # AUTOMATIC_DELTAS_FROM: $AUTOMATIC_DELTAS_FROM
-        METADATA_DEPLOYMENT: $METADATA_DEPLOYMENT
-        checkonly: $checkonly
-        testlevel: $testlevel
-        runtests: $runtests
+        TARGET_ORG: $TARGET_ORG
+        USE_MOST_RECENT: $USE_MOST_RECENT
+        DRY_RUN: $DRY_RUN
+        TEST_LEVEL: $TEST_LEVEL
+        TESTS: $TESTS
     trigger:
         include:
             '.gitlab/pipelines/manual-deployment.yml'
@@ -138,20 +124,43 @@ manual-deployment:
             # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/manual-deployment.yml'
         strategy: depend
 
-scheduled-tests:
+install-package:
     stage: dispatch-child-pipeline
     rules:
-        - if: $DAILY_VALIDATION_DEPLOYMENT_DISABLED && $DAILY_RUN_LOCAL_TESTS_DISABLED
-          when: never
-          # Note: this second checks, not others as exists or null, works when variable is not even declared, so we check as well in each pipeline job individually
-        - if: $CI_PIPELINE_SOURCE == "schedule" && $DESTINATION_ENVIRONMENT != ""
+        - if: $CI_PIPELINE_SOURCE == "web" && $PACKAGE_VERSION_ID && $PACKAGE_VERSION_ID != ""
     variables:
-        DESTINATION_ENVIRONMENT: $DESTINATION_ENVIRONMENT
+        TARGET_ORG: $TARGET_ORG
+        PACKAGE_VERSION_ID: $PACKAGE_VERSION_ID
+        INSTALLATION_KEY: $INSTALLATION_KEY
     trigger:
         include:
-            '.gitlab/pipelines/scheduled-tests.yml'
+            '.gitlab/pipelines/install-package.yml'
             # - project: 'jdkgabri/nakama-project-scaffolding'
             #   ref: 'main'
-            #   file: '.gitlab/pipelines/scheduled-tests.yml'
-            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/scheduled-tests.yml'
+            #   file: '.gitlab/pipelines/install-package.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/install-package.yml'
         strategy: depend
+    parallel:
+        matrix:
+            - TARGET_ORG: !reference [.target-orgs]
+
+run-apex-tests:
+    stage: dispatch-child-pipeline
+    rules:
+        - if: $RUN_APEX_TESTS_DISABLED
+          when: never
+          # Note: this second checks, not others as exists or null, works when variable is not even declared, so we check as well in each pipeline job individually
+        - if: $CI_PIPELINE_SOURCE == "schedule" && $TARGET_ORG != ""
+    variables:
+        TARGET_ORG: $TARGET_ORG
+    trigger:
+        include:
+            '.gitlab/pipelines/run-apex-tests.yml'
+            # - project: 'jdkgabri/nakama-project-scaffolding'
+            #   ref: 'main'
+            #   file: '.gitlab/pipelines/run-apex-tests.yml'
+            # - remote: 'https://raw.githubusercontent.com/Nakama-Partnering-Services/nakama-project-scaffolding/main/.gitlab/pipelines/run-apex-tests.yml'
+        strategy: depend
+    parallel:
+        matrix:
+            - TARGET_ORG: !reference [.target-orgs]

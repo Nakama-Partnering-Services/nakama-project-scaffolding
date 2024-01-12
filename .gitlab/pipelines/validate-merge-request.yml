@@ -1,0 +1,135 @@
+default:
+    image: nakamapartneringservices/nakama-pipelines
+
+include:
+    - template: Code-Quality.gitlab-ci.yml
+
+code_quality:
+    stage: generate-code_quality-report
+    rules:
+        - if: $CODE_QUALITY_DISABLED
+          when: never
+        - when: always
+
+generate-deltas:
+    stage: generate-deltas
+    rules:
+        - changes: !reference [.sfdx-changes]
+    script:
+        - sf nakama generate deltas
+    artifacts:
+        when: always
+        paths:
+            - deltas
+
+validate-jest:
+    stage: validate-merge-request
+    rules:
+        - changes:
+              - force-app/**/lwc/**/*.js
+    script:
+        - sf nakama validate jest
+
+validate-prettier:
+    stage: validate-merge-request
+    rules:
+        - if: $VALIDATE_PRETTIER_DISABLED
+          when: never
+        - when: always
+    script:
+        - sf nakama validate prettier
+
+validate-eslint:
+    stage: validate-merge-request
+    rules:
+        - if: $VALIDATE_ESLINT_DISABLED
+          when: never
+        - changes:
+              - force-app/**/lwc/**/*.js
+              - force-app/**/aura/**/*.js
+    script:
+        - sf nakama validate eslint
+
+validate-pmd:
+    stage: validate-merge-request
+    rules:
+        - if: $VALIDATE_PMD_DISABLED
+          when: never
+        - changes:
+              - force-app/**/classes/**/*.cls
+              - force-app/**/triggers/**/*.trigger
+    script:
+        - sf nakama validate pmd
+
+validate-flows:
+    stage: validate-merge-request
+    rules:
+        - if: $VALIDATE_FLOWS_DISABLED
+          when: never
+        - changes:
+              - force-app/**/flows/**/*.flow-meta.xml
+              - force-app/**/workflows/**/*.workflow-meta.xml
+    script:
+        - sf nakama validate flows
+
+validate-deployment:
+    stage: validate-merge-request
+    rules:
+        - if: $VALIDATE_DEPLOYMENT_DISABLED
+          when: never
+        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
+          changes: !reference [.sfdx-changes]
+          variables:
+              TARGET_ENVIRONMENT: 'INT'
+        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/
+          changes: !reference [.sfdx-changes]
+          variables:
+              TARGET_ENVIRONMENT: 'UAT'
+        - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/
+          changes: !reference [.sfdx-changes]
+          variables:
+              TARGET_ENVIRONMENT: 'PRODUCTION'
+    # Note: TARGET_ORG is renamed to TARGET_ENVIRONMENT so it does not conflict with variable declared in .gitlab-ci.yml
+    environment: $TARGET_ENVIRONMENT
+    resource_group: $TARGET_ENVIRONMENT
+    script:
+        - PULL_REQUEST_BODY=$(curl --request GET --header "PRIVATE-TOKEN:$PIPELINE_ACCESS_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID" | jq '.description')
+        - TESTS_SPECIFICATION=$(awk -F 'Tests:' '{print $2}' <<< "$PULL_REQUEST_BODY" | tr -d '"')
+        - |
+            if [ -z "$TESTS_SPECIFICATION" ]; then
+                TESTS_SPECIFICATION=$(sf nakama decide test level)
+                echo "TEST LEVEL: $TESTS_SPECIFICATION"
+            fi
+            TESTS_SPECIFICATION_ARRAY=($TESTS_SPECIFICATION)
+            TEST_LEVEL=${TESTS_SPECIFICATION_ARRAY[0]}
+            TESTS=${TESTS_SPECIFICATION_ARRAY[1]}
+            if [ -n "$TESTS" ]; then
+                TESTS_FLAG+="-t $TESTS"
+            fi
+        - source .env.replacements
+          # Note: used mainly for detection of environment replacements.
+        - export TARGET_ORG=$TARGET_ENVIRONMENT
+        - sf nakama deploy deltas -o $TARGET_ORG --dry-run true -l $TEST_LEVEL $TESTS_FLAG
+    artifacts:
+        when: always
+        paths:
+            - results.json
+            - test-results
+        reports:
+            # Note: # test report works, but only displayed in child dispatched pipeline, so no sumarry in MR overview appears. This is the reason for validate-merge-request.yml being the only yml directly included in .gitlab-ci.yml instead of triggered and dispatched as a child.
+            junit: test-results/junit/junit.xml
+            coverage_report:
+                coverage_format: cobertura
+                path: test-results/coverage/cobertura.xml
+    # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
+    # coverage: /name="testRunCoverage" value="([\d]+%)"/ not working since the --codecoverage flag can not be specified
+    # and hence the testRunCoverage does not appear even if we print the junit.xml file in the job log.
+
+validate-test-coverage:
+    stage: validate-test-coverage
+    rules:
+        - if: $VALIDATE_DEPLOYMENT_DISABLED
+          when: never
+        - changes: !reference [.sfdx-changes]
+    script:
+        - sf nakama validate coverage

@@ -2,20 +2,25 @@ default:
     image: nakamapartneringservices/nakama-pipelines
 
 stages:
-    - manual-metadata-deployment
+    - manual-deployment
 
-manual-metadata-delta-deployment:
-    stage: manual-metadata-deployment
-    rules:
-        - if: $METADATA_DEPLOYMENT == "true"
-    environment: $DESTINATION_ENVIRONMENT
-    resource_group: $DESTINATION_ENVIRONMENT
+manual-deployment:
+    stage: manual-deployment
+    environment: $TARGET_ORG
+    resource_group: $TARGET_ORG
     script:
-        - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA})
-        - source .env.replacements
-        - bash /deploy.sh $DESTINATION_ENVIRONMENT $LAST_DEPLOYMENT_COMMIT_SHA $checkonly $testlevel $runtests
         - |
-            if [ "$checkonly" != "true" ]; then
-                curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-                  "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+            if [ -n "$USE_MOST_RECENT" ]; then
+                USE_MOST_RECENT_FLAG+="-r $USE_MOST_RECENT"
             fi
+            if [ -n "$DRY_RUN" ]; then
+                DRY_RUN_FLAG+="--dry-run $DRY_RUN"
+            fi
+            if [ -n "$TEST_LEVEL" ]; then
+                TEST_LEVEL_FLAG+="-l $TEST_LEVEL"
+            fi
+            if [ -n "$TESTS" ]; then
+                TESTS_FLAG+="-t $TESTS"
+            fi
+        - source .env.replacements
+        - sf nakama deploy deltas -o $TARGET_ORG $USE_MOST_RECENT_FLAG $DRY_RUN_FLAG $TEST_LEVEL_FLAG $TESTS_FLAG

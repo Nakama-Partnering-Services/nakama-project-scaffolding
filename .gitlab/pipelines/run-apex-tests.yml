@@ -1,0 +1,26 @@
+default:
+    image: nakamapartneringservices/nakama-pipelines
+
+stages:
+    - run-apex-tests
+
+run-apex-tests:
+    stage: run-apex-tests
+    rules:
+        - if: $RUN_APEX_TESTS_DISABLED
+          when: never
+        - if: $TARGET_ORG != ""
+    environment: $TARGET_ORG
+    resource_group: $TARGET_ORG
+    script:
+        - sf nakama validate tests
+    artifacts:
+        when: always
+        paths:
+            - test-results/
+        reports:
+            junit: test-results/junit/junit.xml
+    # Also configurable in: project > Settings > CI/CD > Expand General pipelines, however that is deprecated
+    # coverage: /name="testRunCoverage" value="([\d]+%)"/ not working since the --codecoverage flag can not be specified
+    # and hence the testRunCoverage does not appear even if we print the junit.xml file in the job log.
+    # In order for that to work, we would need to use sf apex run test command, but it works unintentionally with unlocked packages.

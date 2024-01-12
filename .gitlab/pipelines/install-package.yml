@@ -1,0 +1,19 @@
+default:
+    image: nakamapartneringservices/nakama-pipelines
+
+.sfdx-changes:
+    - force-app/**/*
+
+stages:
+    - install-package
+
+install-package:
+    stage: install-package
+    environment: $TARGET_ORG
+    resource_group: $TARGET_ORG
+    script:
+        - |
+            if [ -n "$INSTALLATION_KEY" ]; then
+                INSTALLATION_KEY_FLAG="--installation-key $INSTALLATION_KEY"
+            fi
+        - sf nakama install package -o $TARGET_ORG -p $PACKAGE_VERSION_ID $INSTALLATION_KEY_FLAG

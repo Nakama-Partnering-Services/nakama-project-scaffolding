@@ -2,23 +2,18 @@ default:
     image: nakamapartneringservices/nakama-pipelines
 
 .sfdx-changes:
-    - force-app/**/main/**/*
-    - force-app/**/test/classes/**/*
+    - force-app/**/*
 
 stages:
-    - deploy-deltas
+    - deploy
 
-deploy-deltas:
-    stage: deploy-deltas
+deploy:
+    stage: deploy
     rules:
-        - if: $DESTINATION_ENVIRONMENT
+        - if: $TARGET_ORG
           changes: !reference [.sfdx-changes]
-    environment: $DESTINATION_ENVIRONMENT
-    resource_group: $DESTINATION_ENVIRONMENT
+    environment: $TARGET_ORG
+    resource_group: $TARGET_ORG
     script:
-        - LAST_DEPLOYMENT_COMMIT_SHA=$(eval echo \${${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA})
         - source .env.replacements
-        - bash /deploy.sh $DESTINATION_ENVIRONMENT $LAST_DEPLOYMENT_COMMIT_SHA false NoTestRun
-        - |
-            curl --request PUT --header "PRIVATE-TOKEN: $PIPELINE_ACCESS_TOKEN" \
-              "$CI_API_V4_URL/projects/$CI_PROJECT_ID/variables/${DESTINATION_ENVIRONMENT}_LAST_DEPLOYMENT_COMMIT_SHA" --form "value=$CI_COMMIT_SHA"
+        - sf nakama deploy deltas -o $TARGET_ORG -l NoTestRun
