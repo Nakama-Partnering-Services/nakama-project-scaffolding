@@ -247,6 +247,7 @@ jobs:
                   fail-on-empty: false
 
             - name: 'Code coverage report'
+              continue-on-error: true
               uses: irongut/CodeCoverageSummary@v1.3.0
               with:
                   filename: test-results/coverage/cobertura.xml
@@ -257,6 +258,7 @@ jobs:
                   thresholds: '75 90'
 
             - name: 'Add coverage PR comment'
+              continue-on-error: true
               uses: marocchino/sticky-pull-request-comment@v2
               with:
                   recreate: true
