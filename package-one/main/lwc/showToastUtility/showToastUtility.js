@@ -1,5 +1,5 @@
 /**
- * A toast notifications handler
+ * A toast notifications handler.
  */
 
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';

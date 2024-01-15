@@ -1,3 +1,4 @@
+# TODO: centraize manual-deployment, validate-deployment and deploy-on-push here.
 default:
     image: nakamapartneringservices/nakama-pipelines
 
