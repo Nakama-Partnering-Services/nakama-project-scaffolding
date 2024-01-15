@@ -79,6 +79,10 @@ stages:
     - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
           - template: .azure/templates/validate-pull-request.yml
 
+    # Note: the following 2 deployment jobs are separated because the value of the TARGET_ORG matrix variable is not set dynamically.
+
+    # TODO: improve the followin 2 deployment jobs reusability with expressions.
+
     - stage: qa_deployment
       displayName: 'Deployment until QA and lower environments'
       condition: and(

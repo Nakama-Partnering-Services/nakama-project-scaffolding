@@ -238,6 +238,8 @@ jobs:
                   name: deployment-results
                   path: results.json
 
+            # Note: the following steps regarding tests and coverage only makes sense in the pull request context, but not in manual deployment context.
+
             # Note: GitHub has an issue where checks can be placed under the wrong workflow: https://github.com/ScaCap/action-surefire-report/issues/39
             - uses: dorny/test-reporter@v1
               with:

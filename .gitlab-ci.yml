@@ -65,6 +65,8 @@ include:
       rules:
           - if: $VALIDATE_MERGE_REQUEST && $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^rc/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^patch/)
 
+# Note: the following 2 deployment jobs are separated because the value of the TARGET_ORG variable in the matrx is not set dynamically.
+
 deploy-QA-and-lower-environments:
     stage: dispatch-child-pipeline
     rules:
