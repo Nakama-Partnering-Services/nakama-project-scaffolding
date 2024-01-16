@@ -73,126 +73,26 @@ parameters:
 
 # Note: in order to use a private docker image, follow these instructions and add Service Connection name to container.endpoint property: https://stackoverflow.com/questions/66429863/how-to-push-an-image-to-docker-hub-in-azure-pipelines
 stages:
-    - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
-          - template: .azure/templates/run-apex-tests.yml
-
     - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
           - template: .azure/templates/validate-pull-request.yml
 
-    # Note: the following 2 deployment jobs are separated because the value of the TARGET_ORG matrix variable is not set dynamically.
+    - ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
+          - template: .azure/templates/deploy-on-push.yml
 
-    # TODO: improve the followin 2 deployment jobs reusability with expressions.
+    - ${{ if and(eq(variables['Build.Reason'], 'Manual'), eq(parameters.PACKAGE_VERSION_ID, 'false'), or(startsWith( variables['Build.SourceBranch'], 'refs/heads/rc'), startsWith(variables['Build.SourceBranch'], 'refs/heads/patch'))) }}:
+          - template: .azure/templates/manual-deployment.yml
+            parameters:
+                TARGET_ORG: ${{ parameters.TARGET_ORG }}
+                USE_MOST_RECENT: ${{ parameters.USE_MOST_RECENT }}
+                DRY_RUN: ${{ parameters.DRY_RUN }}
+                TEST_LEVEL: ${{ parameters.TEST_LEVEL }}
+                TESTS: ${{ parameters.TESTS }}
 
-    - stage: qa_deployment
-      displayName: 'Deployment until QA and lower environments'
-      condition: and(
-          eq(variables['Build.Reason'], 'IndividualCI'),
-          startsWith( variables['Build.SourceBranch'], 'refs/heads/main' )
-          )
-      jobs:
-          - job: 'Deploy'
-            strategy:
-                matrix:
-                    INT:
-                        TARGET_ORG: 'INT'
-                    # QA:
-                    #   ENVIRONMENT: 'QA'
-                    # TODO: add lower environments
-            container:
-                image: nakamapartneringservices/nakama-pipelines
-                endpoint: DockerHubNakama
-            steps:
-                - template: .azure/templates/deploy.yml
-                  parameters:
-                      # Note: need parenthesis around in order for the matrix variable to be expanded properly as a parameter in the displayName.
-                      TARGET_ORG: $(TARGET_ORG)
-                      USE_MOST_RECENT: false
-                      DRY_RUN: false
-                      TEST_LEVEL: 'NoTestRun'
-                      TESTS: ''
+    - ${{ if and(eq(variables['Build.Reason'], 'Manual'), ne(parameters.PACKAGE_VERSION_ID, 'false')) }}:
+          - template: .azure/templates/install-package.yml
+            parameters:
+                PACKAGE_VERSION_ID: ${{ parameters.PACKAGE_VERSION_ID }}
+                INSTALLATION_KEY: ${{ parameters.INSTALLATION_KEY }}
 
-    - stage: uat_deployment
-      displayName: 'Deployment to UAT'
-      condition: and(
-          eq(variables['Build.Reason'], 'IndividualCI'),
-          startsWith( variables['Build.SourceBranch'], 'refs/heads/rc' )
-          )
-      jobs:
-          - deployment: 'Deploy_UAT'
-            displayName: 'Deploy UAT'
-            container:
-                image: nakamapartneringservices/nakama-pipelines
-                endpoint: DockerHubNakama
-            environment: UAT
-            strategy:
-                runOnce:
-                    deploy:
-                        steps:
-                            - template: .azure/templates/deploy.yml
-                              parameters:
-                                  # Note: need parenthesis around in order for the matrix variable to be expanded properly as a parameter in the displayName.
-                                  TARGET_ORG: $(TARGET_ORG)
-                                  USE_MOST_RECENT: false
-                                  DRY_RUN: false
-                                  TEST_LEVEL: 'NoTestRun'
-                                  TESTS: ''
-
-    - stage: manual_deployment
-      displayName: 'Manual deployment'
-      condition: ${{ and(
-          eq(variables['Build.Reason'], 'Manual'),
-          eq(parameters.PACKAGE_VERSION_ID, 'false'),
-          or(
-          startsWith( variables['Build.SourceBranch'], 'refs/heads/rc' ),
-          startsWith( variables['Build.SourceBranch'], 'refs/heads/patch' )
-          )) }}
-      jobs:
-          # Note: the deployment requires the environment to be created in Azure DevOps, and that requires some permissions that do not have.
-          # - deployment: manual_deployment
-          #   environment: ${{ parameters.TARGET_ORG }}
-          - job: 'Manual_deployment'
-            displayName: 'Deploy to ${{ parameters.TARGET_ORG }}'
-            container:
-                image: nakamapartneringservices/nakama-pipelines
-                endpoint: DockerHubNakama
-            # strategy:
-            #     runOnce:
-            #         deploy:
-            steps:
-                - template: .azure/templates/deploy.yml
-                  parameters:
-                      TARGET_ORG: ${{ parameters.TARGET_ORG }}
-                      USE_MOST_RECENT: ${{ parameters.USE_MOST_RECENT }}
-                      DRY_RUN: ${{ parameters.DRY_RUN }}
-                      TEST_LEVEL: ${{ parameters.TEST_LEVEL }}
-                      TESTS: ${{ parameters.TESTS }}
-
-    - stage: install_package_in_all_orgs
-      displayName: 'Install package in all orgs'
-      condition: ${{ and(
-          eq(variables['Build.Reason'], 'Manual'),
-          ne(parameters.PACKAGE_VERSION_ID, 'false')
-          ) }}
-      jobs:
-          - job: 'Install_package_in_all_orgs'
-            displayName: 'Install package in all orgs'
-            strategy:
-                matrix:
-                    INT:
-                        TARGET_ORG: 'INT'
-                    # QA:
-                    #   ENVIRONMENT: 'QA'
-                    # UAT:
-                    #     TARGET_ORG: 'UAT'
-                    # PRODUCTION:
-                    #     TARGET_ORG: 'PRODUCTION'
-                    # TODO: add all environments
-            container:
-                image: nakamapartneringservices/nakama-pipelines
-                endpoint: DockerHubNakama
-            steps:
-                - template: .azure/templates/install-package.yml
-                  parameters:
-                      TARGET_ORG: $(TARGET_ORG)
-                      PACKAGE_VERSION_ID: ${{ parameters.PACKAGE_VERSION_ID }}
-                      INSTALLATION_KEY: ${{ parameters.INSTALLATION_KEY }}
+    - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+          - template: .azure/templates/run-apex-tests.yml

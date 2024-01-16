@@ -8,7 +8,7 @@ clone:
 
 pipelines:
     pull-requests:
-        '**': # Note: only work for source branches, not target branches, so we are scoping all branches
+        '**': # Note: only work for source branches, not target branches, so we are scoping all branches.
             - step:
                   name: 'Generate deltas'
                   script:
@@ -19,6 +19,7 @@ pipelines:
                               - 'force-app/**'
                   artifacts:
                       - deltas/**
+
             - parallel:
                   - step:
                         name: 'Validate Jest'
@@ -29,11 +30,13 @@ pipelines:
                                 includePaths:
                                     - '**/aura/**'
                                     - '**/lwc/**'
+
                   - step:
                         name: 'Validate Prettier'
                         script:
                             # TODO: troubleshoot lack of consistency in apex with multi-line string messages
                             - sf nakama validate prettier || true
+
                   - step:
                         name: 'Validate ESLint'
                         script:
@@ -43,10 +46,12 @@ pipelines:
                                 includePaths:
                                     - '**/aura/**'
                                     - '**/lwc/**'
+
                   - step:
                         name: 'Validate PMD'
                         script:
                             - sf nakama validate pmd || true
+
                   - step:
                         name: 'Validate deployment'
                         script:
@@ -69,6 +74,7 @@ pipelines:
                             - sf nakama deploy deltas -o $TARGET_ORG --dry-run true -l $TEST_LEVEL $TESTS_FLAG
                         artifacts:
                             - results.json
+
             - step:
                   name: 'Validate coverage'
                   script:
@@ -104,27 +110,6 @@ pipelines:
                           includePaths:
                               - 'force-app/**'
     custom:
-        install-package:
-            - variables:
-                  - name: PACKAGE_VERSION_ID
-                    default: '04t...'
-                  - name: INSTALLATION_KEY
-            - parallel:
-                  - step:
-                        name: 'Install package'
-                        script:
-                            - |
-                                if [ -n "$INSTALLATION_KEY" ]; then
-                                    INSTALLATION_KEY_FLAG+="--installation-key $INSTALLATION_KEY"
-                                fi
-                            - sf nakama install package -o INT -p $PACKAGE_VERSION_ID $INSTALLATION_KEY_FLAG
-        run-apex-tests:
-            - parallel:
-                  - step:
-                        name: 'Validate deployment executing local tests'
-                        script:
-                            - sf nakama validate tests -o INT
-                  # TODO: add QA, UAT, PRODUCTION and HOTFIX environments
         manual-deployment:
             - variables:
                   - name: TARGET_ORG
@@ -150,6 +135,7 @@ pipelines:
                         - 'Default'
                     default: 'Default'
                   - name: TESTS
+
             - step:
                   name: 'Deploy $TARGET_ORG'
                   deployment: $TARGET_ORG
@@ -162,3 +148,26 @@ pipelines:
                               TESTS_FLAG+="-t $TESTS"
                           fi
                       - sf nakama deploy deltas -o $TARGET_ORG -r $USE_MOST_RECENT --dry-run $DRY_RUN -l $TEST_LEVEL $TESTS_FLAG
+
+        install-package:
+            - variables:
+                  - name: PACKAGE_VERSION_ID
+                    default: '04t...'
+                  - name: INSTALLATION_KEY
+            - parallel:
+                  - step:
+                        name: 'Install package'
+                        script:
+                            - |
+                                if [ -n "$INSTALLATION_KEY" ]; then
+                                    INSTALLATION_KEY_FLAG+="--installation-key $INSTALLATION_KEY"
+                                fi
+                            - sf nakama install package -o INT -p $PACKAGE_VERSION_ID $INSTALLATION_KEY_FLAG
+
+        run-apex-tests:
+            - parallel:
+                  - step:
+                        name: 'Validate deployment executing local tests'
+                        script:
+                            - sf nakama validate tests -o INT
+                  # TODO: add QA, UAT, PRODUCTION and HOTFIX environments
