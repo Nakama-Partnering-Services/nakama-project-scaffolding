@@ -14,7 +14,7 @@ const validateBranchName = async () => {
 
 	if (!isInRemote) {
 		const validReleaseBranchPrefix = 'rc|patch';
-		const validReleaseBranchesRegex = new RegExp(`^(${validReleaseBranchPrefix})/\\d\\.\\d\\.\\d`);
+		const validReleaseBranchesRegex = new RegExp(`^(${validReleaseBranchPrefix})/\\d+\\.\\d+\\.\\d+`);
 
 		const validDevelopmentBranchPrefix = 'feature|bugfix|hotfix|chore|backup|comparison';
 		const userStoryPrefix = '[\\w]+';
