@@ -62,6 +62,10 @@ jobs:
                   DRY_RUN: 'false'
                   TEST_LEVEL: 'Default'
 
+            - name: 'Cancel deployment'
+              if: cancelled()
+              run: sf project deploy cancel --use-most-recent
+
     update-jira-issues:
         name: 'Update Jira issues'
         needs: [get-target-orgs, deploy]

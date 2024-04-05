@@ -233,6 +233,10 @@ jobs:
                   TEST_LEVEL: ${{ needs.get-deployment-tests-specifications.outputs.TEST_LEVEL }}
                   TESTS: ${{ needs.get-deployment-tests-specifications.outputs.TESTS }}
 
+            - name: 'Cancel deployment'
+              if: cancelled()
+              run: sf project deploy cancel --use-most-recent
+
             - uses: actions/upload-artifact@v3
               with:
                   name: deployment-results
