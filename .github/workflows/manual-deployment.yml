@@ -75,6 +75,10 @@ jobs:
                   TEST_LEVEL: ${{ inputs.TEST_LEVEL }}
                   TESTS: ${{ inputs.TESTS }}
 
+            - name: 'Cancel deployment'
+              if: cancelled()
+              run: sf project deploy cancel --use-most-recent
+
     update-jira-issues:
         name: 'Update Jira issues'
         needs: [deploy]
