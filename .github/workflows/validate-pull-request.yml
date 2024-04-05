@@ -216,7 +216,7 @@ jobs:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
         concurrency:
-            group: ${{ needs.get-deployment-target-org.outputs.TARGET_ORG }}-${{ github.ref }}
+            group: ${{ github.workflow }}-${{ needs.get-deployment-target-org.outputs.TARGET_ORG }}-${{ github.ref }}
             cancel-in-progress: true
         env:
             SFDX_AUTH_URL: ${{ needs.get-deployment-target-org.outputs.TARGET_ORG }}_SFDX_AUTH_URL

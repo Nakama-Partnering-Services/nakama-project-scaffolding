@@ -46,7 +46,7 @@ jobs:
                 TARGET_ORG: ${{ fromJSON(needs.get-target-orgs.outputs.TARGET_ORGS) }}
         environment: ${{ matrix.TARGET_ORG }}
         concurrency:
-            group: ${{ matrix.TARGET_ORG }}-${{ github.ref }}
+            group: ${{ github.workflow }}-${{ matrix.TARGET_ORG }}-${{ github.ref }}
             cancel-in-progress: true
         env:
             SFDX_AUTH_URL: ${{ matrix.TARGET_ORG }}_SFDX_AUTH_URL
