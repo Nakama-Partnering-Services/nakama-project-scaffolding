@@ -24,7 +24,7 @@ pipelines:
                   - step:
                         name: 'Validate Jest'
                         script:
-                            - sf nakama validate eslint || true
+                            - sf nakama validate eslint
                         condition:
                             changesets:
                                 includePaths:
@@ -35,12 +35,12 @@ pipelines:
                         name: 'Validate Prettier'
                         script:
                             # TODO: troubleshoot lack of consistency in apex with multi-line string messages
-                            - sf nakama validate prettier || true
+                            - sf nakama validate prettier
 
                   - step:
                         name: 'Validate ESLint'
                         script:
-                            - sf nakama validate eslint || true
+                            - sf nakama validate eslint
                         condition:
                             changesets:
                                 includePaths:
@@ -50,7 +50,7 @@ pipelines:
                   - step:
                         name: 'Validate PMD'
                         script:
-                            - sf nakama validate pmd || true
+                            - sf nakama validate pmd
 
                   - step:
                         name: 'Validate deployment'
@@ -78,7 +78,7 @@ pipelines:
             - step:
                   name: 'Validate coverage'
                   script:
-                      - sf nakama validate coverage -r 75 || true
+                      - sf nakama validate coverage -r 75
     branches:
         main:
             - parallel:
