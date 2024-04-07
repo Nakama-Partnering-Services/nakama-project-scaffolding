@@ -26,3 +26,7 @@ jobs:
               env:
                   ${{ matrix.TARGET_ORG }}_SFDX_AUTH_URL: ${{ secrets[format('{0}_SFDX_AUTH_URL', matrix.TARGET_ORG)] }}
               run: sf nakama validate tests -o ${{ matrix.TARGET_ORG }}
+
+            - name: 'Cancel deployment'
+              if: cancelled()
+              run: sf project deploy cancel --use-most-recent
