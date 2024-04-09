@@ -106,16 +106,6 @@ jobs:
                   # Note: not persisting credentials since it overrides the GitHub App token used to push changes and trigger workflows.
                   persist-credentials: false
 
-            - name: 'Release to CCV'
-              uses: cat-home-experts/go-releaser@main
-              with:
-                  token: ${{ secrets.CI_CCV_TOKEN }}
-                  branch: ${{ github.ref_name }}
-                  environment: prod
-                  service: salesforce
-                  revision: ${{ github.sha }}
-                  repository_url: ${{ github.server_url }}/${{ github.repository }}
-
             # Note: GitHub App Token is required to push changes from a GitHub Action and trigger workflows.
             # Note: https://github.com/peter-evans/create-pull-request/issues/48#issuecomment-1712040977
             - uses: tibdex/github-app-token@v1

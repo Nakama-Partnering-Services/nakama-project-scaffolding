@@ -42,7 +42,7 @@ jobs:
               with:
                   name: ${{ env.LAST_JIRA_COMMIT }}
                   value: ${{ github.sha }}
-                  repository: cat-home-experts/Salesforce
+                  repository: ${{ github.repository }}
                   token: ${{ secrets.PIPELINE_ACCESS_TOKEN }}
 
     get-transition-for-jira-issues:
