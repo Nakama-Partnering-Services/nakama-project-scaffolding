@@ -28,6 +28,7 @@ validate-jest:
         - changes:
               - force-app/**/lwc/**/*.js
     script:
+        # Note: this commands needs Settings > CI/CD > General pipelines > Git shallow clone to be 0.
         - sf nakama validate jest
 
 validate-prettier:
@@ -93,8 +94,7 @@ validate-deployment:
     environment: $TARGET_ENVIRONMENT
     resource_group: $TARGET_ENVIRONMENT
     script:
-        - PULL_REQUEST_BODY=$(curl --request GET --header "PRIVATE-TOKEN:$PIPELINE_ACCESS_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID" | jq '.description')
-        - TESTS_SPECIFICATION=$(awk -F 'Tests:' '{print $2}' <<< "$PULL_REQUEST_BODY" | tr -d '"')
+        - TESTS_SPECIFICATION=$(awk -F 'Tests:' '{print $2}' <<< "$CI_MERGE_REQUEST_DESCRIPTION" | tr -d '"')
         - |
             if [ -z "$TESTS_SPECIFICATION" ]; then
                 TESTS_SPECIFICATION=$(sf nakama decide test level)
