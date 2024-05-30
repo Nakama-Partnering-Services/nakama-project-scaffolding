@@ -7,7 +7,7 @@ commit_message=$(cat "$commit_message_file")
 current_branch=$(git symbolic-ref --short HEAD)
 
 # Extract the Jira ticket number from the branch name (assuming it follows the pattern "(feature|bugfix|hotfix|chore)/<project-key>-<ticket number>")
-ticket_number=$(echo "$current_branch" | sed -n -E 's/^(feature|bugfix|hotfix|chore)\/([A-Z]+-[0-9]+).*/\2/p')
+ticket_number=$(echo "$current_branch" | sed -n -E 's/^(feature|bugfix|hotfix|chore)\/([A-Z]+[0-9]*+-[0-9]+).*/\2/p')
 
 # Check if a Jira ticket number was found
 if [ -n "$ticket_number" ]; then
