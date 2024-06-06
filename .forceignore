@@ -12,23 +12,8 @@
 # environments-specific files
 environment-specific/**
 
-# README.md files
-README.md
-
 # DomainBuilder extra-tests
 frameworks/apex-domainbuilder/sfdx-source/extra-tests/**
 
 # Frameworks: remove if it is really meant to create a new frameworks package version
 frameworks/**
-
-# Consider ignoring default folders in order to force the team to move their newly retrieved metadata to the appropriate folders
-# **/default/**
-# The following lines are needed to prevent the Last deployment information from being ignored,
-# so that it can be detected when retrieved while updating the last deployment commit.
-!**/default/customMetadata/
-!**/default/customMetadata/nakama__DeploymentInformation.nakama__Last.md-meta.xml
-# The following lines are needed to prevent the Deployment Information object from being ignored,
-# so that it can be detected when retrieved while using 'sf nakama validate tests'.
-!**/default/objects/
-!**/default/objects/nakama__DeploymentInformation__mdt/
-!**/default/objects/nakama__DeploymentInformation__mdt/nakama__DeploymentInformation__mdt.object-meta.xml
