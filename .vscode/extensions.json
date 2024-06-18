@@ -10,7 +10,6 @@
 		"mhutchie.git-graph",
 		"eamodio.gitlens",
 		"pkief.material-icon-theme",
-		"usernamehw.errorlens",
-		"amatiasq.sort-imports"
+		"usernamehw.errorlens"
 	]
 }
