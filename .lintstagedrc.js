@@ -4,7 +4,7 @@ module.exports = {
 	'force-app/**/lwc/**': 'yarn test:unit:silent -- --passWithNoTests',
 	'force-app/**/*.{cls,trigger}': (filenames) => {
 		const files = filenames.join(',');
-		return `sf scanner run --pmdconfig config/pmd-ruleset.xml --target "${files}" --engine pmd --format table --severity-threshold 3`;
+		return `sf scanner run --pmdconfig config/pmd-ruleset.xml --target "${files}" --engine pmd --format table --severity-threshold 2`;
 	},
 	'force-app/**/*.flow-meta.xml': (filenames) => {
 		const files = filenames.join(',');
