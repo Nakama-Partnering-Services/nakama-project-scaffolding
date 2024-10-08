@@ -19,7 +19,7 @@ trigger:
             - rc/*
     paths:
         include:
-            - force-app/*
+            - core/*
 
 # Note: this is only supported for GitHub and Bitbucket Cloud, for Azure, it is needed to set up branch policies.
 # pr:
@@ -29,7 +29,7 @@ trigger:
 #             - rc/*
 #     paths:
 #         include:
-#             - force-app/*
+#             - core/*
 
 pool:
     vmImage: 'ubuntu-latest'

@@ -10,7 +10,7 @@
 	<exclude-pattern>.*dlrs_.*</exclude-pattern>
 
 	<!-- IGNORE EXTERNAL LIBS -->
-	<include-pattern>.*/force-app/.*</include-pattern>
+	<include-pattern>.*/core/.*</include-pattern>
 
 	<!-- STANDARD RULES -->
 

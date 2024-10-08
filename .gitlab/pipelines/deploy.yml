@@ -3,7 +3,7 @@ default:
     image: nakamapartneringservices/nakama-pipelines
 
 .sfdx-changes:
-    - force-app/**/*
+    - core/**/*
 
 stages:
     - deploy

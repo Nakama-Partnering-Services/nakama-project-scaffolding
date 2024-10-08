@@ -26,7 +26,7 @@ validate-jest:
     stage: validate-merge-request
     rules:
         - changes:
-              - force-app/**/lwc/**/*.js
+              - core/**/lwc/**/*.js
     script:
         # Note: this commands needs Settings > CI/CD > General pipelines > Git shallow clone to be 0.
         - sf nakama validate jest
@@ -46,8 +46,8 @@ validate-eslint:
         - if: $VALIDATE_ESLINT_DISABLED
           when: never
         - changes:
-              - force-app/**/lwc/**/*.js
-              - force-app/**/aura/**/*.js
+              - core/**/lwc/**/*.js
+              - core/**/aura/**/*.js
     script:
         - sf nakama validate eslint
 
@@ -57,8 +57,8 @@ validate-pmd:
         - if: $VALIDATE_PMD_DISABLED
           when: never
         - changes:
-              - force-app/**/classes/**/*.cls
-              - force-app/**/triggers/**/*.trigger
+              - core/**/classes/**/*.cls
+              - core/**/triggers/**/*.trigger
     script:
         - sf nakama validate pmd
 
@@ -68,8 +68,8 @@ validate-flows:
         - if: $VALIDATE_FLOWS_DISABLED
           when: never
         - changes:
-              - force-app/**/flows/**/*.flow-meta.xml
-              - force-app/**/workflows/**/*.workflow-meta.xml
+              - core/**/flows/**/*.flow-meta.xml
+              - core/**/workflows/**/*.workflow-meta.xml
     script:
         - sf nakama validate flows
 

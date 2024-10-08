@@ -16,7 +16,7 @@ pipelines:
                   condition:
                       changesets:
                           includePaths:
-                              - 'force-app/**'
+                              - 'core/**'
                   artifacts:
                       - deltas/**
 
@@ -93,7 +93,7 @@ pipelines:
                         condition:
                             changesets:
                                 includePaths:
-                                    - 'force-app/**'
+                                    - 'core/**'
                   # TODO: add QA and lower environments
 
         rc/*:
@@ -108,7 +108,7 @@ pipelines:
                   condition:
                       changesets:
                           includePaths:
-                              - 'force-app/**'
+                              - 'core/**'
     custom:
         manual-deployment:
             - variables:

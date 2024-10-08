@@ -3,10 +3,10 @@ on:
     push:
         branches:
             - main
-            # Note: workflow does not trigger when just pushing a new branch to remote if it does not contain new changes, so another commit with changes under force-app/** would be needed.
+            # Note: workflow does not trigger when just pushing a new branch to remote if it does not contain new changes, so another commit with changes under core/** would be needed.
             - rc/**
         paths:
-            - force-app/**
+            - core/**
 
 jobs:
     get-target-orgs:
