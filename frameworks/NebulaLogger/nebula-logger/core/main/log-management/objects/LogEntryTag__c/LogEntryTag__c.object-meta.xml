@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -149,9 +149,10 @@
     <allowInChatterGroups>true</allowInChatterGroups>
     <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
+    <description>Used by Nebula Logger as a junction object to represent a unique relationship between a LogEntry__c record and a LoggerTag__c record</description>
     <enableActivities>true</enableActivities>
     <enableBulkApi>true</enableBulkApi>
-    <enableFeeds>true</enableFeeds>
+    <enableFeeds>false</enableFeeds>
     <enableHistory>true</enableHistory>
     <enableLicensing>false</enableLicensing>
     <enableReports>true</enableReports>
@@ -163,7 +164,6 @@
     <nameField>
         <displayFormat>LET-{00000}</displayFormat>
         <label>Log Entry Tag Number</label>
-        <trackFeedHistory>true</trackFeedHistory>
         <trackHistory>false</trackHistory>
         <type>AutoNumber</type>
     </nameField>
@@ -181,6 +181,12 @@
         <searchFilterFields>NAME</searchFilterFields>
         <searchFilterFields>LogEntry__c</searchFilterFields>
         <searchFilterFields>Tag__c</searchFilterFields>
+        <searchResultsAdditionalFields>LoggedByUsernameLink__c</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>LogLink__c</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>LogEntryTimestamp__c</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>LogEntry__c</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>LogEntryOrigin__c</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>Tag__c</searchResultsAdditionalFields>
     </searchLayouts>
     <sharingModel>ControlledByParent</sharingModel>
     <visibility>Public</visibility>

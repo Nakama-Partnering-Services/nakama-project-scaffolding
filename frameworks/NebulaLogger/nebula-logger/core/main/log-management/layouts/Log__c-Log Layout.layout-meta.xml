@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/04/metadata">
     <excludeButtons>ChangeRecordType</excludeButtons>
     <excludeButtons>Clone</excludeButtons>
@@ -14,6 +14,10 @@
             <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>TransactionId__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>RequestId__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
@@ -68,7 +72,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
-                <field>Scenario__c</field>
+                <field>TransactionScenarioLink__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
@@ -290,15 +294,19 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
-                <field>ApiVersion__c</field>
+                <field>OrganizationLocation__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
-                <field>ApiReleaseVersion__c</field>
+                <field>OrganizationApiVersion__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
-                <field>ApiReleaseNumber__c</field>
+                <field>OrganizationReleaseVersion__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>OrganizationReleaseNumber__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
@@ -308,8 +316,8 @@
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
         <label>System Information</label>
-        <layoutColumns />
-        <layoutColumns />
+        <layoutColumns/>
+        <layoutColumns/>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
     <layoutSections>
@@ -317,9 +325,9 @@
         <detailHeading>false</detailHeading>
         <editHeading>true</editHeading>
         <label>Custom Links</label>
-        <layoutColumns />
-        <layoutColumns />
-        <layoutColumns />
+        <layoutColumns/>
+        <layoutColumns/>
+        <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
     <platformActionList>
@@ -365,7 +373,8 @@
         <fields>Origin__c</fields>
         <fields>Message__c</fields>
         <fields>RecordDetailedLink__c</fields>
-        <fields>LoggingLevelWithImage__c</fields>
+        <fields>EntryScenarioLink__c</fields>
+        <fields>LoggingLevel__c</fields>
         <fields>TransactionEntryNumber__c</fields>
         <relatedList>LogEntry__c.Log__c</relatedList>
         <sortField>TransactionEntryNumber__c</sortField>

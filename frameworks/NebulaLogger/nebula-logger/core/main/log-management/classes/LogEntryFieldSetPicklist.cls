@@ -8,30 +8,37 @@
  * @description Dynamically returns `LogEntry__c` field sets in App Builder when configuring the component RelatedLogEntries
  */
 public without sharing class LogEntryFieldSetPicklist extends VisualEditor.DynamicPickList {
-    /**
-     * @description Returns a default value of null - admins must select a field set within App Builder
-     * @return null (no default value)
-     */
-    public override VisualEditor.DataRow getDefaultValue() {
-        return null;
+  /**
+   * @description Returns the default `LogEntry__c` field set, based on the `LoggerParameter__mdt` record `DefaultLogEntryRelatedListFieldSet`
+   * @return And instance of `VisualEditor.DataRow` if a valid, matching field set exists, or `null`
+   */
+  public override VisualEditor.DataRow getDefaultValue() {
+    if (String.isBlank(LoggerParameter.DEFAULT_LOG_ENTRY_RELATED_LIST_FIELD_SET)) {
+      return null;
     }
 
-    /**
-     * @description Returns the list of fields sets on `LogEntry__c`, allowing admins to specify any
-     *   field set for each instance of the `RelatedLogEntries` component
-     * @return   The list of field sets on the LogEntry__c object
-     */
-    public override VisualEditor.DynamicPickListRows getValues() {
-        VisualEditor.DynamicPickListRows picklistRows = new VisualEditor.DynamicPickListRows();
+    Schema.FieldSet configuredFieldSet = Schema.SObjectType.LogEntry__c.fieldSets.getMap().get(LoggerParameter.DEFAULT_LOG_ENTRY_RELATED_LIST_FIELD_SET);
+    return configuredFieldSet == null ? null : this.createDataRow(configuredFieldSet);
+  }
 
-        List<Schema.FieldSet> fieldSets = Schema.SObjectType.LogEntry__c.fieldSets.getMap().values();
-        for (Schema.FieldSet fieldSet : fieldSets) {
-            String namespacePrefix = String.isBlank(fieldSet.getNameSpace()) ? '' : fieldSet.getNameSpace() + '__';
+  /**
+   * @description Returns the list of fields sets on `LogEntry__c`, allowing admins to specify any
+   *   field set for each instance of the `RelatedLogEntries` component
+   * @return   The list of field sets on the LogEntry__c object
+   */
+  public override VisualEditor.DynamicPickListRows getValues() {
+    VisualEditor.DynamicPickListRows picklistRows = new VisualEditor.DynamicPickListRows();
 
-            VisualEditor.DataRow picklistRow = new VisualEditor.DataRow(fieldSet.getLabel(), namespacePrefix + fieldSet.getName());
-            picklistRows.addRow(picklistRow);
-        }
-
-        return picklistRows;
+    List<Schema.FieldSet> fieldSets = Schema.SObjectType.LogEntry__c.fieldSets.getMap().values();
+    for (Schema.FieldSet fieldSet : fieldSets) {
+      picklistRows.addRow(this.createDataRow(fieldSet));
     }
+
+    return picklistRows;
+  }
+
+  private VisualEditor.DataRow createDataRow(Schema.FieldSet fieldSet) {
+    String namespacePrefix = String.isBlank(fieldSet.getNameSpace()) ? '' : fieldSet.getNameSpace() + '__';
+    return new VisualEditor.DataRow(fieldSet.getLabel(), namespacePrefix + fieldSet.getName());
+  }
 }

@@ -10,35 +10,44 @@
  */
 @SuppressWarnings('PMD.AvoidGlobalModifier')
 global with sharing class LogBatchPurgeScheduler implements System.Schedulable {
-    private final Integer batchSize;
+  @TestVisible
+  private static final String SCHEDULER_SYSTEM_MESSAGE_TEMPLATE = 'Logger - Scheduling LogBatchPurgeScheduler job, schedulableContext=={0}';
 
-    /**
-     * @description Default constructor.  Sets initial batch size to 200.
-     */
-    global LogBatchPurgeScheduler() {
-        this(200);
+  @TestVisible
+  private Integer batchSize;
+
+  /**
+   * @description Default constructor.  Sets initial batch size to 200.
+   */
+  global LogBatchPurgeScheduler() {
+    this(LogBatchPurger.getDefaultBatchSize());
+  }
+
+  /**
+   * @description Construct that accepts the batch size as a parameter.
+   * @param batchSize - The size of the records per batch job / instance.  Max is 5000. Minium is 1.
+   */
+  global LogBatchPurgeScheduler(Integer batchSize) {
+    this.batchSize = batchSize;
+  }
+
+  /**
+   * @description Required by the Database.Schedulable interface, this method kicks off the LogBatchPurger batch class
+   * on a scheduled basis.
+   * @param schedulableContext The instance of `System.SchedulableContext` provided by the platform at runtime
+   */
+  global void execute(System.SchedulableContext schedulableContext) {
+    Logger.setAsyncContext(schedulableContext);
+    if (LoggerParameter.ENABLE_SYSTEM_MESSAGES) {
+      LogMessage logMessage = new LogMessage(SCHEDULER_SYSTEM_MESSAGE_TEMPLATE, schedulableContext);
+      Logger.info(logMessage);
+      Logger.saveLog();
     }
 
-    /**
-     * @description Construct that accepts the batch size as a parameter.
-     * @param batchSize - The size of the records per batch job / instance.  Max is 5000. Minium is 1.
-     */
-    global LogBatchPurgeScheduler(Integer batchSize) {
-        this.batchSize = batchSize;
+    if (this.batchSize == null) {
+      this.batchSize = LogBatchPurger.getDefaultBatchSize();
     }
 
-    /**
-     * @description Required by the Database.Schedulable interface, this method kicks off the LogBatchPurger batch class
-     * on a scheduled basis.
-     * @param schedulableContext Required for the Schedulable interface, this method contains contextual information about when this instance is/was scheduled.
-     */
-    global void execute(SchedulableContext schedulableContext) {
-        if (LoggerParameter.ENABLE_SYSTEM_MESSAGES == true) {
-            LogMessage logMessage = new LogMessage('Logger - Scheduling LogBatchPurgeScheduler job, schedulableContext=={0}', schedulableContext);
-            Logger.info(logMessage);
-            Logger.saveLog();
-        }
-
-        Database.executebatch(new LogBatchPurger().setChainedBatchSize(this.batchSize), this.batchSize);
-    }
+    System.Database.executeBatch(new LogBatchPurger().setChainedBatchSize(this.batchSize), this.batchSize);
+  }
 }

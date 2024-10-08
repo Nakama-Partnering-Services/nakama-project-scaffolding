@@ -1,14 +1,14 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>HttpRequestMethod__c</fullName>
-    <externalId>false</externalId>
+    <businessStatus>Active</businessStatus>
+    <complianceGroup>None</complianceGroup>
     <label>HTTP Request Method</label>
     <required>false</required>
-    <trackFeedHistory>false</trackFeedHistory>
+    <securityClassification>Confidential</securityClassification>
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
-        <restricted>false</restricted>
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>

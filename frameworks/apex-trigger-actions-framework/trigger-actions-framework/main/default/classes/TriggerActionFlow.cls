@@ -14,8 +14,13 @@
    limitations under the License.
  */
 
-@SuppressWarnings('PMD.ApexDoc, PMD.CyclomaticComplexity')
-public inherited sharing class TriggerActionFlow implements TriggerAction.BeforeInsert, TriggerAction.AfterInsert, TriggerAction.BeforeUpdate, TriggerAction.AfterUpdate, TriggerAction.BeforeDelete, TriggerAction.AfterDelete, TriggerAction.AfterUndelete {
+/**
+ * @group Trigger Actions Framework
+ * @description This class implements the TriggerAction interface and provides a framework for
+ * executing Flows before or after the insert, update, delete, or undelete of records.
+ */
+@SuppressWarnings('PMD.CyclomaticComplexity')
+public virtual inherited sharing class TriggerActionFlow implements TriggerAction.BeforeInsert, TriggerAction.AfterInsert, TriggerAction.BeforeUpdate, TriggerAction.AfterUpdate, TriggerAction.BeforeDelete, TriggerAction.AfterDelete, TriggerAction.AfterUndelete {
 	@TestVisible
 	private static final String RECORD_VARIABLE_NOT_FOUND_ERROR = 'There must be a variable defined in this flow with api name of "record" and type of "record" that is marked as "available for output"';
 	@TestVisible
@@ -26,28 +31,58 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 	public String flowName;
 	public Boolean allowRecursion;
 
+	/**
+	 * @description This method bypasses the execution of the Flow for the specified list of records.
+	 *
+	 * @param flowName The API name of the Flow to bypass.
+	 */
 	public static void bypass(String flowName) {
 		TriggerActionFlow.bypassedFlows.add(flowName);
 	}
 
+	/**
+	 * @description This method clears the bypass for the specified list of records.
+	 *
+	 * @param flowName The API name of the Flow to clear the bypass for.
+	 */
 	public static void clearBypass(String flowName) {
 		TriggerActionFlow.bypassedFlows.remove(flowName);
 	}
 
+	/**
+	 * @description This method checks if the Flow is bypassed for the specified list of records.
+	 *
+	 * @param flowName The API name of the Flow to check the bypass for.
+	 * @return `true` if the Flow is bypassed for the specified list of records, `false` otherwise.
+	 */
 	public static Boolean isBypassed(String flowName) {
 		return TriggerActionFlow.bypassedFlows.contains(flowName);
 	}
 
+	/**
+	 * @description This method clears all bypasses for all Flows.
+	 */
 	public static void clearAllBypasses() {
 		TriggerActionFlow.bypassedFlows.clear();
 	}
 
+	/**
+	 * @description This method validates the specified bypass type.
+	 *
+	 * @param bypassType The bypass type to validate.
+	 * @throws IllegalArgumentException if the bypass type is not valid.
+	 */
 	public static void validateType(String bypassType) {
 		if (!TriggerActionConstants.REQUEST_TYPES.contains(bypassType)) {
 			throw new IllegalArgumentException(TriggerActionConstants.INVALID_TYPE);
 		}
 	}
 
+	/**
+	 * @description This method executes the Flow for the specified list of records before the insert of the records.
+	 *
+	 * @param newList The list of records to execute the Flow for.
+	 */
 	public void beforeInsert(List<SObject> newList) {
 		if (flowIsBypassed()) {
 			return;
@@ -59,6 +94,11 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		applyFieldValuesDuringBefore(results, newList);
 	}
 
+	/**
+	 * @description This method executes the Flow for the specified list of records after the insert of the records.
+	 *
+	 * @param newList The list of records to execute the Flow for.
+	 */
 	public void afterInsert(List<SObject> newList) {
 		if (flowIsBypassed()) {
 			return;
@@ -71,6 +111,12 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		);
 	}
 
+	/**
+	 * @description This method executes the Flow for the specified list of records before the update of the records.
+	 *
+	 * @param newList The list of new records that are being updated.
+	 * @param oldList The list of old records that are being updated.
+	 */
 	public void beforeUpdate(List<SObject> newList, List<SObject> oldList) {
 		if (flowIsBypassed()) {
 			return;
@@ -97,6 +143,12 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		applyFieldValuesDuringBefore(results, recordsNotYetProcessed);
 	}
 
+	/**
+	 * @description This method executes the Flow for the specified list of records after the update of the records.
+	 *
+	 * @param newList The list of new records that are being updated.
+	 * @param oldList The list of old records that are being updated.
+	 */
 	public void afterUpdate(List<SObject> newList, List<SObject> oldList) {
 		if (flowIsBypassed()) {
 			return;
@@ -124,6 +176,11 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		);
 	}
 
+	/**
+	 * @description This method executes the Flow for the specified list of records before the delete of the records.
+	 *
+	 * @param oldList The list of old records that are being deleted.
+	 */
 	public void beforeDelete(List<SObject> oldList) {
 		if (flowIsBypassed()) {
 			return;
@@ -139,6 +196,11 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		);
 	}
 
+	/**
+	 * @description This method executes the Flow for the specified list of records after the delete of the records.
+	 *
+	 * @param oldList The list of old records that are being deleted.
+	 */
 	public void afterDelete(List<SObject> oldList) {
 		if (flowIsBypassed()) {
 			return;
@@ -154,6 +216,11 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		);
 	}
 
+	/**
+	 * @description This method executes the Flow for the specified list of records before the undelete of the records.
+	 *
+	 * @param newList The list of records that are being restored.
+	 */
 	public void afterUndelete(List<SObject> newList) {
 		if (flowIsBypassed()) {
 			return;
@@ -186,15 +253,17 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		sObject stateAfterFlow
 	) {
 		Boolean hasBeenMutated = false;
-		Map<String, Object> afterFlowMap = stateAfterFlow.getPopulatedFieldsAsMap();
-		for (String fieldName : afterFlowMap.keySet()) {
+		Set<String> recordPopulatedFields = new Set<String>();
+		recordPopulatedFields.addAll(stateAfterFlow.getPopulatedFieldsAsMap().keySet());
+		recordPopulatedFields.addAll(stateBeforeFlow.getPopulatedFieldsAsMap().keySet()); 
+		for (String fieldName : recordPopulatedFields) {
 			if (stateBeforeFlow.get(fieldName) != stateAfterFlow.get(fieldName)) {
 				stateBeforeFlow.put(fieldName, stateAfterFlow.get(fieldName));
 				hasBeenMutated = true;
 			}
 		}
 		/**
-		 * If the record is not mutated, then any errors will persist after the flow is complete,
+		 * @description If the record is not mutated, then any errors will persist after the flow is complete,
 		 * so there is no need to re-add them
 		 */
 		if (hasBeenMutated == false) {
@@ -202,7 +271,7 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		}
 		for (Database.Error err : stateAfterFlow.getErrors()) {
 			/**
-			 * Unfortunately, err.getFields() does not include the field api name after
+			 * @description Unfortunately, err.getFields() does not include the field api name after
 			 * calling .addError(String fieldApiName, String message) from within a flow,
 			 * so when the record is mutated before save,
 			 * the exact field location for the error cannot be applied.
@@ -211,6 +280,13 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		}
 	}
 
+	/**
+	 * @description This method gets the interview inputs for the specified list of new and old records.
+	 *
+	 * @param newList The list of new records.
+	 * @param oldList The list of old records.
+	 * @return A list of interview inputs.
+	 */
 	private List<Map<String, Object>> getInterviewInputs(
 		List<SObject> newList,
 		List<SObject> oldList
@@ -229,7 +305,7 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 		return result;
 	}
 
-	private List<Map<String, Object>> getInterviewInputs(
+	protected virtual List<Map<String, Object>> getInterviewInputs(
 		List<SObject> records,
 		String variableName
 	) {
@@ -251,9 +327,7 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 					.get(TriggerActionConstants.RECORD_VARIABLE));
 				if (newRecordWhenFlowIsComplete == null) {
 					throw new IllegalArgumentException(
-						this.flowName +
-						': ' +
-						RECORD_VARIABLE_NOT_FOUND_ERROR
+						this.flowName + ': ' + RECORD_VARIABLE_NOT_FOUND_ERROR
 					);
 				}
 				applyFlowValues(newList[i], newRecordWhenFlowIsComplete);
@@ -283,6 +357,13 @@ public inherited sharing class TriggerActionFlow implements TriggerAction.Before
 
 	@TestVisible
 	private virtual class InvocableAction {
+		/**
+		 * @description This method invokes the specified Flow with the specified inputs.
+		 *
+		 * @param flowApiName The API name of the Flow to invoke.
+		 * @param inputs The list of inputs to pass to the Flow.
+		 * @return The list of results from the Flow invocation.
+		 */
 		public virtual List<Invocable.Action.Result> invokeAction(
 			String flowApiName,
 			List<Map<String, Object>> inputs

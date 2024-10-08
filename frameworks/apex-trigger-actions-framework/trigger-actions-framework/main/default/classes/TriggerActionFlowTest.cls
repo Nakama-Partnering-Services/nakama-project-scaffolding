@@ -16,12 +16,13 @@
 
 @SuppressWarnings('PMD.ApexDoc, PMD.ApexUnitTestClassShouldHaveRunAs')
 @IsTest(isParallel=true)
-public class TriggerActionFlowTest {
+private class TriggerActionFlowTest {
 	private static final String BOGUS = 'Bogus';
 	private static final String BYPASSES_SHOULD_BE_POPULATED_CORRECTLY = 'Static bypasses should be populated properly';
 	private static final String ERROR_MESSAGE_SHOULD_MATCH = 'The message should be what we expect';
 	private static final String ERROR_SHOULD_BE_ADDED = 'There should be an error added to the record';
 	private static final String ERROR_SHOULD_NOT_BE_ADDED = 'There should not be an error added to the record';
+	private static final String ERROR_NOT_NULLED_AFTER_FLOW = 'Field nulled in Flow was not written back to record variable';
 	private static final String EXCEPTION_SHOULD_BE_THROWN = 'An exception should be thrown';
 	private static final String EXCEPTION_SHOULD_HAVE_THE_CORRECT_MESSAGE = 'The exception should have the correct message';
 	private static final String EXCEPTION_SHOULD_NOT_BE_THROWN = 'There should be no exception thrown when this method is called with a valid flow.';
@@ -267,6 +268,18 @@ public class TriggerActionFlowTest {
 			ERROR_SHOULD_NOT_BE_ADDED
 		);
 	}
+
+	@IsTest
+    private static void nulledFieldInFlowShouldBeTransferredBack() {
+        myAccount.BillingStreet = TEST;
+        oldAccount.BillingStreet = TEST;
+        myAccountAfterFlow = myAccount.clone(true);
+        myAccountAfterFlow.BillingStreet = null;
+
+        actionFlow.beforeUpdate(newList, oldList);
+
+        System.Assert.isNull(myAccount.BillingStreet, ERROR_NOT_NULLED_AFTER_FLOW);
+    }
 
 	@IsTest
 	private static void unsuccessfulActionResultShouldBeAddedAsErrorToRecord() {

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -149,10 +149,10 @@
     <allowInChatterGroups>true</allowInChatterGroups>
     <compactLayoutAssignment>LoggerTagCompactLayout</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Custom tags used by Logger for tagging Log__c and LogEntry__c records</description>
+    <description>Used by Nebula Logger for storing unique tags (text/String) that can be associated with LogEntry__c records via the junction object LogEntryTag__c</description>
     <enableActivities>true</enableActivities>
     <enableBulkApi>true</enableBulkApi>
-    <enableFeeds>true</enableFeeds>
+    <enableFeeds>false</enableFeeds>
     <enableHistory>true</enableHistory>
     <enableLicensing>false</enableLicensing>
     <enableReports>true</enableReports>
@@ -163,7 +163,6 @@
     <label>Logger Tag</label>
     <nameField>
         <label>Logger Tag Name</label>
-        <trackFeedHistory>true</trackFeedHistory>
         <trackHistory>false</trackHistory>
         <type>Text</type>
     </nameField>
@@ -181,6 +180,11 @@
         <searchFilterFields>NAME</searchFilterFields>
         <searchFilterFields>OWNER.ALIAS</searchFilterFields>
         <searchFilterFields>TotalLogEntries__c</searchFilterFields>
+        <searchResultsAdditionalFields>TotalLogEntries__c</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>UniqueId__c</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>OWNER.ALIAS</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>CREATED_DATE</searchResultsAdditionalFields>
+        <searchResultsAdditionalFields>LAST_UPDATE</searchResultsAdditionalFields>
     </searchLayouts>
     <sharingModel>Read</sharingModel>
     <visibility>Public</visibility>
