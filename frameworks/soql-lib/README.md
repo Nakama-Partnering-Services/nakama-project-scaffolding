@@ -1,1 +1,1 @@
-Original repository: https://github.com/mitchspano/apex-trigger-actions-framework
+Original repository: https://github.com/beyond-the-cloud-dev/soql-lib

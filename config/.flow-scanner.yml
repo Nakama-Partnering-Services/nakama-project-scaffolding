@@ -1,7 +1,7 @@
 rules:
     APIVersion:
         severity: error
-        expression: '===59'
+        expression: '===61'
     CopyAPIName:
         severity: error
     DMLStatementInLoop:

@@ -1,1 +1,1 @@
-Original repository: https://github.com/beyond-the-cloud-dev/soql-lib
+Original repository: https://github.com/rsoesemann/apex-domainbuilder
