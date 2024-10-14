@@ -27,5 +27,6 @@
 	"prettier.useTabs": true,
 	"prettier.documentSelectors": ["**/*.{page,component}"],
 	"apexPMD.rulesets": ["config/pmd-ruleset.xml"],
-	"codeBuilder.showWelcomePage": false
+	"codeBuilder.showWelcomePage": false,
+	"salesforce.einsteinForDevelopers.enable": false
 }
