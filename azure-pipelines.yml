@@ -12,6 +12,13 @@ schedules:
               - main
       always: true
 
+    - cron: '0 0 * * *' # UTC Timezone
+      displayName: 'Daily 2 AM (CET) comparison of production changes with latest release'
+      branches:
+          include:
+              - main
+      always: true
+
 trigger:
     branches:
         include:
@@ -94,5 +101,8 @@ stages:
                 PACKAGE_VERSION_ID: ${{ parameters.PACKAGE_VERSION_ID }}
                 INSTALLATION_KEY: ${{ parameters.INSTALLATION_KEY }}
 
-    - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+    - ${{ if and(eq(variables['Build.Reason'], 'Schedule'), eq(variables['Build.CronSchedule.DisplayName'], 'Daily midnight (CET) validation deployment to run local tests')) }}:
           - template: .azure/templates/run-apex-tests.yml
+
+    - ${{ if and(eq(variables['Build.Reason'], 'Schedule'), eq(variables['Build.CronSchedule.DisplayName'], 'Daily 2 AM (CET) comparison of production changes with latest release')) }}:
+          - template: .azure/templates/compare-production-changes-with-latest-release.yml
