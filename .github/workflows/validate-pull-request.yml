@@ -15,7 +15,7 @@ jobs:
         name: 'Generate deltas'
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -56,7 +56,7 @@ jobs:
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -103,7 +103,7 @@ jobs:
         if: vars.VALIDATE_JEST == 'true'
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -126,7 +126,7 @@ jobs:
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -148,7 +148,7 @@ jobs:
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -170,7 +170,7 @@ jobs:
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -191,7 +191,7 @@ jobs:
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -211,7 +211,7 @@ jobs:
         needs: [get-deployment-target-org, get-deployment-tests-specifications]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -276,7 +276,7 @@ jobs:
         needs: [validate-deployment]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines
+            image: nakamapartneringservices/nakama-pipelines:test
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
