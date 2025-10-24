@@ -185,6 +185,27 @@ jobs:
             - name: 'Validate PMD'
               run: sf nakama validate pmd
 
+    validate-recommendations:
+        name: 'Validate recommendations'
+        if: vars.VALIDATE_RECOMMENDATIONS == 'true'
+        needs: [generate-deltas]
+        runs-on: ubuntu-latest
+        container:
+            image: nakamapartneringservices/nakama-pipelines:test
+            credentials:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/download-artifact@v5
+              with:
+                  name: deltas
+                  path: deltas
+
+            - name: 'Validate recommendations'
+              run: sf nakama validate recommended
+
     validate-flows:
         name: 'Validate Flows'
         if: vars.VALIDATE_FLOWS == 'true'
