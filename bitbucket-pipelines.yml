@@ -24,11 +24,10 @@ pipelines:
                   - step:
                         name: 'Validate Jest'
                         script:
-                            - sf nakama validate eslint
+                            - sf nakama validate jest
                         condition:
                             changesets:
                                 includePaths:
-                                    - '**/aura/**'
                                     - '**/lwc/**'
 
                   - step:
@@ -38,19 +37,18 @@ pipelines:
                             - sf nakama validate prettier
 
                   - step:
-                        name: 'Validate ESLint'
+                        name: 'Validate Recommendations'
                         script:
-                            - sf nakama validate eslint
+                            - sf nakama validate recommendations
+
+                  - step:
+                        name: 'Validate Flows'
+                        script:
+                            - sf nakama validate flows
                         condition:
                             changesets:
                                 includePaths:
-                                    - '**/aura/**'
-                                    - '**/lwc/**'
-
-                  - step:
-                        name: 'Validate PMD'
-                        script:
-                            - sf nakama validate pmd
+                                    - '**/flows/**'
 
                   - step:
                         name: 'Validate deployment'
