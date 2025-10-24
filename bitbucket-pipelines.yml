@@ -37,12 +37,12 @@ pipelines:
                             - sf nakama validate prettier
 
                   - step:
-                        name: 'Validate Recommendations'
+                        name: 'Validate recommendations'
                         script:
                             - sf nakama validate recommendations
 
                   - step:
-                        name: 'Validate Flows'
+                        name: 'Validate flows'
                         script:
                             - sf nakama validate flows
                         condition:
@@ -74,7 +74,7 @@ pipelines:
                             - results.json
 
             - step:
-                  name: 'Validate coverage'
+                  name: 'Validate test coverage'
                   script:
                       - sf nakama validate coverage -r 75
     branches:
