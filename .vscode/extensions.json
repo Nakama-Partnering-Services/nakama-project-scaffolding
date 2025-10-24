@@ -1,7 +1,6 @@
 {
 	"recommendations": [
 		"salesforce.salesforcedx-vscode-expanded",
-		"pmd.apex-pmd", // Note: not present in open-vsx version of salesforcedx-vscode-expanded
 		"shardulm94.trailing-spaces",
 		"vivaxy.vscode-conventional-commits",
 		"formulahendry.auto-close-tag",
@@ -9,7 +8,6 @@
 		"formulahendry.auto-rename-tag",
 		"mhutchie.git-graph",
 		"eamodio.gitlens",
-		"pkief.material-icon-theme",
-		"usernamehw.errorlens"
+		"pkief.material-icon-theme"
 	]
 }

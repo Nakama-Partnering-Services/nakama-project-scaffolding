@@ -7,13 +7,17 @@
 	"tabWidth": 4,
 	"useTabs": true,
 	"apexInsertFinalNewline": true,
+	"plugins": [
+		"prettier-plugin-apex",
+		"@prettier/plugin-xml"
+	],
 	"overrides": [
 		{
 			"files": "**/lwc/**/*.html",
 			"options": { "parser": "lwc" }
 		},
 		{
-			"files": "*.{app,cmp,page,component}",
+			"files": "*.{app,auradoc,cmp,design,page,component}",
 			"options": { "parser": "html" }
 		}
 	]

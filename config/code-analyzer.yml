@@ -1,0 +1,16 @@
+rules:
+    # Note: include and exclude patterns for files and folders from ruleset XML file are not respected
+    # so , if executed, PMD engine would also run in folders such as frameworks/ and files such as dlrs_*
+    pmd:
+        ApexDoc:
+            tags: ['Documentation', 'Apex']
+
+engines:
+    pmd:
+        custom_rulesets:
+            - config/pmd-ruleset.xml
+    eslint:
+        eslint_config_file: eslint.config.js
+        disable_lwc_base_config: true
+    cpd:
+        disable_engine: true

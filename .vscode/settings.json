@@ -6,11 +6,19 @@
 		"**/.sfdx": true
 	},
 	"terminal.integrated.defaultProfile.windows": "Git Bash",
+	"salesforce.einsteinForDevelopers.enable": true,
 	// Note: below property is an example path when working locally in Windows
-	// "salesforcedx-vscode-apex.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.6.10-hotspot",
+	// Note: pipeline jobs use java 11 so there may be discrepancies if using other versions locally, for example with Prettier or PMD
+	"salesforcedx-vscode-apex.java.home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.8.9-hotspot",
 	// Note: below property contains the proper value when working with Code Builder
-	"salesforcedx-vscode-apex.java.home": "/usr/lib/jvm/java-11-openjdk-amd64",
+	// "salesforcedx-vscode-apex.java.home": "/usr/lib/jvm/java-11-openjdk-amd64",
+	// "codeBuilder.showWelcomePage": false,
+	"salesforcedx-vscode-core.clearOutputTab": true,
 	"salesforcedx-vscode-core.retrieve-test-code-coverage": true,
+	"salesforcedx-vscode-slds.basic.deprecated": true,
+	"salesforcedx-vscode-slds.basic.slds2": true,
+	"codeAnalyzer.analyzeOnSave.enabled": true,
+	"codeAnalyzer.configFile": "config/code-analyzer.yml",
 	"trailing-spaces.trimOnSave": true,
 	"files.trimTrailingWhitespace": true,
 	"diffEditor.ignoreTrimWhitespace": false,
@@ -26,7 +34,5 @@
 	"prettier.tabWidth": 4,
 	"prettier.useTabs": true,
 	"prettier.documentSelectors": ["**/*.{page,component}"],
-	"apexPMD.rulesets": ["config/pmd-ruleset.xml"],
-	"codeBuilder.showWelcomePage": false,
-	"salesforce.einsteinForDevelopers.enable": false
+	"xml.preferences.showSchemaDocumentationType": "none"
 }

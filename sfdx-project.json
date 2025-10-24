@@ -25,7 +25,7 @@
 	"namespace": "nakama",
 	"name": "nakama-project-scaffolding",
 	"sfdcLoginUrl": "https://login.salesforce.com",
-	"sourceApiVersion": "61.0",
+	"sourceApiVersion": "65.0",
 	"packageAliases": {
 		"Frameworks": "0Ho7Q0000008OO8SAM",
 		"Frameworks@2.0.0-1": "04tJ7000000LP5bIAG",

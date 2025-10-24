@@ -1,3 +1,5 @@
+// Note: this script is written with CommonJS. If we migrate to ESM, using import instead of require, renaming it to .mjs instead of .js, and executing it
+// like "node scripts/node/verify-branch-name/index.mjs" instead of "node scripts/node/verify-branch-name", we could remove the 'use strict' directive.
 'use strict';
 
 const { promisify } = require('util');
