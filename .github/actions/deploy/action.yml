@@ -33,7 +33,7 @@ inputs:
 runs:
     using: composite
     steps:
-        - uses: actions/download-artifact@v3
+        - uses: actions/download-artifact@v5
           continue-on-error: true
           with:
               name: deltas

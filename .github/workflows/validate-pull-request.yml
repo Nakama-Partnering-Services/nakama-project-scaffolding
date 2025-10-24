@@ -66,7 +66,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v5
               with:
                   name: deltas
                   path: deltas
@@ -133,7 +133,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v5
               with:
                   name: deltas
                   path: deltas
@@ -155,7 +155,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v5
               with:
                   name: deltas
                   path: deltas
@@ -177,7 +177,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v5
               with:
                   name: deltas
                   path: deltas
@@ -198,7 +198,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v5
               with:
                   name: deltas
                   path: deltas
@@ -281,12 +281,12 @@ jobs:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
         steps:
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v5
               with:
                   name: deltas
                   path: deltas
 
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v5
               with:
                   name: deployment-results
 
