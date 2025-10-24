@@ -62,6 +62,7 @@ const showToastWarning = (self, options) => {
 		messageData: options.messageData || [],
 		mode: options.mode || 'dismissable'
 	});
+	let log;
 	self.dispatchEvent(showWarn);
 };
 /**
