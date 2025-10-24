@@ -15,7 +15,7 @@ jobs:
         name: 'Generate deltas'
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines:test
+            image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -56,7 +56,7 @@ jobs:
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines:test
+            image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -103,7 +103,7 @@ jobs:
         if: vars.VALIDATE_JEST == 'true'
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines:test
+            image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -126,7 +126,7 @@ jobs:
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines:test
+            image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -142,56 +142,13 @@ jobs:
             - name: 'Validate Prettier'
               run: sf nakama validate prettier
 
-    validate-eslint:
-        name: 'Validate ESLint'
-        if: vars.VALIDATE_ESLINT == 'true'
-        needs: [generate-deltas]
-        runs-on: ubuntu-latest
-        container:
-            image: nakamapartneringservices/nakama-pipelines:test
-            credentials:
-                username: ${{ secrets.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        steps:
-            - uses: actions/checkout@v4
-
-            - uses: actions/download-artifact@v5
-              with:
-                  name: deltas
-                  path: deltas
-
-            # Note: all files in the lwc or aura bundle are validated, not only the ones that were modified.
-            - name: 'Validate ESLint'
-              run: sf nakama validate eslint
-
-    validate-pmd:
-        name: 'Validate PMD'
-        if: vars.VALIDATE_PMD == 'true'
-        needs: [generate-deltas]
-        runs-on: ubuntu-latest
-        container:
-            image: nakamapartneringservices/nakama-pipelines:test
-            credentials:
-                username: ${{ secrets.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        steps:
-            - uses: actions/checkout@v4
-
-            - uses: actions/download-artifact@v5
-              with:
-                  name: deltas
-                  path: deltas
-
-            - name: 'Validate PMD'
-              run: sf nakama validate pmd
-
     validate-recommendations:
         name: 'Validate recommendations'
         if: vars.VALIDATE_RECOMMENDATIONS == 'true'
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines:test
+            image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -204,15 +161,15 @@ jobs:
                   path: deltas
 
             - name: 'Validate recommendations'
-              run: sf nakama validate recommended
+              run: sf nakama validate recommendations
 
     validate-flows:
-        name: 'Validate Flows'
+        name: 'Validate flows'
         if: vars.VALIDATE_FLOWS == 'true'
         needs: [generate-deltas]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines:test
+            image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -232,7 +189,7 @@ jobs:
         needs: [get-deployment-target-org, get-deployment-tests-specifications]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines:test
+            image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -297,7 +254,7 @@ jobs:
         needs: [validate-deployment]
         runs-on: ubuntu-latest
         container:
-            image: nakamapartneringservices/nakama-pipelines:test
+            image: nakamapartneringservices/nakama-pipelines
             credentials:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_PASSWORD }}
