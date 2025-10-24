@@ -40,27 +40,13 @@ validate-prettier:
     script:
         - sf nakama validate prettier
 
-validate-eslint:
+validate-recommendations:
     stage: validate-merge-request
     rules:
-        - if: $VALIDATE_ESLINT_DISABLED
+        - if: $VALIDATE_RECOMMENDATIONS_DISABLED
           when: never
-        - changes:
-              - core/**/lwc/**/*.js
-              - core/**/aura/**/*.js
     script:
-        - sf nakama validate eslint
-
-validate-pmd:
-    stage: validate-merge-request
-    rules:
-        - if: $VALIDATE_PMD_DISABLED
-          when: never
-        - changes:
-              - core/**/classes/**/*.cls
-              - core/**/triggers/**/*.trigger
-    script:
-        - sf nakama validate pmd
+        - sf nakama validate recommendations
 
 validate-flows:
     stage: validate-merge-request
