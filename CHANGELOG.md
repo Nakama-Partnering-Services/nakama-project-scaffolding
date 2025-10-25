@@ -1,6 +1,24 @@
-# Changelog
+# Release notes
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [2.0.0](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.4.0...v2.0.0) (2025-10-25)
+
+
+### Features
+
+* improve bitbucket pipelines with docker image ([2972070](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/2972070c254e4c506aa6ed09b90d9b43d086ec7d))
+* update azure validate  pipelines with new plugin version without testing ([d9077bf](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/d9077bf3b37d7c6cd14d5e608c6cd5489f936053))
+* update bitbucket pipelines with new plugin version without testing ([e1e8ed8](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/e1e8ed8154227c927c3e6ae97d779427144451cf))
+* update gitlab validate  pipelines with new plugin version without testing ([e0a5109](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/e0a51095ac9e3570bac7b00d0d9752bed377ab89))
+
+
+### Bug Fixes
+
+* change pmd threshold to 2 instead of 3 ([3083d7f](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/3083d7fad4cc1ff2ad1ce2b911a067827f4ba5fd))
+* exclude nakama settings from being ignored in case the default folder is ignored ([4fa693a](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/4fa693aac3ab2a56edfbb621d44876a533507f81))
+* issue with readme files being ignored ([9dc3e88](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/9dc3e88a2170a1e49f98f39644a7339836a78c6b))
+* set UAT as direct environment for rc push deployments in Azure ([c07af17](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/c07af176abb37ee8f1a8fc481dc895f8e6b9941b))
+* target org references in azure jobs and frameworks readmes ([123736d](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/commit/123736df22904b2abeca1a4e82d3e389a068c3e6))
 
 ## [1.4.0](https://github.com/Nakama-Partnering-Services/nakama-project-scaffolding/compare/v1.3.1...v1.4.0) (2024-01-07)
 
